@@ -1,0 +1,55 @@
+export TERM="xterm-256color"
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
+# antigen
+if test -z "$NO_WALL"; then
+    ANTIGEN_OMZ_REPO_URL="https://mirrors.tuna.tsinghua.edu.cn/git/ohmyzsh.git"
+    ANTIGEN_URL="https://raw.fastgit.org/zsh-users/antigen/master/bin/antigen.zsh"
+    GIHUB_PROXY="https://hub.fastgit.xyz/"
+else
+    ANTIGEN_URL="git.io/antigen"
+    GIHUB_PROXY=""
+fi
+ANTIGEN="$HOME/antigen.zsh"
+# Install antigen.zsh if not exist
+if [ ! -f "$ANTIGEN" ]; then
+	echo "Installing antigen ..."
+	TMPFILE="/tmp/antigen.zsh"
+	if [ -x "$(which curl)" ]; then
+		curl -L "$ANTIGEN_URL" -o "$TMPFILE" 
+	elif [ -x "$(which wget)" ]; then
+		wget "$ANTIGEN_URL" -O "$TMPFILE" 
+	else
+		echo "ERROR: please install curl or wget before installation !!"
+		exit
+	fi
+	if [ ! $? -eq 0 ]; then
+		echo ""
+		echo "ERROR: downloading antigen.zsh ($ANTIGEN_URL) failed !!"
+		exit
+	fi;
+	echo "move $TMPFILE to $ANTIGEN"
+	mv "$TMPFILE" "$ANTIGEN"
+fi
+# config and enable antigen
+source "$ANTIGEN"
+antigen use oh-my-zsh
+# enable plugins
+antigen bundle git
+antigen bundle command-not-found
+antigen bundle thefuck
+antigen bundle fzf
+antigen bundle docker
+antigen bundle ripgrep
+antigen bundle tmux
+antigen bundle ufw
+antigen bundle z
+antigen bundle ${GIHUB_PROXY}zsh-users/zsh-syntax-highlighting
+antigen bundle ${GIHUB_PROXY}zsh-users/zsh-completions
+antigen bundle ${GIHUB_PROXY}zsh-users/zsh-autosuggestions
+# select theme
+antigen theme ys
+# apply 
+antigen apply
+# end of antigen config
