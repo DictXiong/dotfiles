@@ -3,14 +3,20 @@ export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
 # antigen
-if test -z "$NO_WALL"; then
-    ANTIGEN_OMZ_REPO_URL="https://mirrors.tuna.tsinghua.edu.cn/git/ohmyzsh.git"
-    ANTIGEN_URL="https://raw.fastgit.org/zsh-users/antigen/master/bin/antigen.zsh"
-    GIHUB_PROXY="https://hub.fastgit.xyz/"
-else
-    ANTIGEN_URL="git.io/antigen"
-    GIHUB_PROXY=""
-fi
+
+# if test -z "$NO_WALL"; then
+#     ANTIGEN_OMZ_REPO_URL="https://mirrors.tuna.tsinghua.edu.cn/git/ohmyzsh.git"
+#     ANTIGEN_URL="https://raw.fastgit.org/zsh-users/antigen/master/bin/antigen.zsh"
+#     GIHUB_PROXY="https://hub.fastgit.xyz/"
+# else
+#     ANTIGEN_URL="git.io/antigen"
+#     GIHUB_PROXY=""
+# fi
+# antigen bundle ${GIHUB_PROXY}zsh-users/zsh-syntax-highlighting
+# antigen bundle ${GIHUB_PROXY}zsh-users/zsh-completions
+# antigen bundle ${GIHUB_PROXY}zsh-users/zsh-autosuggestions
+ANTIGEN_OMZ_REPO_URL="https://mirrors.tuna.tsinghua.edu.cn/git/ohmyzsh.git"
+ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/master/bin/antigen.zsh"
 ANTIGEN="$HOME/antigen.zsh"
 # Install antigen.zsh if not exist
 if [ ! -f "$ANTIGEN" ]; then
@@ -45,9 +51,9 @@ antigen bundle ripgrep
 antigen bundle tmux
 antigen bundle ufw
 antigen bundle z
-antigen bundle ${GIHUB_PROXY}zsh-users/zsh-syntax-highlighting
-antigen bundle ${GIHUB_PROXY}zsh-users/zsh-completions
-antigen bundle ${GIHUB_PROXY}zsh-users/zsh-autosuggestions
+antigen bundle https://gitee.com/dictxiong/zsh-syntax-highlighting
+antigen bundle https://gitee.com/dictxiong/zsh-completions
+antigen bundle https://gitee.com/dictxiong/zsh-autosuggestions
 # select theme
 antigen theme ys
 # apply 
