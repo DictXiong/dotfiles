@@ -15,7 +15,7 @@ export LANG=C.UTF-8
 # antigen bundle ${GIHUB_PROXY}zsh-users/zsh-syntax-highlighting
 # antigen bundle ${GIHUB_PROXY}zsh-users/zsh-completions
 # antigen bundle ${GIHUB_PROXY}zsh-users/zsh-autosuggestions
-ANTIGEN_OMZ_REPO_URL="https://mirrors.tuna.tsinghua.edu.cn/git/ohmyzsh.git"
+ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
 ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/master/bin/antigen.zsh"
 ANTIGEN="$HOME/antigen.zsh"
 # Install antigen.zsh if not exist
