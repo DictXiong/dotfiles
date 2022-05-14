@@ -62,3 +62,14 @@ antigen apply
 
 # functions
 dotfile_path=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+dfs()
+{
+	if [[$1 == 'update']]; then
+		(cd "$dotfile_path" && env git pull)
+	else
+		echo "unknown command \"$1\". available: update"
+}
+
+# alias
+alias "pls"="sudo $(fc -ln -1)"
+alias "se"="sudo -sE"
