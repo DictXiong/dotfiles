@@ -59,3 +59,18 @@ antigen theme ys
 # apply 
 antigen apply
 # end of antigen config
+
+# functions
+export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+dfs()
+{
+	if [[ $1 == update ]]; then
+		(cd "$DOTFILES" && env git pull)
+	else
+		echo "unknown command \"$1\". available: update"
+	fi
+}
+
+# alias
+alias "pls"='sudo $(fc -ln -1)'
+alias "se"='sudo -sE'
