@@ -89,7 +89,7 @@ setup_color() {
 }
 # END of color settings
 
-dotfile_path=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+dotfile_path=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 home_slashes=${HOME//\//\\\/}
 if [[ ! $dotfile_path == ${home_slashes}* ]]; then 
     fmt_fatal "\"$dotfile_path\" is not under \"$HOME\". aborting ..."
