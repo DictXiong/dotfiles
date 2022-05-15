@@ -121,6 +121,16 @@ insert_if_not_exist()
     grep -qxF -- "$line" "$filename" || echo "$line" >> "$filename"
 }
 
+delete_if_exist()
+{
+    filename=$1
+    line=$2
+    fmt_note "removing \"$line\" from \"$filename\" ..."
+    if [ -f "$filename" ]; then
+        grep -vxF -- "$line" "$filename" >> "$filename"
+    fi
+}
+
 create_symlink()
 {
     src=$1
@@ -146,22 +156,47 @@ create_symlink()
     ln -s $src $dest
 }
 
+delete_link_if_match()
+{
+    src=$1
+    dest=$2
+    if [ "$(readlink $dest)" -ef "$src" ]; then
+        fmt_note "removing symlink \"$dest\" ..."
+        echo ----------
+        env stat $dest
+        echo ----------
+        rm $dest
+    fi
+}
+
+
 install_crontab(){
     fmt_note "installing \"$crontab_job\" to crontab ..."
-    ( crontab -l | grep -v "${crontab_job//\*/\\\*}" | grep -v "no crontab for"; echo "$crontab_job" ) | crontab -
+    ( crontab -l | grep -vxF "${crontab_job}" | grep -v "no crontab for"; echo "$crontab_job" ) | crontab -
 }
 
 uninstall_crontab(){
-    fmt_note uninstalling "\"$crontab_job\"" from crontab ...
-    ( crontab -l | grep -v"$crontab_job" ) | crontab - 
+    fmt_note "removing \"$crontab_job\" from crontab ..."
+    ( crontab -l | grep -vxF "$crontab_job" ) | crontab - 
 }
 
 install(){
     install_crontab
     insert_if_not_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
     create_symlink "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
-    fmt_note "job done!"
+    fmt_note "done installing!"
+}
+
+uninstall(){
+    uninstall_crontab
+    delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
+    delete_link_if_match "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
+    fmt_note "done uninstalling!"
 }
 
 setup_color
-install
+case $1 in
+    ^$|-i ) install ;;
+    -r    ) uninstall ;;
+    *     ) echo "unknown command \"$1\". available: -i, -r" ;;
+esac

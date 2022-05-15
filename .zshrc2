@@ -64,11 +64,10 @@ antigen apply
 export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 dfs()
 {
-	if [[ $1 == update ]]; then
-		(cd "$DOTFILES" && env git pull)
-	else
-		echo "unknown command \"$1\". available: update"
-	fi
+	case $1 in
+		update ) (cd "$DOTFILES" && env git pull) ;;
+		* )      echo "unknown command \"$1\". available: update" ;;
+	esac
 }
 
 # alias
