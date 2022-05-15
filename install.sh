@@ -101,7 +101,7 @@ crontab_job="0 * * * * cd ${dotfile_path} && env git pull"
 ask_for_yN()
 {
     while true; do
-        read -p "$1 [yN]: " yn
+        read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
         case $yn in
             [Yy]* ) return 1;;
             [Nn]* ) return 0;;
@@ -127,7 +127,7 @@ delete_if_exist()
     line=$2
     fmt_note "removing \"$line\" from \"$filename\" ..."
     if [ -f "$filename" ]; then
-        grep -vxF -- "$line" "$filename" >> "$filename"
+        grep -vxF -- "$line" "$filename" | tee "$filename"
     fi
 }
 
@@ -143,9 +143,9 @@ create_symlink()
     if [ -f "$dest" ]; then
         fmt_warning "\"$dest\" already exists! stat output:"
         echo ----------
-        env stat $dest
+        stat $dest
         echo ----------
-        ask_for_yN "${FMT_YELLOW}would you like to replace ${dest}?${FMT_RESET}"
+        ask_for_yN "would you like to replace ${dest}?"
         if [ $? -eq 1 ]; then 
             rm $dest
         else
@@ -163,7 +163,7 @@ delete_link_if_match()
     if [ "$(readlink $dest)" -ef "$src" ]; then
         fmt_note "removing symlink \"$dest\" ..."
         echo ----------
-        env stat $dest
+        stat $dest
         echo ----------
         rm $dest
     fi
@@ -188,15 +188,18 @@ install(){
 }
 
 uninstall(){
-    uninstall_crontab
-    delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
-    delete_link_if_match "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
-    fmt_note "done uninstalling!"
+    ask_for_yN "do you really want to uninstall?"
+    if [[ $? == 1 ]]; then
+        uninstall_crontab
+        delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
+        delete_link_if_match "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
+        fmt_note "done uninstalling!"
+    fi
 }
 
 setup_color
 case $1 in
-    ^$|-i ) install ;;
+    ""|-i ) install ;;
     -r    ) uninstall ;;
     *     ) echo "unknown command \"$1\". available: -i, -r" ;;
 esac
