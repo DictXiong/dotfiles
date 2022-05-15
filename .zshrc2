@@ -74,6 +74,7 @@ dfs()
 			$DOTFILES/install.sh -i
 			echo 'Done. Please open a new shell to see the changes.'
 			;;
+		cd     ) cd "$DOTFILES" ;;
 		*      ) echo "unknown command \"$1\". available: update, reset" ;;
 	esac
 }
