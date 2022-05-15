@@ -65,8 +65,16 @@ export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 dfs()
 {
 	case $1 in
-		update ) (cd "$DOTFILES" && env git pull) ;;
-		* )      echo "unknown command \"$1\". available: update" ;;
+		update ) (cd "$DOTFILES" && git pull) ;;
+		reset  ) 
+			antigen reset 1> /dev/null
+			rm -rf $HOME/.antigen
+			$DOTFILES/install.sh -r
+			dfs update
+			$DOTFILES/install.sh -i
+			echo 'Done. Please open a new shell to see the changes.'
+			;;
+		*      ) echo "unknown command \"$1\". available: update, reset" ;;
 	esac
 }
 

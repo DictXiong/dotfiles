@@ -141,6 +141,9 @@ create_symlink()
         return 1
     fi
     if [ -f "$dest" ]; then
+        if [ "$(readlink $dest)" -ef "$src" ]; then
+            return 0
+        fi
         fmt_warning "\"$dest\" already exists! stat output:"
         echo ----------
         stat $dest
@@ -154,6 +157,7 @@ create_symlink()
         fi
     fi
     ln -s $src $dest
+    return $?
 }
 
 delete_link_if_match()
