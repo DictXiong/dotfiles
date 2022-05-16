@@ -42,12 +42,14 @@ fi
 source "$ANTIGEN"
 antigen use oh-my-zsh
 # enable plugins
-antigen bundle git
+antigen bundle autojump
 antigen bundle command-not-found
-antigen bundle thefuck
-antigen bundle fzf
 antigen bundle docker
+antigen bundle extract
+antigen bundle fzf
+antigen bundle git
 antigen bundle ripgrep
+antigen bundle thefuck
 antigen bundle tmux
 antigen bundle ufw
 antigen bundle z
