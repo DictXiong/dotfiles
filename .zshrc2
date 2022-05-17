@@ -42,7 +42,6 @@ fi
 source "$ANTIGEN"
 antigen use oh-my-zsh
 # enable plugins
-antigen bundle autojump
 antigen bundle command-not-found
 antigen bundle docker
 antigen bundle extract
@@ -77,7 +76,7 @@ dfs()
 			echo 'Done. Please open a new shell to see the changes.'
 			;;
 		cd     ) cd "$DOTFILES" ;;
-		*      ) echo "unknown command \"$1\". available: update, reset" ;;
+		*      ) echo "unknown command \"$1\". available: update, reset, cd" ;;
 	esac
 }
 
