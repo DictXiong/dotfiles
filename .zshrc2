@@ -42,12 +42,13 @@ fi
 source "$ANTIGEN"
 antigen use oh-my-zsh
 # enable plugins
-antigen bundle git
 antigen bundle command-not-found
-antigen bundle thefuck
-antigen bundle fzf
 antigen bundle docker
+antigen bundle extract
+antigen bundle fzf
+antigen bundle git
 antigen bundle ripgrep
+antigen bundle thefuck
 antigen bundle tmux
 antigen bundle ufw
 antigen bundle z
@@ -55,7 +56,7 @@ antigen bundle https://gitee.com/dictxiong/zsh-syntax-highlighting
 antigen bundle https://gitee.com/dictxiong/zsh-completions
 antigen bundle https://gitee.com/dictxiong/zsh-autosuggestions
 # select theme
-antigen theme ys
+antigen theme ${ZSH_THEME:-ys}
 # apply 
 antigen apply
 # end of antigen config
@@ -65,8 +66,17 @@ export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 dfs()
 {
 	case $1 in
-		update ) (cd "$DOTFILES" && env git pull) ;;
-		* )      echo "unknown command \"$1\". available: update" ;;
+		update ) (cd "$DOTFILES" && git pull) ;;
+		reset  ) 
+			antigen reset 1> /dev/null
+			rm -rf $HOME/.antigen
+			$DOTFILES/install.sh -r
+			dfs update
+			$DOTFILES/install.sh -i
+			echo 'Done. Please open a new shell to see the changes.'
+			;;
+		cd     ) cd "$DOTFILES" ;;
+		*      ) echo "unknown command \"$1\". available: update, reset, cd" ;;
 	esac
 }
 
