@@ -56,7 +56,7 @@ antigen bundle https://gitee.com/dictxiong/zsh-syntax-highlighting
 antigen bundle https://gitee.com/dictxiong/zsh-completions
 antigen bundle https://gitee.com/dictxiong/zsh-autosuggestions
 # select theme
-antigen theme ys
+antigen theme ${ZSH_THEME:-ys}
 # apply 
 antigen apply
 # end of antigen config
