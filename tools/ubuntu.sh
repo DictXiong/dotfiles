@@ -18,7 +18,7 @@ init()
 
     # mass installation
     apt update
-    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server
+    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server top htop
     for i in {fzf,ripgrep}; do apt install $i -y; done
 
     # custom dotfiles (usually not needed)
@@ -30,18 +30,11 @@ init()
     git config --global user.name "Dict Xiong"
 }
 
-install()
-{
-    echo to-do: install apt-less packages: $1
-    
-}
-
 router()
 {
     case $1 in
         init    ) init ;;
-        install ) install $2 ;;
-        *       ) echo unknown command "$1". available: init, install ;;
+        *       ) echo unknown command "$1". available: init ;;
     esac
 }
 
