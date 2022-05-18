@@ -18,11 +18,11 @@ init()
 
     # mass installation
     apt update
-    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping
+    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server
     for i in {fzf,ripgrep}; do apt install $i -y; done
 
     # custom dotfiles (usually not needed)
-    # mkdir -p ~/.ssh
+    mkdir -p ~/.ssh
     # cd ~ && git clone https://gitee.com/dictxiong/dotfiles && ./dotfiles/install.sh
     
     # who am i
