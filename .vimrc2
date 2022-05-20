@@ -1,5 +1,16 @@
-set cursorline
+" vundle
 set nocompatible
+filetype off
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+Plugin 'https://hub.fastgit.xyz/VundleVim/Vundle.vim'
+Plugin 'https://hub.fastgit.xyz/joshdick/onedark.vim'
+call vundle#end()
+filetype plugin indent on
+" end vundle
+colorscheme onedark
+
+set cursorline
 set syntax=on
 set autoindent
 set smartindent
@@ -13,10 +24,10 @@ set linebreak
 "set termguicolors "true color
 set completeopt=preview,menu "auto complete
 set laststatus=2 "always show statusline
-hi User1 ctermfg=21 ctermbg=15
+hi User1 ctermfg=14 ctermbg=236
 hi User2 ctermfg=237 ctermbg=214
 hi User3 ctermfg=15 ctermbg=2
 au InsertEnter * hi User3 ctermfg=15 ctermbg=5 
 au InsertLeave * hi User3 ctermfg=15 ctermbg=2
-set statusline=%3*\ %{mode()}\ %*[%F](%{\"\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\"+\":\"\").\"\"},%{&ff},%Y)%2*%r%1*%m%*%<%=\'0x%B\'\ [Line:%l/%L,Col:%c][%p%%]
-filetype on
+set statusline=%3*\ %{mode()}\ %*[%n][%F](%{\"\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\"+\":\"\").\"\"},%{&ff},%Y)%2*%r%1*%m%*%<%=\'0x%B\'\ [Line:%l/%L,Col:%c][%p%%]
+

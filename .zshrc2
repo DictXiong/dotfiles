@@ -65,10 +65,28 @@ antigen apply
 TMUX_TPM="$HOME/.tmux/plugins/tpm"
 command -v tmux > /dev/null 2>&1
 if [[ $? == 0 && ! -d "$TMUX_TPM" ]]; then
+    echo "installing tmux tpm ..."
     git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
+    command -v g++
+    if [[ $? == 0 ]]; then
+        echo "initializing tmux plugins ..."
+        ~/.tmux/plugins/tpm/bin/install_plugins
+    else
+        echo "pls install g++ and init tmux plugins by <prefix + I>"
+    fi
 fi
 # end of tpm
 
+# install vundle
+VIM_VUNDLE="$HOME/.vim/bundle/Vundle.vim"
+command -v vim > /dev/null 2>&1
+if [[ $? == 0 && ! -d "$VIM_VUNDLE" ]]; then
+    echo "installing vim vundle ..."
+    git clone https://hub.fastgit.xyz/gmarik/Vundle.vim.git "$VIM_VUNDLE"
+    echo "initializing vim plugins ..."
+    vim +PluginInstall +qall
+fi
+# end of vundle
 
 # functions
 export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
