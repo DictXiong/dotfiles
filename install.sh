@@ -187,14 +187,14 @@ install_tmux_tpm(){
     TMUX_TPM="$HOME/.tmux/plugins/tpm"
     command -v tmux > /dev/null 2>&1
     if [[ $? == 0 && ! -d "$TMUX_TPM" ]]; then
-        echo "installing tmux tpm ..."
+        fmt_note "installing tmux tpm ..."
         git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
         command -v g++ > /dev/null 2>&1
         if [[ $? == 0 ]]; then
-            echo "initializing tmux plugins ..."
+            fmt_note "initializing tmux plugins ..."
             ~/.tmux/plugins/tpm/bin/install_plugins
         else
-            echo "pls install g++ and init tmux plugins by <prefix + I>"
+            fmt_warning "pls install g++ and init tmux plugins by <prefix + I>"
         fi
     fi
 }
@@ -203,9 +203,9 @@ install_vim_vundle(){
     VIM_VUNDLE="$HOME/.vim/bundle/Vundle.vim"
     command -v vim > /dev/null 2>&1
     if [[ $? == 0 && ! -d "$VIM_VUNDLE" ]]; then
-        echo "installing vim vundle ..."
+        fmt_note "installing vim vundle ..."
         git clone https://hub.fastgit.xyz/gmarik/Vundle.vim.git "$VIM_VUNDLE"
-        echo "initializing vim plugins ..."
+        fmt_note "initializing vim plugins ..."
         vim +PluginInstall +qall
     fi
 }
@@ -238,5 +238,5 @@ setup_color
 case $1 in
     ""|-i ) install ;;
     -r    ) uninstall ;;
-    *     ) echo "unknown command \"$1\". available: -i, -r" ;;
+    *     ) fmt_warning "unknown command \"$1\". available: -i, -r" ;;
 esac
