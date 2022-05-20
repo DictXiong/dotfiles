@@ -173,7 +173,6 @@ delete_link_if_match()
     fi
 }
 
-
 install_crontab(){
     fmt_note "installing \"$crontab_job\" to crontab ..."
     ( crontab -l | grep -vxF "${crontab_job}" | grep -v "no crontab for"; echo "$crontab_job" ) | crontab -
@@ -184,11 +183,42 @@ uninstall_crontab(){
     ( crontab -l | grep -vxF "$crontab_job" ) | crontab - 
 }
 
+install_tmux_tpm(){
+    TMUX_TPM="$HOME/.tmux/plugins/tpm"
+    command -v tmux > /dev/null 2>&1
+    if [[ $? == 0 && ! -d "$TMUX_TPM" ]]; then
+        fmt_note "installing tmux tpm ..."
+        git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
+        command -v g++ > /dev/null 2>&1
+        if [[ $? == 0 ]]; then
+            fmt_note "initializing tmux plugins ..."
+            ~/.tmux/plugins/tpm/bin/install_plugins
+        else
+            fmt_warning "pls install g++ and init tmux plugins by <prefix + I>"
+        fi
+    fi
+}
+
+install_vim_vundle(){
+    VIM_VUNDLE="$HOME/.vim/bundle/Vundle.vim"
+    command -v vim > /dev/null 2>&1
+    if [[ $? == 0 && ! -d "$VIM_VUNDLE" ]]; then
+        fmt_note "installing vim vundle ..."
+        git clone https://hub.fastgit.xyz/gmarik/Vundle.vim.git "$VIM_VUNDLE"
+        fmt_note "initializing vim plugins ..."
+        vim +PluginInstall +qall
+    fi
+}
+
 install(){
     install_crontab
     insert_if_not_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
     insert_if_not_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
+    insert_if_not_exist "${HOME}/.vimrc" "source ${dotfile_home_path}/.vimrc2"
     create_symlink "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
+    # those that won't be uninstalled in the future
+    install_tmux_tpm
+    install_vim_vundle
     fmt_note "done installing!"
 }
 
@@ -198,6 +228,7 @@ uninstall(){
         uninstall_crontab
         delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
         delete_if_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
+        delete_if_exist "${HOME}/.vimrc" "source ${dotfile_home_path}/.vimrc2"
         delete_link_if_match "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
         fmt_note "done uninstalling!"
     fi
@@ -207,5 +238,5 @@ setup_color
 case $1 in
     ""|-i ) install ;;
     -r    ) uninstall ;;
-    *     ) echo "unknown command \"$1\". available: -i, -r" ;;
+    *     ) fmt_warning "unknown command \"$1\". available: -i, -r" ;;
 esac
