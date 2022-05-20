@@ -187,6 +187,7 @@ uninstall_crontab(){
 install(){
     install_crontab
     insert_if_not_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
+    insert_if_not_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
     create_symlink "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
     fmt_note "done installing!"
 }
@@ -196,6 +197,7 @@ uninstall(){
     if [[ $? == 1 ]]; then
         uninstall_crontab
         delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
+        delete_if_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
         delete_link_if_match "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
         fmt_note "done uninstalling!"
     fi

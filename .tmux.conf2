@@ -1,0 +1,48 @@
+set -g prefix ^a
+set -g default-terminal "xterm-256color"
+
+# plugins
+set -g @plugin 'https://hub.fastgit.xyz/thewtex/tmux-mem-cpu-load'
+set -g @plugin 'https://hub.fastgit.xyz/tmux-plugins/tmux-resurrect'
+run '~/.tmux/plugins/tpm/tpm'
+
+# Use Alt-arrow keys to switch panes
+bind -n M-Left select-pane -L
+bind -n M-Right select-pane -R
+bind -n M-Up select-pane -U
+bind -n M-Down select-pane -D
+
+# Shift arrow to switch windows
+bind -n S-Left previous-window
+bind -n S-Right next-window
+
+# '-' and '|' to split
+bind - split-window -v -c "#{pane_current_path}"
+bind | split-window -h -c "#{pane_current_path}"
+
+# other key bindings
+bind r source-file ~/.tmux.conf \; display-message "tmux.conf reloaded"
+bind m run 'old=$(tmux show -gv mouse); new="off"; if [ "$old" = "off" ]; then new="on"; fi; tmux set -g mouse $new && tmux display-message toggle\ mouse\ mode\ $new'
+
+# styles
+# status bar
+set -g monitor-activity on
+set -g bell-action any
+set -g status-position top
+set -g status-style fg=white,bg=colour241
+set -g status-interval 1
+set -g status-justify centre
+set -g status-left-length 23
+set -g status-left "#[fg=#f9f1a5]#(whoami)#[default]@#(hostname | sed 's/-ibd-ink//g')[#S]"
+set -g status-right-length 60
+set -g status-right "#[default]#(~/.tmux/plugins/tmux-mem-cpu-load/tmux-mem-cpu-load  --averages-count 1 --interval 2)#[default] "
+set -ag status-right "#[default]#(uptime | cut -f 4-5 -d ' ' | cut -f 1 -d ',' | sed 's/ //g')"
+set -ag status-right " #[fg=white,bg=default]%H:%M:%S"
+set -g window-status-style fg=colour248
+set -g window-status-current-style fg=#f9f1a5,bg=colour237
+set -g window-status-activity-style fg=colour237,bg=colour248
+set -g window-status-bell-style fg=colour237,bg=colour214
+# panes and windows
+set -g pane-active-border-style fg=brightblue
+set -g window-style fg=colour248
+set -g window-active-style fg=white

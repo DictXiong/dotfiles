@@ -61,6 +61,15 @@ antigen theme ${ZSH_THEME:-ys}
 antigen apply
 # end of antigen config
 
+# install tmux tpm
+TMUX_TPM="$HOME/.tmux/plugins/tpm"
+command -v tmux > /dev/null 2>&1
+if [[ $? == 0 && ! -d "$TMUX_TPM" ]]; then
+    git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
+fi
+# end of tpm
+
+
 # functions
 export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 dfs()
@@ -83,3 +92,16 @@ dfs()
 # alias
 alias "pls"='sudo $(fc -ln -1)'
 alias "se"='sudo -sE'
+alias "pbd"='ping baidu.com'
+alias "p114"='ping 114.114.114.114'
+alias "p666"='ping6 2001:da8::666'
+
+# key bindings
+bindkey "^b" beginning-of-line
+bindkey "^e" end-of-line
+bindkey "^[[H" beginning-of-line
+bindkey "^[[F" end-of-line
+bindkey "^[[1~" beginning-of-line
+bindkey "^[[4~" end-of-line
+bindkey "^[OH" beginning-of-line
+bindkey "^[OF" end-of-line
