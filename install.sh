@@ -185,24 +185,21 @@ uninstall_crontab(){
 
 install_tmux_tpm(){
     TMUX_TPM="$HOME/.tmux/plugins/tpm"
-    command -v tmux > /dev/null 2>&1
-    if [[ $? == 0 && ! -d "$TMUX_TPM" ]]; then
+    if [[ -x $(command -v tmux) && ! -d "$TMUX_TPM" ]]; then
         fmt_note "installing tmux tpm ..."
         git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
-        command -v g++ > /dev/null 2>&1
-        if [[ $? == 0 ]]; then
+        if [[ -x $(command -v g++) && -x $(command -v cmake) ]]; then
             fmt_note "initializing tmux plugins ..."
             ~/.tmux/plugins/tpm/bin/install_plugins
         else
-            fmt_warning "pls install g++ and init tmux plugins by <prefix + I>"
+            fmt_warning "pls install g++ and cmake and then init tmux plugins by <prefix + I>"
         fi
     fi
 }
 
 install_vim_vundle(){
     VIM_VUNDLE="$HOME/.vim/bundle/Vundle.vim"
-    command -v vim > /dev/null 2>&1
-    if [[ $? == 0 && ! -d "$VIM_VUNDLE" ]]; then
+    if [[ -x $(command -v vim) && ! -d "$VIM_VUNDLE" ]]; then
         fmt_note "installing vim vundle ..."
         git clone https://hub.fastgit.xyz/gmarik/Vundle.vim.git "$VIM_VUNDLE"
         fmt_note "initializing vim plugins ..."
