@@ -18,7 +18,7 @@ init()
 
     # mass installation
     apt update
-    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server top htop
+    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake
     for i in {fzf,ripgrep}; do apt install $i -y; done
 
     # custom dotfiles (usually not needed)
