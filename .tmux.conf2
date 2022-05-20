@@ -1,5 +1,7 @@
 set -g prefix ^a
+set -g mouse off
 set -g default-terminal "xterm-256color"
+set -g history-limit 10000
 
 # plugins
 set -g @plugin 'https://hub.fastgit.xyz/thewtex/tmux-mem-cpu-load'
