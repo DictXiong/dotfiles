@@ -75,6 +75,7 @@ dfs()
 {
 	case $1 in
 		update ) (cd "$DOTFILES" && git pull) ;;
+		force-update ) (cd "$DOTFILES" && git fetch --all && git reset --hard origin/main && git pull) ;;
 		reset  ) 
 			antigen reset 1> /dev/null
 			rm -rf $HOME/.antigen
@@ -84,7 +85,7 @@ dfs()
 			echo 'Done. Please open a new shell to see the changes.'
 			;;
 		cd     ) cd "$DOTFILES" ;;
-		*      ) echo "unknown command \"$1\". available: update, reset, cd" ;;
+		*      ) echo "unknown command \"$1\". available: update, force-update, reset, cd" ;;
 	esac
 }
 
