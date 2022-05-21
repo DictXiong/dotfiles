@@ -42,19 +42,27 @@ fi
 source "$ANTIGEN"
 antigen use oh-my-zsh
 # enable plugins
-antigen bundle command-not-found
-antigen bundle docker
-antigen bundle extract
-antigen bundle fzf
-antigen bundle git
-antigen bundle ripgrep
-antigen bundle thefuck
-antigen bundle tmux
-antigen bundle ufw
-antigen bundle z
-antigen bundle https://gitee.com/dictxiong/zsh-syntax-highlighting
-antigen bundle https://gitee.com/dictxiong/zsh-completions
-antigen bundle https://gitee.com/dictxiong/zsh-autosuggestions
+antigen_plugins=( \
+    "command-not-found" \
+    "docker" \
+    "extract" \
+    "fzf" \
+    "git" \
+    "ripgrep" \
+    "thefuck" \
+    "tmux" \
+    "ufw" \
+    "z" \
+    "https://gitee.com/dictxiong/zsh-syntax-highlighting" \
+    "https://gitee.com/dictxiong/zsh-completions" \
+    "https://gitee.com/dictxiong/zsh-autosuggestions" \
+)
+for i in ${antigen_plugins[*]}
+do
+    if [[ -z $ANTIGEN_EXCLUDE || ! $i =~ $ANTIGEN_EXCLUDE ]]; then
+        antigen bundle $i
+    fi
+done
 # select theme
 antigen theme ${ZSH_THEME:-ys}
 # apply 
