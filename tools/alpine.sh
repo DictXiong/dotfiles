@@ -26,12 +26,21 @@ apk_add()
     git config --global user.name "Dict Xiong"
 }
 
+set_timezone()
+{
+    apk update
+    apk add tzdata
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+    echo "Asia/Shanghai" > /etc/timezone
+}
+
 router()
 {
     case $1 in
         apk-add ) apk_add ;;
+        set-timezone | set-tz ) set_timezone ;;
         #set-mirror  ) set_mirror $2 ;;  
-        *           ) echo unknown command "$1". available: apk-add;;
+        *           ) echo unknown command "$1". available: apk-add, set-timezone;;
     esac
 }
 

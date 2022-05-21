@@ -190,11 +190,11 @@ install_tmux_tpm(){
     if [[ -x $(command -v tmux) && ! -d "$TMUX_TPM" ]]; then
         fmt_note "installing tmux tpm ..."
         git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
-        if [[ -x $(command -v g++) && -x $(command -v cmake) ]]; then
+        if [[ -x $(command -v g++) && -x $(command -v cmake) && -x $(command -v make) ]]; then
             fmt_note "initializing tmux plugins ..."
             ~/.tmux/plugins/tpm/bin/install_plugins
         else
-            fmt_warning "pls install g++ and cmake and then init tmux plugins by <prefix + I>"
+            fmt_warning "pls install g++,cmake,make and then init tmux plugins by <prefix + I> or ~/.tmux/plugins/tpm/bin/install_plugins"
         fi
     fi
 }

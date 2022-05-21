@@ -10,6 +10,7 @@ install_commands=(\
     [v2ray]="bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) #--remove" \
     [zerotier-one]='curl -s https://install.zerotier.com | sudo bash' \
     [docker-ce]='curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh #--mirror Aliyun #--dry-run' \
+    [lemonbench]='curl -fsSL https://ilemonra.in/LemonBenchIntl | bash -s fast # or full' \
 )
 
 install()

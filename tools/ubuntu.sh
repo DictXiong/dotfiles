@@ -7,7 +7,7 @@ fi
 
 set_mirror()
 {
-    MIRROR=${1:="mirrors.tuna.tsinghua.edu.cn"}
+    MIRROR=${1:-"mirrors.tuna.tsinghua.edu.cn"}
     MIRROR=${MIRROR//\//\\\/}
     sed -i 's/(archive|security).ubuntu.com/${MIRROR}/g' /etc/apt/sources.list
 }
@@ -28,12 +28,20 @@ apt_install()
     git config --global user.name "Dict Xiong"
 }
 
+set_timezone()
+{
+    TIMEZONE=${1:-"Asia/Shanghai"}
+    timedatectl set-timezone "$TIMEZONE"
+}
+
 router()
 {
     case $1 in
         apt-install ) apt_install ;;
         set-mirror  ) set_mirror $2 ;;  
-        *           ) echo unknown command "$1". available: apt-install, set-mirror;;
+        set-timezone\
+        | set-tz    ) set_timezone $2 ;;
+        *           ) echo unknown command "$1". available: apt-install, set-mirror, set-timezone;;
     esac
 }
 
