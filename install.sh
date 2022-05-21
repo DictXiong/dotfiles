@@ -141,7 +141,7 @@ create_symlink()
         fmt_error "\"$src\" does not exist! aborting this job ..."
         return 1
     fi
-    mkdir -p $(driname "$dest")
+    mkdir -p $(dirname "$dest")
     if [ -f "$dest" ]; then
         if [ "$(readlink $dest)" -ef "$src" ]; then
             return 0
