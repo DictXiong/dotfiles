@@ -115,6 +115,7 @@ insert_if_not_exist()
     filename=$1
     line=$2
     fmt_note "installing \"$line\" into \"$filename\" ..."
+    mkdir -p $(dirname "$filename")
     if [ ! -f "$filename" ]; then
         touch $filename
     fi
@@ -140,6 +141,7 @@ create_symlink()
         fmt_error "\"$src\" does not exist! aborting this job ..."
         return 1
     fi
+    mkdir -p $(dirname "$dest")
     if [ -f "$dest" ]; then
         if [ "$(readlink $dest)" -ef "$src" ]; then
             return 0
@@ -188,11 +190,11 @@ install_tmux_tpm(){
     if [[ -x $(command -v tmux) && ! -d "$TMUX_TPM" ]]; then
         fmt_note "installing tmux tpm ..."
         git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
-        if [[ -x $(command -v g++) && -x $(command -v cmake) ]]; then
+        if [[ -x $(command -v g++) && -x $(command -v cmake) && -x $(command -v make) ]]; then
             fmt_note "initializing tmux plugins ..."
             ~/.tmux/plugins/tpm/bin/install_plugins
         else
-            fmt_warning "pls install g++ and cmake and then init tmux plugins by <prefix + I>"
+            fmt_warning "pls install g++,cmake,make and then init tmux plugins by <prefix + I> or ~/.tmux/plugins/tpm/bin/install_plugins"
         fi
     fi
 }
@@ -212,6 +214,7 @@ install(){
     insert_if_not_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
     insert_if_not_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
     insert_if_not_exist "${HOME}/.vimrc" "source ${dotfile_home_path}/.vimrc2"
+    insert_if_not_exist "${HOME}/.gitconfig" "[include] path = \"${dotfile_home_path}/.gitconfig2\""
     create_symlink "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
     # those that won't be uninstalled in the future
     install_tmux_tpm
@@ -226,6 +229,7 @@ uninstall(){
         delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
         delete_if_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
         delete_if_exist "${HOME}/.vimrc" "source ${dotfile_home_path}/.vimrc2"
+        delete_if_exist "${HOME}/.gitconfig" "[include] path = \"${dotfile_home_path}/.gitconfig2\""
         delete_link_if_match "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
         fmt_note "done uninstalling!"
     fi

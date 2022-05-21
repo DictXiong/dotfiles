@@ -5,36 +5,43 @@ if [[ $USER != "root" ]]; then
     exit 1
 fi
 
-init()
+set_mirror()
+{
+    MIRROR=${1:-"mirrors.tuna.tsinghua.edu.cn"}
+    MIRROR=${MIRROR//\//\\\/}
+    sed -i 's/(archive|security).ubuntu.com/${MIRROR}/g' /etc/apt/sources.list
+}
+
+apt_install()
 {
     # basic packages
     apt update
     for i in {man-db,vim,ca-certificates}; do apt install $i -y; done
 
-    # apt source
-    ${MIRROR:="mirrors.tuna.tsinghua.edu.cn"}
-    MIRROR=${MIRROR//\//\\\/}
-    sed -i 's/(archive|security).ubuntu.com/${MIRROR}/g' /etc/apt/sources.list
-
     # mass installation
     apt update
-    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake
+    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake make
     for i in {fzf,ripgrep}; do apt install $i -y; done
 
-    # custom dotfiles (usually not needed)
-    mkdir -p ~/.ssh
-    # cd ~ && git clone https://gitee.com/dictxiong/dotfiles && ./dotfiles/install.sh
-    
     # who am i
     git config --global user.email "me@beardic.cn"
     git config --global user.name "Dict Xiong"
 }
 
+set_timezone()
+{
+    TIMEZONE=${1:-"Asia/Shanghai"}
+    timedatectl set-timezone "$TIMEZONE"
+}
+
 router()
 {
     case $1 in
-        init    ) init ;;
-        *       ) echo unknown command "$1". available: init ;;
+        apt-install ) apt_install ;;
+        set-mirror  ) set_mirror $2 ;;  
+        set-timezone\
+        | set-tz    ) set_timezone $2 ;;
+        *           ) echo unknown command "$1". available: apt-install, set-mirror, set-timezone;;
     esac
 }
 
