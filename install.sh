@@ -189,7 +189,7 @@ install_tmux_tpm(){
     TMUX_TPM="$HOME/.tmux/plugins/tpm"
     if [[ -x $(command -v tmux) && ! -d "$TMUX_TPM" ]]; then
         fmt_note "installing tmux tpm ..."
-        git clone https://hub.fastgit.xyz/tmux-plugins/tpm "$TMUX_TPM"
+        git clone https://gitee.com/dictxiong/tpm "$TMUX_TPM"
         if [[ -x $(command -v g++) && -x $(command -v cmake) && -x $(command -v make) ]]; then
             fmt_note "initializing tmux plugins ..."
             ~/.tmux/plugins/tpm/bin/install_plugins
@@ -203,7 +203,7 @@ install_vim_vundle(){
     VIM_VUNDLE="$HOME/.vim/bundle/Vundle.vim"
     if [[ -x $(command -v vim) && ! -d "$VIM_VUNDLE" ]]; then
         fmt_note "installing vim vundle ..."
-        git clone https://hub.fastgit.xyz/gmarik/Vundle.vim.git "$VIM_VUNDLE"
+        git clone https://gitee.com/dictxiong/Vundle.vim "$VIM_VUNDLE"
         fmt_note "initializing vim plugins ..."
         vim +PluginInstall +qall
     fi

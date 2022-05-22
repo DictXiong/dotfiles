@@ -4,8 +4,8 @@ set -g default-terminal "xterm-256color"
 set -g history-limit 10000
 
 # plugins
-set -g @plugin 'https://hub.fastgit.xyz/thewtex/tmux-mem-cpu-load'
-set -g @plugin 'https://hub.fastgit.xyz/tmux-plugins/tmux-resurrect'
+set -g @plugin 'https://gitee.com/dictxiong/tmux-mem-cpu-load'
+set -g @plugin 'https://gitee.com/dictxiong/tmux-resurrect'
 run '~/.tmux/plugins/tpm/tpm'
 
 # Use Alt-arrow keys to switch panes

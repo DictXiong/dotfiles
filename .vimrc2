@@ -3,8 +3,8 @@ set nocompatible
 filetype off
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
-Plugin 'https://hub.fastgit.xyz/VundleVim/Vundle.vim'
-Plugin 'https://hub.fastgit.xyz/joshdick/onedark.vim'
+Plugin 'https://gitee.com/dictxiong/Vundle.vim'
+Plugin 'https://gitee.com/dictxiong/onedark.vim'
 call vundle#end()
 filetype plugin indent on
 " end vundle
