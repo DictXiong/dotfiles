@@ -19,13 +19,8 @@ apt_install()
     for i in {man-db,vim,ca-certificates}; do apt install $i -y; done
 
     # mass installation
-    apt update
-    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake make
+    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake make zip
     for i in {fzf,ripgrep}; do apt install $i -y; done
-
-    # who am i
-    git config --global user.email "me@beardic.cn"
-    git config --global user.name "Dict Xiong"
 }
 
 set_timezone()
