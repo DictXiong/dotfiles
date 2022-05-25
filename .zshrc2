@@ -95,6 +95,7 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
+alias l='ls -lah --time-style="+%y-%m-%d %H:%M"'
 
 # key bindings
 bindkey "^b" beginning-of-line
