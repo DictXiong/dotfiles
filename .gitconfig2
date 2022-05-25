@@ -1,3 +1,5 @@
 [user]
 	email = me@beardic.cn
 	name = Dict Xiong
+[core]
+    editor = vim
