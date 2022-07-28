@@ -80,7 +80,7 @@ fi
 dfs()
 {
 	case $1 in
-		update ) (cd "$DOTFILES" && git pull) ;;
+		update ) $DOTFILES/update.sh ;;
 		force-update ) (cd "$DOTFILES" && git fetch --all && git reset --hard origin/main && git pull) ;;
 		reset  ) 
 			antigen reset 1> /dev/null
