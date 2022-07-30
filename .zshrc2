@@ -84,9 +84,9 @@ dfs()
         force-update ) (
             cd "$DOTFILES" 
             git fetch --all
-            ref=$(__git_prompt_git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(__git_prompt_git rev-parse --short HEAD 2> /dev/null)  || return 0
+            ref=$(git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(git rev-parse --short HEAD 2> /dev/null)  || return 0
             for b in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${b#refs/heads/} ; git pull --ff-only ; done
-            git checkout $ref)
+            git checkout -c advice.detachedHead=false $ref)
             ;;
         version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
         reset  )
