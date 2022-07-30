@@ -49,7 +49,6 @@ antigen_plugins=( \
     "fzf" \
     "git" \
     "ripgrep" \
-    "thefuck" \
     "tmux" \
     "ufw" \
     "z" \
