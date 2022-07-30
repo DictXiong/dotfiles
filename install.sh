@@ -217,6 +217,11 @@ install_update(){
     ${dotfile_path}/update.sh
 }
 
+uninstall_update(){
+    fmt_note "removing update.sh ..."
+    rm "${dotfile_path}/update.sh"
+}
+
 install(){
     install_update
     install_crontab
@@ -234,6 +239,7 @@ install(){
 uninstall(){
     ask_for_yN "do you really want to uninstall?"
     if [[ $? == 1 ]]; then
+        uninstall_update
         uninstall_crontab
         delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
         delete_if_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
