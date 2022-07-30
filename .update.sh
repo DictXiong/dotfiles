@@ -19,7 +19,7 @@ if [[ "$(git rev-parse HEAD)" == "$dfs_commit" ]]; then
     echo "Nothing to do."
 else
     echo "Checking out to commit $dfs_commit ..."
-    git checkout $dfs_commit
+    git -c advice.detachedHead=false checkout $dfs_commit
     cp ./.update.sh ./update.sh
     chmod +x ./update.sh
 fi
