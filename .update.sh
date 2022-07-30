@@ -2,7 +2,7 @@
 
 export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 # get the specified commit id
-dfs_commit=$(curl -fsSL https://api.beardic.cn/get-dfs-commit)
+dfs_commit=$(curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id)
 if [[ ${#dfs_commit} != 40 ]]; then
     echo "Error: invalid commit id."
     exit
