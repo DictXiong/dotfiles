@@ -51,6 +51,10 @@ if __name__ == "__main__":
     content = args.content
     hostname = get_hostname()
     uuid = get_uuid()
+    content=content.strip()
+    if not content:
+        print("error: empty log content")
+        exit(1)
     resp = post_log(url, hostname, uuid, content)
     if resp.status_code == 200:
         print("200 ok")
