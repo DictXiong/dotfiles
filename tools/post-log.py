@@ -2,7 +2,7 @@
 import os, uuid, socket, argparse, logging
 
 namespace = uuid.UUID("cc23b903-1993-44eb-9c90-48bd841eeac3")
-logging.basicConfig(level=logging.INFO, format="[%(filename)s:%(lineno)d %(levelname)s] %(message)s")
+logging.basicConfig(level=logging.INFO, format="[%(filename)s:%(lineno)d][%(levelname)s] %(message)s")
 
 try:
     import requests
