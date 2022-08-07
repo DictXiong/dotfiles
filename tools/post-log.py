@@ -20,7 +20,8 @@ def get_uuid_raw() -> str:
         if os.path.exists(i):
             with open(i, "r") as f:
                 return f.read().strip()
-    os.mkdir(os.path.dirname(possible_uuid_files[-1]))
+    if not os.path.exists(os.path.dirname(possible_uuid_files[-1])):
+        os.mkdir(os.path.dirname(possible_uuid_files[-1]))
     with open(possible_uuid_files[-1], 'w') as f:
         ans = str(uuid.uuid4())
         f.write(ans)
