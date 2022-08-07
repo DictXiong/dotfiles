@@ -10,16 +10,17 @@ import os, uuid, socket, argparse
 namespace = uuid.UUID("cc23b903-1993-44eb-9c90-48bd841eeac3")
 
 def get_uuid_raw() -> str:
-    possible_files = [
+    possible_uuid_files = [
         "/var/lib/dbus/machine-id",
         "/etc/machine-id",
-        os.path.join(os.path.expanduser('~'), ".uuid"),
+        os.path.join(os.path.expanduser('~'), ".config/uuid"),
     ]
-    for i in possible_files:
+    for i in possible_uuid_files:
         if os.path.exists(i):
             with open(i, "r") as f:
                 return f.read().strip()
-    with open(possible_files[-1], 'w') as f:
+    os.mkdir(os.path.dirname(possible_uuid_files[-1]))
+    with open(possible_uuid_files[-1], 'w') as f:
         ans = str(uuid.uuid4())
         f.write(ans)
         return ans
@@ -57,8 +58,8 @@ if __name__ == "__main__":
     elif resp.status_code == 403:
         print("403 forbidden")
         print("you may need to register your hostname and uuid")
-        print(f"hostname: {hostname}, uuid: {uuid}")
     else:
         print("unknown error")
         print(f"{resp.status_code}: {resp.text}")
+    print(f"hostname: {hostname}, uuid: {uuid}")
     exit(1)
