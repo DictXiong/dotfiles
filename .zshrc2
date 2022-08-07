@@ -79,7 +79,7 @@ fi
 dfs()
 {
     case $1 in
-        update ) $DOTFILES/update.sh ;;
+        update ) "$DOTFILES/update.sh" ;;
         force-update ) (
             cd "$DOTFILES" 
             git fetch --all
@@ -91,13 +91,14 @@ dfs()
         reset  )
             antigen reset 1> /dev/null
             rm -rf $HOME/.antigen
-            $DOTFILES/install.sh -r
+            "$DOTFILES/install.sh" -r
             dfs update
-            $DOTFILES/install.sh -i
+            "$DOTFILES/install.sh" -i
             echo 'Done. Please open a new shell to see the changes.'
             ;;
         cd     ) cd "$DOTFILES" ;;
-        *      ) echo "unknown command \"$1\". available: update, force-update, reset, cd" ;;
+        log    ) "$DOTFILES/tools/post-log.py" "$2" ;;
+        *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac
 }
 
