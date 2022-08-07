@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
+import os, uuid, socket, argparse, logging
+
+namespace = uuid.UUID("cc23b903-1993-44eb-9c90-48bd841eeac3")
+logging.basicConfig(level=logging.INFO, format="[%(filename)s:%(lineno)d %(levelname)s] %(message)s")
 
 try:
     import requests
 except ImportError:
-    print("Please install requests module")
-    exit(1)
-import os, uuid, socket, argparse
+    logging.fatal("Please install requests module")
 
-namespace = uuid.UUID("cc23b903-1993-44eb-9c90-48bd841eeac3")
 
 def get_uuid_raw() -> str:
     possible_uuid_files = [
@@ -53,17 +54,17 @@ if __name__ == "__main__":
     uuid = get_uuid()
     content=content.strip()
     if not content:
-        print("error: empty log content")
+        logging.error("empty log content")
         exit(1)
     resp = post_log(url, hostname, uuid, content)
     if resp.status_code == 200:
-        print("200 ok")
+        logging.info("200 ok")
         exit(0)
     elif resp.status_code == 403:
-        print("403 forbidden")
-        print("you may need to register your hostname and uuid")
+        logging.error("403 forbidden")
+        logging.info("you may need to register your hostname and uuid")
     else:
-        print("unknown error")
-        print(f"{resp.status_code}: {resp.text}")
-    print(f"hostname: {hostname}, uuid: {uuid}")
+        logging.error("unknown error ")
+        logging.error(f"{resp.status_code}: {resp.text}")
+    logging.info(f"hostname: {hostname}, uuid: {uuid}")
     exit(1)
