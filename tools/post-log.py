@@ -8,6 +8,7 @@ try:
     import requests
 except ImportError:
     logging.fatal("Please install requests module")
+    exit(1)
 
 
 def get_uuid_raw() -> str:
