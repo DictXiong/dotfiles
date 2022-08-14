@@ -20,23 +20,23 @@ ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
 ANTIGEN="$HOME/antigen.zsh"
 # Install antigen.zsh if not exist
 if [ ! -f "$ANTIGEN" ]; then
-	echo "Installing antigen ..."
-	TMPFILE="/tmp/antigen.zsh"
-	if [ -x "$(which curl)" ]; then
-		curl -L "$ANTIGEN_URL" -o "$TMPFILE" 
-	elif [ -x "$(which wget)" ]; then
-		wget "$ANTIGEN_URL" -O "$TMPFILE" 
-	else
-		echo "ERROR: please install curl or wget before installation !!"
-		exit
-	fi
-	if [ ! $? -eq 0 ]; then
-		echo ""
-		echo "ERROR: downloading antigen.zsh ($ANTIGEN_URL) failed !!"
-		exit
-	fi;
-	echo "move $TMPFILE to $ANTIGEN"
-	mv "$TMPFILE" "$ANTIGEN"
+    echo "Installing antigen ..."
+    TMPFILE="/tmp/antigen.zsh"
+    if [ -x "$(which curl)" ]; then
+        curl -L "$ANTIGEN_URL" -o "$TMPFILE"
+    elif [ -x "$(which wget)" ]; then
+        wget "$ANTIGEN_URL" -O "$TMPFILE"
+    else
+        echo "ERROR: please install curl or wget before installation !!"
+        exit
+    fi
+    if [ ! $? -eq 0 ]; then
+        echo ""
+        echo "ERROR: downloading antigen.zsh ($ANTIGEN_URL) failed !!"
+        exit
+    fi;
+    echo "move $TMPFILE to $ANTIGEN"
+    mv "$TMPFILE" "$ANTIGEN"
 fi
 # config and enable antigen
 source "$ANTIGEN"
@@ -49,7 +49,6 @@ antigen_plugins=( \
     "fzf" \
     "git" \
     "ripgrep" \
-    "thefuck" \
     "tmux" \
     "ufw" \
     "z" \
@@ -79,29 +78,37 @@ fi
 
 dfs()
 {
-	case $1 in
-		update ) (cd "$DOTFILES" && git pull) ;;
-		force-update ) (cd "$DOTFILES" && git fetch --all && git reset --hard origin/main && git pull) ;;
-		reset  ) 
-			antigen reset 1> /dev/null
-			rm -rf $HOME/.antigen
-			$DOTFILES/install.sh -r
-			dfs update
-			$DOTFILES/install.sh -i
-			echo 'Done. Please open a new shell to see the changes.'
-			;;
-		cd     ) cd "$DOTFILES" ;;
-		*      ) echo "unknown command \"$1\". available: update, force-update, reset, cd" ;;
-	esac
+    case $1 in
+        update ) "$DOTFILES/update.sh" ;;
+        force-update ) (
+            cd "$DOTFILES" 
+            git fetch --all
+            ref=$(git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(git rev-parse --short HEAD 2> /dev/null)  || return 0
+            for b in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${b#refs/heads/} ; git pull --ff-only ; done
+            git checkout -c advice.detachedHead=false $ref)
+            ;;
+        version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
+        reset  )
+            antigen reset 1> /dev/null
+            rm -rf $HOME/.antigen
+            "$DOTFILES/install.sh" -r
+            dfs update
+            "$DOTFILES/install.sh" -i
+            echo 'Done. Please open a new shell to see the changes.'
+            ;;
+        cd     ) cd "$DOTFILES" ;;
+        log    ) "$DOTFILES/tools/post-log.py" "$2" ;;
+        *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
+    esac
 }
 
 dogo()
 {
-	if [[ -z "$1" || "$1" =~ "-h|--help" ]]; then
-		echo "usage: dogo <container>"
-	else
-		$SUDO docker exec -it $1 zsh
-	fi
+    if [[ -z "$1" || "$1" =~ "-h|--help" ]]; then
+        echo "usage: dogo <container>"
+    else
+        $SUDO docker exec -it $1 zsh
+    fi
 }
 
 # alias

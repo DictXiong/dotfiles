@@ -96,7 +96,7 @@ if [[ ! $dotfile_path == ${home_slashes}* ]]; then
 fi
 dotfile_home_path=${dotfile_path/${home_slashes}/\~}
 dotfile_relative_path=${dotfile_path#${home_slashes}\/}
-crontab_job="0 * * * * cd ${dotfile_path} && env git pull"
+crontab_job="0 * * * * ${dotfile_path}/update.sh"
 
 ask_for_yN()
 {
@@ -209,7 +209,21 @@ install_vim_vundle(){
     fi
 }
 
+install_update(){
+    fmt_note "installing update.sh ..."
+    cp "${dotfile_path}/.update.sh" "${dotfile_path}/update.sh"
+    chmod +x "${dotfile_path}/update.sh"
+    fmt_note "running update.sh ..."
+    ${dotfile_path}/update.sh
+}
+
+uninstall_update(){
+    fmt_note "removing update.sh ..."
+    rm "${dotfile_path}/update.sh"
+}
+
 install(){
+    install_update
     install_crontab
     insert_if_not_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
     insert_if_not_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
@@ -225,6 +239,7 @@ install(){
 uninstall(){
     ask_for_yN "do you really want to uninstall?"
     if [[ $? == 1 ]]; then
+        uninstall_update
         uninstall_crontab
         delete_if_exist "${HOME}/.zshrc" "source ${dotfile_home_path}/.zshrc2"
         delete_if_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
