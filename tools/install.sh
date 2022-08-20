@@ -3,7 +3,7 @@
 declare -A install_commands
 install_commands=(\
     [git]="apt update && apt install git" \
-    [fzf]="git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf &&  ~/.fzf/install" \
+    [fzf]="git clone --depth 1 https://gitee.com/dictxiong/fzf.git ~/.fzf &&  ~/.fzf/install" \
     [acme.sh]="curl https://get.acme.sh | sh -s email=${EMAIL:-me@beardic.cn}" \
     [oh-my-zsh]='sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"' \
     [oh-my-tuna]='wget https://tuna.moe/oh-my-tuna/oh-my-tuna.py && sudo python oh-my-tuna.py --global' \
