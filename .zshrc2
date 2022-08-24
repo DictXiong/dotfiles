@@ -80,7 +80,7 @@ get_os_type() {
     case "$(uname -s)" in
         Darwin*)    ans="MacOS";;
         CYGWIN*)    ans="Cygwin";;
-        MINGW* )    ans="MinGw";;
+        MSYS*  )    ans="MSYS";;
         Linux* )    ans="Linux";;
         *)          ans="unknown";;
     esac
