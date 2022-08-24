@@ -76,6 +76,38 @@ if (( $EUID != 0 )); then
     SUDO='sudo'
 fi
 
+get_os_type() {
+    case "$(uname -s)" in
+        Darwin*)    ans="MacOS";;
+        CYGWIN*)    ans="Cygwin";;
+        MSYS*  )    ans="MSYS";;
+        Linux* )    ans="Linux";;
+        *)          ans="unknown";;
+    esac
+    echo $ans | tr '[:upper:]' '[:lower:]'
+}
+
+get_linux_dist() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        ans=$ID
+    elif type lsb_release >/dev/null 2>&1; then
+        ans=$(lsb_release -si)
+    elif [ -f /etc/lsb-release ]; then
+        . /etc/lsb-release
+        ans=$DISTRIB_ID
+    elif [ -f /etc/debian_version ]; then
+        ans=Debian
+    elif [ -f /etc/SuSe-release ]; then
+        ans=SUSE
+    elif [ -f /etc/redhat-release ]; then
+        ans=RedHat
+    else
+        ans=unknown
+    fi
+    echo $ans | tr '[:upper:]' '[:lower:]'
+}
+
 dfs()
 {
     case $1 in
@@ -117,7 +149,10 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
-alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"'
+case $(get_os_type) in
+    macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
+    *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
+esac
 
 # key bindings
 bindkey "^b" beginning-of-line

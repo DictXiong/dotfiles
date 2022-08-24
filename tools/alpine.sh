@@ -18,12 +18,8 @@ apk_add()
     apk update
 
     # mass installation
-    apk add zsh git tmux vim curl wget bash python3 htop gcc g++ cmake make fzf perl linux-headers bind-tools iputils man-db
+    apk add zsh git tmux vim curl wget bash python3 htop gcc g++ cmake make fzf perl linux-headers bind-tools iputils man-db coreutils
     #for i in {fzf,ripgrep}; do apk add $i -y; done
-
-    # who am i
-    git config --global user.email "me@beardic.cn"
-    git config --global user.name "Dict Xiong"
 }
 
 set_timezone()
