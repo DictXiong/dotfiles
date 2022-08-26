@@ -23,6 +23,6 @@ case $1 in
         echo 'Done. Please open a new shell to see the changes.'
         ;;
     cd     ) cd "$DOTFILES" ;;
-    log    ) "$DOTFILES/tools/post-log.py" "$2" ;;
+    log    ) post_log "INFO" "dfs" "$2" ;;
     *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
 esac
