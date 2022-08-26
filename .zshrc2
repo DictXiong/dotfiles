@@ -68,80 +68,9 @@ antigen theme ${ZSH_THEME:-ys}
 antigen apply
 # end of antigen config
 
-# functions
+# env
 export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
-
-SUDO=''
-if (( $EUID != 0 )); then
-    SUDO='sudo'
-fi
-
-get_os_type() {
-    case "$(uname -s)" in
-        Darwin*)    ans="MacOS";;
-        CYGWIN*)    ans="Cygwin";;
-        MSYS*  )    ans="MSYS";;
-        Linux* )    ans="Linux";;
-        *)          ans="unknown";;
-    esac
-    echo $ans | tr '[:upper:]' '[:lower:]'
-}
-
-get_linux_dist() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        ans=$ID
-    elif type lsb_release >/dev/null 2>&1; then
-        ans=$(lsb_release -si)
-    elif [ -f /etc/lsb-release ]; then
-        . /etc/lsb-release
-        ans=$DISTRIB_ID
-    elif [ -f /etc/debian_version ]; then
-        ans=Debian
-    elif [ -f /etc/SuSe-release ]; then
-        ans=SUSE
-    elif [ -f /etc/redhat-release ]; then
-        ans=RedHat
-    else
-        ans=unknown
-    fi
-    echo $ans | tr '[:upper:]' '[:lower:]'
-}
-
-dfs()
-{
-    case $1 in
-        update ) "$DOTFILES/update.sh" ;;
-        force-update ) (
-            cd "$DOTFILES" 
-            git fetch --all
-            ref=$(git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(git rev-parse --short HEAD 2> /dev/null)  || return 0
-            for b in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${b#refs/heads/} ; git pull --ff-only ; done
-            git checkout -c advice.detachedHead=false $ref)
-            ;;
-        version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
-        reset  )
-            antigen reset 1> /dev/null
-            rm -rf $HOME/.antigen
-            "$DOTFILES/install.sh" -r
-            dfs update
-            "$DOTFILES/install.sh" -i
-            echo 'Done. Please open a new shell to see the changes.'
-            ;;
-        cd     ) cd "$DOTFILES" ;;
-        log    ) "$DOTFILES/tools/post-log.py" "$2" ;;
-        *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
-    esac
-}
-
-dogo()
-{
-    if [[ -z "$1" || "$1" =~ "-h|--help" ]]; then
-        echo "usage: dogo <container>"
-    else
-        $SUDO docker exec -it $1 zsh
-    fi
-}
+export PATH=$PATH:$DOTFILES/scripts
 
 # alias
 alias "pls"='sudo $(fc -ln -1)'
@@ -149,7 +78,7 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
-case $(get_os_type) in
+case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
     *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
 esac

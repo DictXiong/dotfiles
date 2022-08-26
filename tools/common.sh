@@ -1,7 +1,6 @@
 #!/bin/bash
 
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
-
 export DOTFILES=$( cd "$THIS_DIR/.." && pwd )
 
 SUDO=''
@@ -100,7 +99,6 @@ setup_color() {
     FMT_BOLD=$(printf '\033[1m')
     FMT_RESET=$(printf '\033[0m')
 }
-setup_color
 # END of color settings
 
 ask_for_yN()
@@ -119,3 +117,41 @@ post_log()
 {
     python3 "${DOTFILES}/tools/log.py" "[$1] $2: $3"
 }
+
+get_os_type() {
+    case "$(uname -s)" in
+        Darwin*)    ans="MacOS";;
+        CYGWIN*)    ans="Cygwin";;
+        MSYS*  )    ans="MSYS";;
+        Linux* )    ans="Linux";;
+        *)          ans="unknown";;
+    esac
+    echo $ans | tr '[:upper:]' '[:lower:]'
+}
+
+get_linux_dist() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        ans=$ID
+    elif type lsb_release >/dev/null 2>&1; then
+        ans=$(lsb_release -si)
+    elif [ -f /etc/lsb-release ]; then
+        . /etc/lsb-release
+        ans=$DISTRIB_ID
+    elif [ -f /etc/debian_version ]; then
+        ans=Debian
+    elif [ -f /etc/SuSe-release ]; then
+        ans=SUSE
+    elif [ -f /etc/redhat-release ]; then
+        ans=RedHat
+    else
+        ans=unknown
+    fi
+    echo $ans | tr '[:upper:]' '[:lower:]'
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    $1
+else
+    setup_color
+fi
