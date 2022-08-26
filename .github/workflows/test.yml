@@ -19,11 +19,10 @@ jobs:
       
       - name: install dfs
         run: |
+          rev=`git rev-parse HEAD`
           pwd
           ./install.sh
-
-      - name: checkout repo
-        uses: actions/checkout@v3
+          git checkout $rev
 
       - name: antigen build
         shell: /bin/zsh -ileo PIPE_FAIL {0}
