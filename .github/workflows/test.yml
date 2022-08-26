@@ -43,13 +43,13 @@ jobs:
           dfs cd
           pwd
           dfs version
-          dfs log 1  #???
+          dfs log 1 | echo
           l
           p114 -c 4
           dogo
           tools/common.sh get_os_type
           tools/common.sh get_linux_dist
-          bash -x tools/common.sh post_log 1 2 3
+          bash -x tools/common.sh post_log 1 2 3 | echo
 
       - name: check update
         shell: /bin/zsh -ileo PIPE_FAIL {0}
