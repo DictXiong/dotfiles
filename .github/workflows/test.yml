@@ -1,0 +1,57 @@
+name: test
+on: 
+  push: ~
+  workflow_dispatch: ~
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git python3 python3-pip zsh curl inetutils-ping
+          sudo pip3 install requests
+      
+      - name: checkout repo
+        uses: actions/checkout@v3
+      
+      - name: install dfs
+        run: |
+          cd dotfiles
+          ./install.sh
+
+      - name: antigen build
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: |
+          echo $SHELL
+          antigen list 
+      
+      - name: check files
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: |
+          l ~
+          l ~/.ssh
+          cat ~/.zshrc
+
+      - name: check scripts and alias
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: |
+          cd /
+          dfs
+          dfs cd
+          pwd
+          dfs version
+          dfs log 1  #???
+          l
+          p114 -c 4
+          dogo
+          tools/common.sh get_os_type
+          tools/common.sh get_linux_dist
+          bash -x tools/common.sh post_log 1 2 3
+
+      - name: check update
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: |
+          dfs update
+          dfs version
