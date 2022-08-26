@@ -151,7 +151,7 @@ get_linux_dist() {
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    $1
+    $1 "${@:2}"
 else
     setup_color
 fi

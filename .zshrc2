@@ -92,3 +92,30 @@ bindkey "^[[1~" beginning-of-line
 bindkey "^[[4~" end-of-line
 bindkey "^[OH" beginning-of-line
 bindkey "^[OF" end-of-line
+
+# dfs
+dfs()
+{
+    case $1 in
+        update ) "$DOTFILES/update.sh" ;;
+        force-update ) (
+            cd "$DOTFILES" 
+            git fetch --all
+            ref=$(git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(git rev-parse --short HEAD 2> /dev/null)  || return 0
+            for b in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${b#refs/heads/} ; git pull --ff-only ; done
+            git checkout -c advice.detachedHead=false $ref)
+            ;;
+        version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
+        reset  )
+            antigen reset 1> /dev/null
+            rm -rf $HOME/.antigen
+            "$DOTFILES/install.sh" -r
+            dfs update
+            "$DOTFILES/install.sh" -i
+            echo 'Done. Please open a new shell to see the changes.'
+            ;;
+        cd     ) cd "$DOTFILES" ;;
+        log    ) "$DOTFILES/tools/common.sh" "post_log" "INFO" "dfs" "$2" ;;
+        *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
+    esac
+}
