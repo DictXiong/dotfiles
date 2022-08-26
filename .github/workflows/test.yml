@@ -18,7 +18,7 @@ jobs:
       
       - name: install dfs
         run: |
-          cd dotfiles
+          pwd
           ./install.sh
 
       - name: antigen build
