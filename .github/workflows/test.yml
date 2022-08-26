@@ -44,7 +44,6 @@ jobs:
           pwd
           dfs version
           l
-          p114 -c 4
           dogo
           tools/common.sh get_os_type
           tools/common.sh get_linux_dist
@@ -54,6 +53,7 @@ jobs:
         run: |
           dfs log 1
           bash -x tools/common.sh post_log 1 2 3
+          p114 -c 4
           return 0
 
       - name: check update
