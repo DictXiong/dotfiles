@@ -1,9 +1,6 @@
 #!/bin/bash
 
-if [[ $USER != "root" ]]; then
-    echo "must run as root!"
-    exit 1
-fi
+set -e
 
 set_mirror()
 {

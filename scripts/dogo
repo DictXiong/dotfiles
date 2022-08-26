@@ -1,0 +1,11 @@
+#!/bin/bash
+
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+DOTFILES=${DOTFILES:-$( cd "$THIS_DIR/.." && pwd )}
+source "$DOTFILES/tools/common.sh"
+
+if [[ -z "$1" || "$1" =~ "-h|--help" ]]; then
+    fmt_info "usage: dogo <container>"
+else
+    $SUDO docker exec -it $1 zsh
+fi

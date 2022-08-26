@@ -1,114 +1,15 @@
 #!/bin/bash
 
-# Color settings
-# Source: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
-if [ -t 1 ]; then
-    is_tty() {
-        true
-    }
-else
-    is_tty() {
-        false
-    }
-fi
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/tools/common.sh"
 
-supports_truecolor() {
-    case "$COLORTERM" in
-    truecolor|24bit) return 0 ;;
-    esac
-
-    case "$TERM" in
-    iterm           |\
-    tmux-truecolor  |\
-    linux-truecolor |\
-    xterm-truecolor |\
-    screen-truecolor) return 0 ;;
-    esac
-
-    return 1
-}
-
-fmt_fatal() {
-    printf '%sfatal: %s%s\n' "${FMT_BOLD}${FMT_RED}" "$*" "$FMT_RESET" >&2
-    exit
-}
-
-fmt_error() {
-    printf '%serror: %s%s\n' "${FMT_RED}" "$*" "$FMT_RESET" >&2
-}
-
-fmt_warning() {
-    echo "${FMT_YELLOW}warning: $1 ${FMT_RESET}" 
-}
-
-fmt_note() {
-    echo "${FMT_GREEN}$1 ${FMT_RESET}"
-}
-
-setup_color() {
-    # Only use colors if connected to a terminal
-    if ! is_tty; then
-        FMT_RAINBOW=""
-        FMT_RED=""
-        FMT_GREEN=""
-        FMT_YELLOW=""
-        FMT_BLUE=""
-        FMT_BOLD=""
-        FMT_RESET=""
-    return
-    fi
-
-    if supports_truecolor; then
-    FMT_RAINBOW="
-        $(printf '\033[38;2;255;0;0m')
-        $(printf '\033[38;2;255;97;0m')
-        $(printf '\033[38;2;247;255;0m')
-        $(printf '\033[38;2;0;255;30m')
-        $(printf '\033[38;2;77;0;255m')
-        $(printf '\033[38;2;168;0;255m')
-        $(printf '\033[38;2;245;0;172m')
-    "
-    else
-    FMT_RAINBOW="
-        $(printf '\033[38;5;196m')
-        $(printf '\033[38;5;202m')
-        $(printf '\033[38;5;226m')
-        $(printf '\033[38;5;082m')
-        $(printf '\033[38;5;021m')
-        $(printf '\033[38;5;093m')
-        $(printf '\033[38;5;163m')
-    "
-    fi
-
-    FMT_RED=$(printf '\033[31m')
-    FMT_GREEN=$(printf '\033[32m')
-    FMT_YELLOW=$(printf '\033[33m')
-    FMT_BLUE=$(printf '\033[34m')
-    FMT_BOLD=$(printf '\033[1m')
-    FMT_RESET=$(printf '\033[0m')
-}
-# END of color settings
-
-dotfile_path=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 home_slashes=${HOME//\//\\\/}
-if [[ ! $dotfile_path == ${home_slashes}* ]]; then 
-    fmt_fatal "\"$dotfile_path\" is not under \"$HOME\". aborting ..."
+if [[ ! $DOTFILES == ${home_slashes}* ]]; then 
+    fmt_fatal "\"$DOTFILES\" is not under \"$HOME\". aborting ..."
 fi
-dotfile_home_path=${dotfile_path/${home_slashes}/\~}
-dotfile_relative_path=${dotfile_path#${home_slashes}\/}
-crontab_job="0 * * * * ${dotfile_path}/update.sh"
-
-ask_for_yN()
-{
-    while true; do
-        read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
-        case $yn in
-            [Yy]* ) return 1;;
-            [Nn]* ) return 0;;
-            * ) return 0;;
-        esac
-    done
-}
+dotfile_home_path=${DOTFILES/${home_slashes}/\~}
+dotfile_relative_path=${DOTFILES#${home_slashes}\/}
+crontab_job="0 * * * * ${DOTFILES}/update.sh"
 
 insert_if_not_exist()
 {
@@ -211,15 +112,15 @@ install_vim_vundle(){
 
 install_update(){
     fmt_note "installing update.sh ..."
-    cp "${dotfile_path}/.update.sh" "${dotfile_path}/update.sh"
-    chmod +x "${dotfile_path}/update.sh"
+    cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
+    chmod +x "${DOTFILES}/update.sh"
     fmt_note "running update.sh ..."
-    ${dotfile_path}/update.sh
+    ${DOTFILES}/update.sh
 }
 
 uninstall_update(){
     fmt_note "removing update.sh ..."
-    rm "${dotfile_path}/update.sh"
+    rm "${DOTFILES}/update.sh"
 }
 
 install(){
@@ -229,7 +130,7 @@ install(){
     insert_if_not_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
     insert_if_not_exist "${HOME}/.vimrc" "source ${dotfile_home_path}/.vimrc2"
     insert_if_not_exist "${HOME}/.gitconfig" "[include] path = \"${dotfile_home_path}/.gitconfig2\""
-    create_symlink "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
+    create_symlink "${DOTFILES}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
     # those that won't be uninstalled in the future
     install_tmux_tpm
     install_vim_vundle
@@ -245,12 +146,12 @@ uninstall(){
         delete_if_exist "${HOME}/.tmux.conf" "source-file ${dotfile_home_path}/.tmux.conf2"
         delete_if_exist "${HOME}/.vimrc" "source ${dotfile_home_path}/.vimrc2"
         delete_if_exist "${HOME}/.gitconfig" "[include] path = \"${dotfile_home_path}/.gitconfig2\""
-        delete_link_if_match "${dotfile_path}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
+        delete_link_if_match "${DOTFILES}/.ssh/authorized_keys2" "${HOME}/.ssh/authorized_keys2"
         fmt_note "done uninstalling!"
     fi
 }
 
-setup_color
+
 case $1 in
     ""|-i ) install ;;
     -r    ) uninstall ;;
