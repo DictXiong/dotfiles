@@ -63,10 +63,11 @@ if __name__ == "__main__":
         logging.info("200 ok")
         exit(0)
     elif resp.status_code == 403:
-        logging.error("403 forbidden")
+        logging.warning("403 forbidden")
         logging.info("you may need to register your hostname and uuid")
+        logging.info(f"hostname: {hostname}, uuid: {uuid}")
+        exit(0)
     else:
         logging.error("unknown error ")
         logging.error(f"{resp.status_code}: {resp.text}")
-    logging.info(f"hostname: {hostname}, uuid: {uuid}")
-    exit(1)
+        exit(1)
