@@ -41,8 +41,8 @@ jobs:
       - name: install dependencies
         run: |
           brew update
-          brew install -y git python3 zsh curl
-          brew remove -y vim tmux
+          brew install git python3 zsh curl
+          brew remove vim tmux
           sudo pip3 install requests
       
       - name: checkout repo
