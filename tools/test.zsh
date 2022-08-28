@@ -1,24 +1,28 @@
+#!/bin/false "This script should be sourced in a shell, not executed directly"
 
 set -ex
 
-l ~
-l ~/.ssh
-cat ~/.zshrc
+# check files
 cd /
-dfs
 dfs cd
 pwd
+test -f .zshrc2
+diff -q ./.ssh/authorized_keys2 ~/.ssh/authorized_keys2
+grep -q ".zshrc2" ~/.zshrc
+
+# check scripts and functions
 dfs version
 dfs log 1
 l
 dogo
 tools/common.sh get_os_type
 tools/common.sh get_linux_dist
-bash -x tools/common.sh post_log 1 2 3
 
+# check alias
+alias p114 > /dev/null
+
+# check update
 dfs update
 dfs version
 
-# ..?
-p114 -c 4
 

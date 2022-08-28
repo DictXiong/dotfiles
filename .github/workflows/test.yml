@@ -28,38 +28,8 @@ jobs:
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: |
           echo $SHELL
-          antigen list 
+          antigen list
       
-      - name: check files
+      - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: |
-          l ~
-          l ~/.ssh
-          cat ~/.zshrc
-
-      - name: check scripts and alias
-        shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: |
-          cd /
-          dfs
-          dfs cd
-          pwd
-          dfs version
-          dfs log 1
-          l
-          dogo
-          tools/common.sh get_os_type
-          tools/common.sh get_linux_dist
-          bash -x tools/common.sh post_log 1 2 3
-
-      - name: check scripts and alias (no ret check)
-        shell: /bin/zsh -il {0}
-        run: |
-          p114 -c 4
-          return 0
-
-      - name: check update
-        shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: |
-          dfs update
-          dfs version
+        run: source tools/test.zsh
