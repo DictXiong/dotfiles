@@ -118,8 +118,10 @@ install_update(){
     fmt_note "installing update.sh ..."
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
-    fmt_note "running update.sh ..."
-    ${DOTFILES}/update.sh
+    if [[ -z "$DFS_NO_UPDATE" ]]; then
+        fmt_note "running update.sh ..."
+        ${DOTFILES}/update.sh
+    fi
 }
 
 uninstall_update(){
