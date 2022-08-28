@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO, format="[%(filename)s:%(lineno)d][%(leve
 try:
     import requests
 except ImportError:
-    logging.fatal("Please install requests module")
+    logging.critical("Please install requests module")
     exit(1)
 
 
@@ -57,17 +57,17 @@ if __name__ == "__main__":
     content=content.strip()
     if not content:
         logging.error("empty log content")
-        exit(1)
+        exit(0)
     resp = post_log(url, hostname, uuid, content)
     if resp.status_code == 200:
         logging.info("200 ok")
         exit(0)
     elif resp.status_code == 403:
-        logging.warning("403 forbidden")
+        logging.error("403 forbidden")
         logging.info("you may need to register your hostname and uuid")
         logging.info(f"hostname: {hostname}, uuid: {uuid}")
         exit(0)
     else:
-        logging.error("unknown error ")
+        logging.critical("unknown error ")
         logging.error(f"{resp.status_code}: {resp.text}")
         exit(1)

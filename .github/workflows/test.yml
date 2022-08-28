@@ -3,15 +3,14 @@ on:
   push: ~
   workflow_dispatch: ~
 jobs:
-  test:
-    name: test
+  test-ubuntu:
+    name: test on ubuntu
     runs-on: ubuntu-latest
     steps:
       - name: install dependencies
         run: |
           sudo apt update
           sudo apt install -y git python3 python3-pip zsh curl inetutils-ping
-          sudo apt remove -y vim tmux
           sudo pip3 install requests
       
       - name: checkout repo
@@ -21,45 +20,47 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
+          export DFS_NO_COMPILE=1 DFS_NO_UPDATE=1
           ./install.sh
-          git checkout $rev
+          test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: |
           echo $SHELL
-          antigen list 
-      
-      - name: check files
-        shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: |
-          l ~
-          l ~/.ssh
-          cat ~/.zshrc
+          antigen list
 
-      - name: check scripts and alias
+      - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: source tools/test.zsh
+  
+  test-macos:
+    name: test on macos
+    runs-on: macos-12
+    steps:
+      - name: install dependencies
         run: |
-          cd /
-          dfs
-          dfs cd
+          brew update
+          brew install git python3 zsh curl
+          sudo pip3 install requests
+
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+      - name: install dfs
+        run: |
+          rev=`git rev-parse HEAD`
           pwd
-          dfs version
-          dfs log 1
-          l
-          dogo
-          tools/common.sh get_os_type
-          tools/common.sh get_linux_dist
-          bash -x tools/common.sh post_log 1 2 3
+          export DFS_NO_COMPILE=1 DFS_NO_UPDATE=1
+          ./install.sh
+          test `git rev-parse HEAD` = "$rev"
 
-      - name: check scripts and alias (no ret check)
-        shell: /bin/zsh -il {0}
-        run: |
-          p114 -c 4
-          return 0
-
-      - name: check update
+      - name: antigen build
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: |
-          dfs update
-          dfs version
+          echo $SHELL
+          antigen list
+
+      - name: run tests
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: source tools/test.zsh
