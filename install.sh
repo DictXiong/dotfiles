@@ -93,7 +93,9 @@ install_tmux_tpm(){
         git clone https://gitee.com/dictxiong/tpm "$TMUX_TPM"
         if [[ -x $(command -v g++) && -x $(command -v cmake) && -x $(command -v make) ]]; then
             fmt_note "initializing tmux plugins ..."
-            ~/.tmux/plugins/tpm/bin/install_plugins
+            if [[ -z "$DFS_NO_COMPILE" ]]; then
+                ~/.tmux/plugins/tpm/bin/install_plugins
+            fi
         else
             fmt_warning "pls install g++,cmake,make and then init tmux plugins by <prefix + I> or ~/.tmux/plugins/tpm/bin/install_plugins"
         fi
@@ -106,7 +108,9 @@ install_vim_vundle(){
         fmt_note "installing vim vundle ..."
         git clone https://gitee.com/dictxiong/Vundle.vim "$VIM_VUNDLE"
         fmt_note "initializing vim plugins ..."
-        vim +PluginInstall +qall
+        if [[ -z "$DFS_NO_COMPLIE" ]]; then
+            vim +PluginInstall +qall
+        fi
     fi
 }
 
