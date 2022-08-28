@@ -24,5 +24,4 @@ alias p114 > /dev/null
 # check update
 dfs update
 dfs version
-
-
+test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id`

@@ -22,14 +22,14 @@ jobs:
           pwd
           export DFS_NO_COMPILE=1 DFS_NO_UPDATE=1
           ./install.sh
-          git checkout $rev
+          test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: |
           echo $SHELL
           antigen list
-      
+
       - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: source tools/test.zsh
@@ -43,24 +43,24 @@ jobs:
           brew update
           brew install git python3 zsh curl
           sudo pip3 install requests
-      
+
       - name: checkout repo
         uses: actions/checkout@v3
-      
+
       - name: install dfs
         run: |
           rev=`git rev-parse HEAD`
           pwd
           export DFS_NO_COMPILE=1 DFS_NO_UPDATE=1
           ./install.sh
-          git checkout $rev
+          test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: |
           echo $SHELL
           antigen list
-      
+
       - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: source tools/test.zsh
