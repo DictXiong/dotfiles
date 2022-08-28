@@ -40,9 +40,9 @@ jobs:
     steps:
       - name: install dependencies
         run: |
-          sudo brew update
-          sudo brew install -y git python3 zsh curl
-          sudo brew remove -y vim tmux
+          brew update
+          brew install -y git python3 zsh curl
+          brew remove -y vim tmux
           sudo pip3 install requests
       
       - name: checkout repo
