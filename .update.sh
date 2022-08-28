@@ -13,7 +13,7 @@ if [[ ${#dfs_commit} != 40 ]]; then
 fi
 # fetch origin
 cd $DOTFILES
-git fetch
+git fetch --all
 if [[ -n "$(git status -s)" ]]; then
     fmt_error "directory not clean"
     post_log "ERROR" "$THIS_FILE" "directory not clean"
