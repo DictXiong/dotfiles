@@ -42,6 +42,7 @@ jobs:
         run: |
           brew update
           brew install git python3 zsh curl
+          sudo rm /usr/bin/vim
           sudo pip3 install requests
       
       - name: checkout repo
