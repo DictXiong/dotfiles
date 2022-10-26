@@ -26,7 +26,6 @@ if [[ "$(git rev-parse HEAD)" == "$dfs_commit" ]]; then
 else
     fmt_info "checking out to commit $dfs_commit ..."
     git -c advice.detachedHead=false checkout $dfs_commit
-    cp ./.update.sh ./update.sh
-    chmod +x ./update.sh
-    post_log "INFO" "$THIS_FILE" "checked out to commit $dfs_commit"
+    post_log "INFO" "$THIS_FILE" "will check out to commit $dfs_commit"
+    cp ./.update.sh ./update.sh && chmod +x ./update.sh && exit
 fi
