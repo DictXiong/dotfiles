@@ -118,6 +118,7 @@ post_log()
 }
 
 get_os_type() {
+    local ans="unknown"
     case "$(uname -s)" in
         Darwin*)    ans="MacOS";;
         CYGWIN*)    ans="Cygwin";;
@@ -129,6 +130,7 @@ get_os_type() {
 }
 
 get_linux_dist() {
+    local ans="unknown"
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         ans="$ID"

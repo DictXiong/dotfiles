@@ -13,8 +13,8 @@ crontab_job="0 * * * * ${DOTFILES}/update.sh"
 
 insert_if_not_exist()
 {
-    filename=$1
-    line=$2
+    local filename=$1
+    local line=$2
     fmt_note "installing \"$line\" into \"$filename\" ..."
     mkdir -p $(dirname "$filename")
     if [ ! -f "$filename" ]; then
@@ -25,8 +25,8 @@ insert_if_not_exist()
 
 delete_if_exist()
 {
-    filename=$1
-    line=$2
+    local filename=$1
+    local line=$2
     fmt_note "removing \"$line\" from \"$filename\" ..."
     if [ -f "$filename" ]; then
         grep -vxF -- "$line" "$filename" | tee "$filename"
@@ -35,8 +35,8 @@ delete_if_exist()
 
 create_symlink()
 {
-    src=$1
-    dest=$2
+    local src=$1
+    local dest=$2
     fmt_note "creating symlink \"$dest\" --> \"$src\" ..."
     if [ ! -f "$src" ]; then
         fmt_error "\"$src\" does not exist! aborting this job ..."
@@ -65,8 +65,8 @@ create_symlink()
 
 delete_link_if_match()
 {
-    src=$1
-    dest=$2
+    local src=$1
+    local dest=$2
     if [ "$(readlink $dest)" -ef "$src" ]; then
         fmt_note "removing symlink \"$dest\" ..."
         echo ----------
