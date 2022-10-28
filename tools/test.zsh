@@ -4,18 +4,20 @@ set -ex
 
 # check files
 cd /
+l
 dfs cd
+l
 pwd
 test -f .zshrc2
 diff -q ./.ssh/authorized_keys2 ~/.ssh/authorized_keys2
 grep -q ".zshrc2" ~/.zshrc
-l ~
+cd ~
+l
 
 # check scripts and functions
 dfs version
 dfs log 1
-l
-z
+z ~
 dogo
 tools/common.sh get_os_type
 tools/common.sh get_linux_dist
