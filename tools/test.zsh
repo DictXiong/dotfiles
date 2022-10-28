@@ -11,7 +11,6 @@ diff -q ./.ssh/authorized_keys2 ~/.ssh/authorized_keys2
 grep -q ".zshrc2" ~/.zshrc
 
 # check scripts and functions
-antigen list
 dfs version
 dfs log 1
 l
