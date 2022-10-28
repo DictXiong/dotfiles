@@ -1,7 +1,7 @@
 #!/bin/bash
 
-THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
-export DOTFILES=$( cd "$THIS_DIR/.." && pwd )
+THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 
 SUDO=''
 if (( $EUID != 0 )); then
@@ -107,7 +107,6 @@ ask_for_yN()
         read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
         case $yn in
             [Yy]* ) return 1;;
-            [Nn]* ) return 0;;
             * ) return 0;;
         esac
     done
@@ -132,24 +131,25 @@ get_os_type() {
 get_linux_dist() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
-        ans=$ID
+        ans="$ID"
     elif type lsb_release >/dev/null 2>&1; then
-        ans=$(lsb_release -si)
+        ans="$(lsb_release -si)"
     elif [ -f /etc/lsb-release ]; then
         . /etc/lsb-release
-        ans=$DISTRIB_ID
+        ans="$DISTRIB_ID"
     elif [ -f /etc/debian_version ]; then
-        ans=Debian
+        ans="Debian"
     elif [ -f /etc/SuSe-release ]; then
-        ans=SUSE
+        ans="SUSE"
     elif [ -f /etc/redhat-release ]; then
-        ans=RedHat
+        ans="RedHat"
     else
-        ans=unknown
+        ans="unknown"
     fi
     echo $ans | tr '[:upper:]' '[:lower:]'
 }
 
+# if bash-ed, else source-d
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     $1 "${@:2}"
 else

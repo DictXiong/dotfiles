@@ -6,7 +6,7 @@ set_mirror()
 {
     MIRROR=${1:-"mirrors.tuna.tsinghua.edu.cn"}
     MIRROR=${MIRROR//\//\\\/}
-    sed -i 's/(archive|security).ubuntu.com/${MIRROR}/g' /etc/apt/sources.list
+    sed -i "s/(archive|security).ubuntu.com/${MIRROR}/g" /etc/apt/sources.list
 }
 
 apt_install()

@@ -1,6 +1,10 @@
+# env
 export TERM="xterm-256color"
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
+export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+export PATH="$PATH:$DOTFILES/scripts"
+export LESS="-N"
 
 # antigen
 if [[ -z "$DFS_NO_WALL" ]]; then
@@ -74,10 +78,6 @@ antigen theme ${ZSH_THEME:-$TMP_THEME}
 # apply 
 antigen apply
 # end of antigen config
-
-# env
-export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
-export PATH=$PATH:$DOTFILES/scripts
 
 # alias
 alias "pls"='sudo $(fc -ln -1)'
