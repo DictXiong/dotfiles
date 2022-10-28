@@ -12,7 +12,7 @@ if [[ -z "$DFS_NO_WALL" ]]; then
         "https://gitee.com/dictxiong/zsh-autosuggestions" \
     )
 else
-    ANTIGEN_URL="git.io/antigen"
+    ANTIGEN_URL="https://raw.githubusercontent.com/zsh-users/antigen/develop/bin/antigen.zsh"
     ANTIGEN_OMZ_REPO_URL="https://github.com/ohmyzsh/ohmyzsh.git"
     ANTIGEN_PLUGINS=( \
         "https://github.com/zsh-users/zsh-syntax-highlighting" \
