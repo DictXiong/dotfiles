@@ -3,20 +3,23 @@ export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
 # antigen
-
-# if test -z "$NO_WALL"; then
-#     ANTIGEN_OMZ_REPO_URL="https://mirrors.tuna.tsinghua.edu.cn/git/ohmyzsh.git"
-#     ANTIGEN_URL="https://raw.fastgit.org/zsh-users/antigen/master/bin/antigen.zsh"
-#     GIHUB_PROXY="https://hub.fastgit.xyz/"
-# else
-#     ANTIGEN_URL="git.io/antigen"
-#     GIHUB_PROXY=""
-# fi
-# antigen bundle ${GIHUB_PROXY}zsh-users/zsh-syntax-highlighting
-# antigen bundle ${GIHUB_PROXY}zsh-users/zsh-completions
-# antigen bundle ${GIHUB_PROXY}zsh-users/zsh-autosuggestions
-ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
-ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
+if [[ -z "$DFS_NO_WALL" ]]; then
+    ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
+    ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
+    ANTIGEN_PLUGINS=( \
+        "https://gitee.com/dictxiong/zsh-syntax-highlighting" \
+        "https://gitee.com/dictxiong/zsh-completions" \
+        "https://gitee.com/dictxiong/zsh-autosuggestions" \
+    )
+else
+    ANTIGEN_URL="git.io/antigen"
+    ANTIGEN_OMZ_REPO_URL="https://github.com/ohmyzsh/ohmyzsh.git"
+    ANTIGEN_PLUGINS=( \
+        "https://github.com/zsh-users/zsh-syntax-highlighting" \
+        "https://github.com/zsh-users/zsh-completions" \
+        "https://github.com/zsh-users/zsh-autosuggestions" \
+    )
+fi
 ANTIGEN="$HOME/antigen.zsh"
 # Install antigen.zsh if not exist
 if [ ! -f "$ANTIGEN" ]; then
@@ -40,9 +43,9 @@ if [ ! -f "$ANTIGEN" ]; then
 fi
 # config and enable antigen
 source "$ANTIGEN"
-antigen use oh-my-zsh
 # enable plugins
-antigen_plugins=( \
+antigen use oh-my-zsh
+ANTIGEN_PLUGINS+=( \
     "command-not-found" \
     "docker" \
     "extract" \
@@ -52,11 +55,8 @@ antigen_plugins=( \
     "tmux" \
     "ufw" \
     "z" \
-    "https://gitee.com/dictxiong/zsh-syntax-highlighting" \
-    "https://gitee.com/dictxiong/zsh-completions" \
-    "https://gitee.com/dictxiong/zsh-autosuggestions" \
 )
-for i in ${antigen_plugins[*]}
+for i in ${ANTIGEN_PLUGINS[*]}
 do
     if [[ -z $ANTIGEN_EXCLUDE || ! $i =~ $ANTIGEN_EXCLUDE ]]; then
         antigen bundle $i

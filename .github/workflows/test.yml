@@ -31,6 +31,15 @@ jobs:
         run: |
           echo $SHELL
           antigen list
+          antigen reset
+
+      - name: antigen build with DFS_NO_WALL
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        env:
+          DFS_NO_WALL: 1
+        run: |
+          echo $SHELL
+          antigen list
 
       - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
