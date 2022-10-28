@@ -3,3 +3,5 @@
 	name = Dict Xiong
 [core]
     editor = vim
+[push]
+    autoSetupRemote = true
