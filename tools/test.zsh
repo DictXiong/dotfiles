@@ -15,6 +15,7 @@ antigen list
 dfs version
 dfs log 1
 l
+l ~
 dogo
 tools/common.sh get_os_type
 tools/common.sh get_linux_dist
