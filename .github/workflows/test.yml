@@ -32,6 +32,7 @@ jobs:
           echo $SHELL
           antigen list
           antigen reset
+          rm -rf $ANTIGEN $HOME/.antigen
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
