@@ -103,13 +103,14 @@ setup_color() {
 
 ask_for_yN()
 {
-    while true; do
+    while [[ -z "$DFS_QUIET" ]]; do
         read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
         case $yn in
             [Yy]* ) return 1;;
             * ) return 0;;
         esac
     done
+    return 0
 }
 
 post_log()
