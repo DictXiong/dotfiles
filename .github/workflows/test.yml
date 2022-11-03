@@ -22,7 +22,7 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          export DFS_NO_COMPILE=1 DFS_NO_UPDATE=1
+          export DFS_NO_COMPILE=1 DFS_DEV=1
           ./install.sh
           test `git rev-parse HEAD` = "$rev"
 
@@ -70,7 +70,7 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          export DFS_NO_COMPILE=1 DFS_NO_UPDATE=1
+          export DFS_NO_COMPILE=1 DFS_DEV=1
           ./install.sh
           test `git rev-parse HEAD` = "$rev"
 

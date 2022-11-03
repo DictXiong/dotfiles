@@ -25,7 +25,11 @@ if [[ "$(git rev-parse HEAD)" == "$dfs_commit" ]]; then
     post_log "INFO" "$THIS_FILE" "nothing to do"
 else
     fmt_info "checking out to commit $dfs_commit ..."
-    git -c advice.detachedHead=false checkout $dfs_commit
+    if [[ -z "DFS_DEV" ]]; then
+        git -c advice.detachedHead=false checkout $dfs_commit
+    else
+        fmt_warning "won't really checkout in dev mode"
+    done
     post_log "INFO" "$THIS_FILE" "will check out to commit $dfs_commit"
     cp ./.update.sh ./update.sh && chmod +x ./update.sh && exit
 fi
