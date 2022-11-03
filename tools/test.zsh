@@ -1,4 +1,4 @@
-#!/bin/false "This script should be sourced in a shell, not executed directly"
+#!/bin/false "This script should be sourced in zsh, not executed directly"
 
 set -ex
 
