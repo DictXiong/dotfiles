@@ -29,7 +29,7 @@ else
         git -c advice.detachedHead=false checkout $dfs_commit
     else
         fmt_warning "won't really checkout in dev mode"
-    done
+    fi
     post_log "INFO" "$THIS_FILE" "will check out to commit $dfs_commit"
     cp ./.update.sh ./update.sh && chmod +x ./update.sh && exit
 fi
