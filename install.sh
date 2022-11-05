@@ -215,7 +215,8 @@ while [[ $# > 0 ]]; do
         -i ) BIN=install ;;
         -r ) BIN=uninstall ;;
         -q ) export DFS_QUIET=1 ;;
-        *  ) fmt_warning "unknown command \"$1\". available: -i, -r"; exit 1 ;;
+        -d ) export DFS_DEV=1 ;;
+        *  ) fmt_warning "unknown command \"$1\". available: -i, -r, -q, -d"; exit 1 ;;
     esac
     shift
 done
