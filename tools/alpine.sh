@@ -4,10 +4,9 @@ set -e
 
 set_mirror()
 {
-    #MIRROR=${1:="mirrors.tuna.tsinghua.edu.cn"}
-    #MIRROR=${MIRROR//\//\\\/}
-    #sed -i 's/(archive|security).ubuntu.com/${MIRROR}/g' /etc/apt/sources.list
-    echo "to-do ..."
+    MIRROR=${1:-"mirrors.tuna.tsinghua.edu.cn"}
+    MIRROR=${MIRROR//\//\\\/}
+    sed -i "s/dl-cdn.alpinelinux.org/$MIRROR/g" /etc/apk/repositories
 }
 
 apk_add()
@@ -32,7 +31,7 @@ router()
     case $1 in
         apk-add ) apk_add ;;
         set-timezone | set-tz ) set_timezone ;;
-        #set-mirror  ) set_mirror $2 ;;  
+        set-mirror  ) set_mirror $2 ;;
         *           ) echo unknown command "$1". available: apk-add, set-timezone;;
     esac
 }

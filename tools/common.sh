@@ -1,7 +1,7 @@
 #!/bin/bash
 
-THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
-export DOTFILES=$( cd "$THIS_DIR/.." && pwd )
+THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 
 SUDO=''
 if (( $EUID != 0 )); then
@@ -38,7 +38,7 @@ supports_truecolor() {
 
 fmt_fatal() {
     printf '%sfatal: %s%s\n' "${FMT_BOLD}${FMT_RED}" "$*" "${FMT_RESET}" >&2
-    exit
+    exit 1
 }
 
 fmt_error() {
@@ -103,14 +103,26 @@ setup_color() {
 
 ask_for_yN()
 {
-    while true; do
+    while [[ -z "$DFS_QUIET" ]]; do
         read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
         case $yn in
             [Yy]* ) return 1;;
-            [Nn]* ) return 0;;
             * ) return 0;;
         esac
     done
+    return 0
+}
+
+ask_for_Yn()
+{
+    while [[ -z "$DFS_QUIET" ]]; do
+        read -p "${FMT_YELLOW}$1${FMT_RESET} [Yn]: " yn
+        case $yn in
+            [Nn]* ) return 0;;
+            * ) return 1;;
+        esac
+    done
+    return 1
 }
 
 post_log()
@@ -119,6 +131,7 @@ post_log()
 }
 
 get_os_type() {
+    local ans="unknown"
     case "$(uname -s)" in
         Darwin*)    ans="MacOS";;
         CYGWIN*)    ans="Cygwin";;
@@ -130,26 +143,28 @@ get_os_type() {
 }
 
 get_linux_dist() {
+    local ans="unknown"
     if [ -f /etc/os-release ]; then
         . /etc/os-release
-        ans=$ID
+        ans="$ID"
     elif type lsb_release >/dev/null 2>&1; then
-        ans=$(lsb_release -si)
+        ans="$(lsb_release -si)"
     elif [ -f /etc/lsb-release ]; then
         . /etc/lsb-release
-        ans=$DISTRIB_ID
+        ans="$DISTRIB_ID"
     elif [ -f /etc/debian_version ]; then
-        ans=Debian
+        ans="Debian"
     elif [ -f /etc/SuSe-release ]; then
-        ans=SUSE
+        ans="SUSE"
     elif [ -f /etc/redhat-release ]; then
-        ans=RedHat
+        ans="RedHat"
     else
-        ans=unknown
+        ans="unknown"
     fi
     echo $ans | tr '[:upper:]' '[:lower:]'
 }
 
+# if bash-ed, else source-d
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     $1 "${@:2}"
 else

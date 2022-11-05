@@ -1,7 +1,7 @@
 #!/bin/bash
 
-declare -A install_commands
-install_commands=(\
+declare -A INSTALL_COMMANDS
+INSTALL_COMMANDS=(\
     [git]="apt update && apt install git" \
     [fzf]="git clone --depth 1 https://gitee.com/dictxiong/fzf.git ~/.fzf &&  ~/.fzf/install" \
     [acme.sh]="curl https://get.acme.sh | sh -s email=${EMAIL:-me@beardic.cn}" \
@@ -15,7 +15,7 @@ install_commands=(\
 
 install()
 {
-    echo -e ${install_commands[$1]}
+    echo -e ${INSTALL_COMMANDS[$1]}
 }
 
 install $1
