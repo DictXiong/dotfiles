@@ -209,9 +209,14 @@ uninstall(){
     fmt_note "done uninstalling!"
 }
 
-
-case $1 in
-    ""|-i ) install ;;
-    -r    ) uninstall ;;
-    *     ) fmt_warning "unknown command \"$1\". available: -i, -r" ;;
-esac
+BIN=install
+while [[ $# > 0 ]]; do
+    case $1 in
+        -i ) BIN=install ;;
+        -r ) BIN=uninstall ;;
+        -q ) export DFS_QUIET=1 ;;
+        *  ) fmt_warning "unknown command \"$1\". available: -i, -r"; exit 1 ;;
+    esac
+    shift
+done
+$BIN
