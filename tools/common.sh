@@ -38,7 +38,7 @@ supports_truecolor() {
 
 fmt_fatal() {
     printf '%sfatal: %s%s\n' "${FMT_BOLD}${FMT_RED}" "$*" "${FMT_RESET}" >&2
-    exit
+    exit 1
 }
 
 fmt_error() {
@@ -111,6 +111,18 @@ ask_for_yN()
         esac
     done
     return 0
+}
+
+ask_for_Yn()
+{
+    while [[ -z "$DFS_QUIET" ]]; do
+        read -p "${FMT_YELLOW}$1${FMT_RESET} [Yn]: " yn
+        case $yn in
+            [Nn]* ) return 0;;
+            * ) return 1;;
+        esac
+    done
+    return 1
 }
 
 post_log()

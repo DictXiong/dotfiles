@@ -3,6 +3,7 @@
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/tools/common.sh"
 
+
 if [[ ! "$DOTFILES" == "${HOME}"* ]]; then 
     fmt_fatal "\"$DOTFILES\" is not under \"$HOME\". aborting ..."
 fi
@@ -25,6 +26,30 @@ declare -a HOME_SYMLINKS_DST
 HOME_SYMLINKS_SRC[0]=".ssh/authorized_keys2"
 HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
 
+
+preinstall_check()
+{
+    mandatory_commands=( "git" "zsh" "curl" "ping" )
+    optional_commands=( "python3" "vim" "tmux" )
+    for i in "${mandatory_commands[@]}"; do
+        if [[ ! -x "$(command -v $i)" ]]; then
+            fmt_info "all this utils are required: ${mandatory_commands[@]}"
+            fmt_info "install them manually or check scripts in tools/"
+            fmt_fatal "\"$i\" not found. aborting ..."
+        fi
+    done
+    for i in "${optional_commands[@]}"; do
+        if [[ ! -x "$(command -v $i)" ]]; then
+            fmt_warning "\"$i\" not found"
+            ask_for_Yn "continue anyway?"
+            if [[ "$?" == "0" ]]; then
+                fmt_info "all this utils are suggested: ${optional_commands[@]}"
+                fmt_info "install them manually or check scripts in tools/"
+                fmt_fatal "aborting ..."
+            fi
+        fi
+    done
+}
 
 install_file_content()
 {
@@ -101,13 +126,21 @@ uninstall_symlink()
 }
 
 install_crontab(){
-    fmt_note "installing \"$CRON_JOB\" to crontab ..."
-    ( crontab -l | grep -vxF "${CRON_JOB}" | grep -v "no crontab for"; echo "$CRON_JOB" ) | crontab -
+    if [[ -x $(command -v crontab) ]]; then
+        fmt_note "installing \"$CRON_JOB\" to crontab ..."
+        ( crontab -l | grep -vxF "${CRON_JOB}" | grep -v "no crontab for"; echo "$CRON_JOB" ) | crontab -
+    else
+        fmt_warning "crontab does not exist. skipping ..."
+    fi
 }
 
 uninstall_crontab(){
-    fmt_note "removing \"$CRON_JOB\" from crontab ..."
-    ( crontab -l | grep -vxF "$CRON_JOB" ) | crontab - 
+    if [[ -x $(command -v crontab) ]]; then
+        fmt_note "removing \"$CRON_JOB\" from crontab ..."
+        ( crontab -l | grep -vxF "$CRON_JOB" ) | crontab -
+    else
+        fmt_note "crontab does not exist. skipping ..."
+    fi
 }
 
 install_tmux_tpm(){
@@ -152,6 +185,7 @@ uninstall_update(){
 }
 
 install(){
+    preinstall_check
     install_update
     install_crontab
     install_file_content
