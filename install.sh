@@ -165,9 +165,7 @@ install_vim_vundle(){
         fmt_note "installing vim vundle ..."
         git clone https://gitee.com/dictxiong/Vundle.vim "$VIM_VUNDLE"
         fmt_note "initializing vim plugins ..."
-        if [[ -z "$DFS_NO_COMPILE" ]]; then
-            vim +PluginInstall +qall
-        fi
+        echo | vim +PluginInstall +qall
     fi
 }
 
