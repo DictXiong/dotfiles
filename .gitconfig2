@@ -1,7 +1,17 @@
 [user]
-	email = me@beardic.cn
-	name = Dict Xiong
+    email = me@beardic.cn
+    name = Dict Xiong
 [core]
     editor = vim
+    # test this by `git update-index --test-untracked-cache`
+    # disable this by setting `GIT_DISABLE_UNTRACKED_CACHE`
+    untrackedCache = true
 [push]
     autoSetupRemote = true
+[branch]
+    # Show most recently changed branches first.
+    sort = -committerdate
+[help]
+    autocorrect = 1
+[init]
+    defaultBranch = main
