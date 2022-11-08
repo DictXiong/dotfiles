@@ -26,6 +26,43 @@ declare -a HOME_SYMLINKS_DST
 HOME_SYMLINKS_SRC[0]=".ssh/authorized_keys2"
 HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
 
+install_dependencies()
+{
+    fmt_info "installing dependencies ..."
+    case $(get_os_type) in
+        "linux" )
+            case $(get_linux_dist) in
+                "ubuntu"|"debian" )
+                    $SUDO apt-get update
+                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping
+                    ;;
+                "alpine" )
+                    $SUDO apk update
+                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils
+                    ;;
+                * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
+            esac
+            ;;
+        "macos" )
+            $SUDO brew update
+            $SUDO brew install git python3 zsh curl tmux vim
+            ;;
+        "msys" )
+            pacman -Syu
+            pacman -S tmux git zsh bash curl vim python3 python3-pip
+            SUDO=""
+            ;;
+        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_type)"
+    esac
+
+    if [[ -x $(command -v pip3) ]]; then
+        $SUDO pip3 install requests
+    elif [[ -x $(command -v pip) ]]; then
+        $SUDO pip install requests
+    else
+        fmt_error "pip3 and pip not found. is pip correctly installed?"
+    fi
+}
 
 preinstall_check()
 {
@@ -214,6 +251,7 @@ while [[ $# > 0 ]]; do
         -r ) BIN=uninstall ;;
         -q ) export DFS_QUIET=1 ;;
         -d ) export DFS_DEV=1 ;;
+        -a|--auto ) install_dependencies ;;
         *  ) fmt_warning "unknown command \"$1\". available: -i, -r, -q, -d"; exit 1 ;;
     esac
     shift
