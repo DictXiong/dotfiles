@@ -22,8 +22,8 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          export DFS_NO_COMPILE=1 DFS_DEV=1
-          ./install.sh
+          export DFS_NO_COMPILE=1
+          ./install.sh -d
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -70,8 +70,8 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          export DFS_NO_COMPILE=1 DFS_DEV=1
-          ./install.sh
+          export DFS_NO_COMPILE=1
+          ./install.sh -d
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -98,3 +98,27 @@ jobs:
       - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: source tools/test.zsh
+
+  test-autodep:
+    name: test of auto-install dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: install dfs
+        run: |
+          rev=`git rev-parse HEAD`
+          export DFS_NO_COMPILE=1
+          ./install.sh -d -a
+          test `git rev-parse HEAD` = "$rev"
+
+      - name: antigen build with DFS_NO_WALL
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        env:
+          DFS_NO_WALL: 1
+        run: |
+          echo $SHELL
+          antigen list
