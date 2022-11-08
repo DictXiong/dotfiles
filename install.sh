@@ -26,9 +26,47 @@ declare -a HOME_SYMLINKS_DST
 HOME_SYMLINKS_SRC[0]=".ssh/authorized_keys2"
 HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
 
+install_dependencies()
+{
+    fmt_note "installing dependencies ..."
+    case $(get_os_type) in
+        "linux" )
+            case $(get_linux_dist) in
+                "ubuntu"|"debian" )
+                    $SUDO apt-get update
+                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping
+                    ;;
+                "alpine" )
+                    $SUDO apk update
+                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils
+                    ;;
+                * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
+            esac
+            ;;
+        "macos" )
+            $SUDO brew update
+            $SUDO brew install git python3 zsh curl tmux vim
+            ;;
+        "msys" )
+            pacman -Syu
+            pacman -S tmux git zsh bash curl vim python3 python3-pip
+            SUDO=""
+            ;;
+        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_type)"
+    esac
+
+    if [[ -x $(command -v pip3) ]]; then
+        $SUDO pip3 install requests
+    elif [[ -x $(command -v pip) ]]; then
+        $SUDO pip install requests
+    else
+        fmt_error "pip3 and pip not found. is pip correctly installed?"
+    fi
+}
 
 preinstall_check()
 {
+    fmt_note "checking requirements ..."
     mandatory_commands=( "git" "zsh" "curl" "ping" )
     optional_commands=( "python3" "vim" "tmux" )
     for i in "${mandatory_commands[@]}"; do
@@ -53,10 +91,11 @@ preinstall_check()
 
 install_file_content()
 {
+    fmt_note "installing file content ..."
     for ((i=0; i<${#HOME_FILES_PATH[@]}; i++)); do
         local filename="$HOME/${HOME_FILES_PATH[$i]}"
         local content=${HOME_FILES_CONTENT[$i]}
-        fmt_note "installing \"$content\" into \"$filename\" ..."
+        fmt_info "installing \"$content\" into \"$filename\" ..."
         mkdir -p $(dirname "$filename")
         if [ ! -f "$filename" ]; then
             touch $filename
@@ -67,10 +106,11 @@ install_file_content()
 
 uninstall_file_content()
 {
+    fmt_note "uninstalling file content ..."
     for ((i=0; i<${#HOME_FILES_PATH[@]}; i++)); do
         local filename="$HOME/${HOME_FILES_PATH[$i]}"
         local content=${HOME_FILES_CONTENT[$i]}
-        fmt_note "removing \"$content\" from \"$filename\" ..."
+        fmt_info "removing \"$content\" from \"$filename\" ..."
         if [ -f "$filename" ]; then
             grep -vxF -- "$content" "$filename" | tee "$filename"
         fi
@@ -79,10 +119,11 @@ uninstall_file_content()
 
 install_symlink()
 {
+    fmt_note "installing symlinks ..."
     for ((i=0; i<${#HOME_SYMLINKS_SRC[@]}; i++)); do
         local src="$DOTFILES/${HOME_SYMLINKS_SRC[$i]}"
         local dst="$HOME/${HOME_SYMLINKS_DST[$i]}"
-        fmt_note "creating symlink \"$dst\" --> \"$src\" ..."
+        fmt_info "creating symlink \"$dst\" --> \"$src\" ..."
         if [ ! -f "$src" ]; then
             fmt_error "\"$src\" does not exist! aborting this job ..."
             continue
@@ -110,13 +151,14 @@ install_symlink()
 
 uninstall_symlink()
 {
+    fmt_note "uninstalling symlinks ..."
     local src
     for src in "${!HOME_SYMLINKS[@]}"; do
         local dst=${HOME_SYMLINKS[$src]}
         src="$DOTFILES/$src"
         dst="$HOME/$dst"
         if [ "$(readlink $dst)" -ef "$src" ]; then
-            fmt_note "removing symlink \"$dst\" ..."
+            fmt_info "removing symlink \"$dst\" ..."
             echo ----------
             stat $dst
             echo ----------
@@ -214,6 +256,7 @@ while [[ $# > 0 ]]; do
         -r ) BIN=uninstall ;;
         -q ) export DFS_QUIET=1 ;;
         -d ) export DFS_DEV=1 ;;
+        -a|--auto ) install_dependencies ;;
         *  ) fmt_warning "unknown command \"$1\". available: -i, -r, -q, -d"; exit 1 ;;
     esac
     shift
