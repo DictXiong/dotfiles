@@ -28,7 +28,7 @@ HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
 
 install_dependencies()
 {
-    fmt_info "installing dependencies ..."
+    fmt_note "installing dependencies ..."
     case $(get_os_type) in
         "linux" )
             case $(get_linux_dist) in
@@ -66,6 +66,7 @@ install_dependencies()
 
 preinstall_check()
 {
+    fmt_note "checking requirements ..."
     mandatory_commands=( "git" "zsh" "curl" "ping" )
     optional_commands=( "python3" "vim" "tmux" )
     for i in "${mandatory_commands[@]}"; do
@@ -90,10 +91,11 @@ preinstall_check()
 
 install_file_content()
 {
+    fmt_note "installing file content ..."
     for ((i=0; i<${#HOME_FILES_PATH[@]}; i++)); do
         local filename="$HOME/${HOME_FILES_PATH[$i]}"
         local content=${HOME_FILES_CONTENT[$i]}
-        fmt_note "installing \"$content\" into \"$filename\" ..."
+        fmt_info "installing \"$content\" into \"$filename\" ..."
         mkdir -p $(dirname "$filename")
         if [ ! -f "$filename" ]; then
             touch $filename
@@ -104,10 +106,11 @@ install_file_content()
 
 uninstall_file_content()
 {
+    fmt_note "uninstalling file content ..."
     for ((i=0; i<${#HOME_FILES_PATH[@]}; i++)); do
         local filename="$HOME/${HOME_FILES_PATH[$i]}"
         local content=${HOME_FILES_CONTENT[$i]}
-        fmt_note "removing \"$content\" from \"$filename\" ..."
+        fmt_info "removing \"$content\" from \"$filename\" ..."
         if [ -f "$filename" ]; then
             grep -vxF -- "$content" "$filename" | tee "$filename"
         fi
@@ -116,10 +119,11 @@ uninstall_file_content()
 
 install_symlink()
 {
+    fmt_note "installing symlinks ..."
     for ((i=0; i<${#HOME_SYMLINKS_SRC[@]}; i++)); do
         local src="$DOTFILES/${HOME_SYMLINKS_SRC[$i]}"
         local dst="$HOME/${HOME_SYMLINKS_DST[$i]}"
-        fmt_note "creating symlink \"$dst\" --> \"$src\" ..."
+        fmt_info "creating symlink \"$dst\" --> \"$src\" ..."
         if [ ! -f "$src" ]; then
             fmt_error "\"$src\" does not exist! aborting this job ..."
             continue
@@ -147,13 +151,14 @@ install_symlink()
 
 uninstall_symlink()
 {
+    fmt_note "uninstalling symlinks ..."
     local src
     for src in "${!HOME_SYMLINKS[@]}"; do
         local dst=${HOME_SYMLINKS[$src]}
         src="$DOTFILES/$src"
         dst="$HOME/$dst"
         if [ "$(readlink $dst)" -ef "$src" ]; then
-            fmt_note "removing symlink \"$dst\" ..."
+            fmt_info "removing symlink \"$dst\" ..."
             echo ----------
             stat $dst
             echo ----------

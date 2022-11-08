@@ -105,7 +105,7 @@ jobs:
     steps:
       - name: remove dependencies
         run: |
-          sudo apt-get remove curl vim
+          sudo apt-get -y remove curl vim
 
       - name: checkout repo
         uses: actions/checkout@v3
