@@ -17,7 +17,7 @@ apt_install()
     for i in {man-db,vim,ca-certificates}; do apt install $i -y; done
 
     # mass installation
-    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake make zip
+    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake make zip less
     for i in {fzf,ripgrep}; do apt install $i -y; done
 }
 
