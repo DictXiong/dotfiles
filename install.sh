@@ -34,7 +34,7 @@ install_dependencies()
             case $(get_linux_dist) in
                 "ubuntu"|"debian" )
                     $SUDO apt-get update
-                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping
+                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less
                     ;;
                 "alpine" )
                     $SUDO apk update
