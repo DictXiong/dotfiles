@@ -103,7 +103,7 @@ setup_color() {
 
 ask_for_yN()
 {
-    while [[ -z "$DFS_QUIET" ]]; do
+    while [[ -z "$DFS_QUIET" || "$DFS_QUIET" == "0" ]]; do
         read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
         case $yn in
             [Yy]* ) return 1;;
@@ -115,7 +115,7 @@ ask_for_yN()
 
 ask_for_Yn()
 {
-    while [[ -z "$DFS_QUIET" ]]; do
+    while [[ -z "$DFS_QUIET" || "$DFS_QUIET" == "0" ]]; do
         read -p "${FMT_YELLOW}$1${FMT_RESET} [Yn]: " yn
         case $yn in
             [Nn]* ) return 0;;

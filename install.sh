@@ -191,9 +191,12 @@ install_tmux_tpm(){
         fmt_note "installing tmux tpm ..."
         git clone https://gitee.com/dictxiong/tpm "$TMUX_TPM"
         if [[ -x $(command -v g++) && -x $(command -v cmake) && -x $(command -v make) ]]; then
-            fmt_note "initializing tmux plugins ..."
-            if [[ -z "$DFS_NO_COMPILE" ]]; then
+            if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
+                fmt_note "initializing tmux plugins ..."
                 ~/.tmux/plugins/tpm/bin/install_plugins
+            else
+                fmt_warning "in lite mode, tmux plugins are downloaded but not complied"
+                fmt_info "try <prefix + I> or ~/.tmux/plugins/tpm/bin/install_plugins to complie manually"
             fi
         else
             fmt_warning "pls install g++,cmake,make and then init tmux plugins by <prefix + I> or ~/.tmux/plugins/tpm/bin/install_plugins"
@@ -254,10 +257,11 @@ while [[ $# > 0 ]]; do
     case $1 in
         -i ) BIN=install ;;
         -r ) BIN=uninstall ;;
-        -q ) export DFS_QUIET=1 ;;
-        -d ) export DFS_DEV=1 ;;
+        -q|--quite ) export DFS_QUIET=1 ;;
+        -d|--dev ) export DFS_DEV=1 ;;
+        -l|--lite ) export DFS_LITE=1 ;;
         -a|--auto ) install_dependencies ;;
-        *  ) fmt_warning "unknown command \"$1\". available: -i, -r, -q, -d"; exit 1 ;;
+        *  ) fmt_warning "unknown command \"$1\". available: -i, -r, -q, -d, -l, -a"; exit 1 ;;
     esac
     shift
 done
