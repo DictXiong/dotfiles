@@ -253,16 +253,22 @@ uninstall(){
 }
 
 BIN=install
-while [[ $# > 0 ]]; do
+ARG=""
+while [[ $# > 0 || -n "$ARG" ]]; do
+    if [[ -z "$ARG" ]]; then ARG=$1 ORIGIN_ARG=$1; shift; fi
     case $1 in
-        -i ) BIN=install ;;
-        -r ) BIN=uninstall ;;
-        -q|--quite ) export DFS_QUIET=1 ;;
-        -d|--dev ) export DFS_DEV=1 ;;
-        -l|--lite ) export DFS_LITE=1 ;;
-        -a|--auto ) install_dependencies ;;
-        *  ) fmt_warning "unknown command \"$1\". available: -i, -r, -q, -d, -l, -a"; exit 1 ;;
+        -i* ) BIN=install ;;
+        -r* ) BIN=uninstall ;;
+        -q*|--quite ) export DFS_QUIET=1 ;;
+        -d*|--dev ) export DFS_DEV=1 ;;
+        -l*|--lite ) export DFS_LITE=1 ;;
+        -a*|--auto ) install_dependencies ;;
+        *  ) fmt_warning "unknown command \"$ORIGIN_ARG\". available: -i, -r, -q, -d, -l, -a"; exit 1 ;;
     esac
-    shift
+    if [[ "$ARG" == "--"* || ${#ARG} == 2 ]]; then
+        ARG=""
+    else
+        ARG=-${ARG:2}
+    fi
 done
 $BIN
