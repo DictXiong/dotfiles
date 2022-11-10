@@ -256,7 +256,7 @@ BIN=install
 ARG=""
 while [[ $# > 0 || -n "$ARG" ]]; do
     if [[ -z "$ARG" ]]; then ARG=$1 ORIGIN_ARG=$1; shift; fi
-    case $1 in
+    case $ARG in
         -i* ) BIN=install ;;
         -r* ) BIN=uninstall ;;
         -q*|--quite ) export DFS_QUIET=1 ;;
