@@ -22,7 +22,7 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          ./install.sh -d -l
+          ./install.sh -dl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -69,7 +69,7 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          ./install.sh -d -l
+          ./install.sh -dl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -113,7 +113,7 @@ jobs:
       - name: install dfs
         run: |
           rev=`git rev-parse HEAD`
-          ./install.sh -d -a -l
+          ./install.sh -dal
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build with DFS_NO_WALL
