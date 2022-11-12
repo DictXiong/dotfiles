@@ -4,7 +4,7 @@ THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
 
 if [[ -z "$1" || "$1" =~ "-h|--help" ]]; then
-    fmt_info "usage: dogo <container>"
+    fmt_info "usage: $0 <container>"
 else
-    $SUDO docker exec -it $1 zsh
+    $SUDO docker exec -it $1 sh -c 'if [ -x "$(command -v zsh)" ]; then zsh; elif [ -x "$(command -v bash)" ]; then echo "-->bash"; bash; else echo "-->sh"; sh; fi'
 fi

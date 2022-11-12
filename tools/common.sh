@@ -4,7 +4,7 @@ THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 
 SUDO=''
-if (( $EUID != 0 )); then
+if [[ "$EUID" != "0" && -x $(command -v sudo) ]]; then
     SUDO='sudo'
 fi
 

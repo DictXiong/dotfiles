@@ -1,0 +1,10 @@
+#!/bin/bash
+
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/../tools/common.sh"
+
+if [[ -z "$1" || "$1" =~ "-h|--help" ]]; then
+    fmt_info "usage: $0 <image>"
+else
+    $SUDO docker run -itd $1 sh
+fi
