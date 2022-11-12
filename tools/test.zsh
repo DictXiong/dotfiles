@@ -34,6 +34,14 @@ dfs version
 test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id`
 
 # clean
-dfs cd
 git reset --hard $DFS_VERSION
+
+# then check install.sh
+./install.sh -l
+dfs version
+test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id`
+
+# clean
+git reset --hard $DFS_VERSION
+
 set +x

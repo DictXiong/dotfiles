@@ -219,7 +219,11 @@ install_update(){
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
     fmt_note "running update.sh ..."
-    ${DOTFILES}/update.sh
+    DFS_ENABLE_RET=1 ${DOTFILES}/update.sh
+    if [[ $? == 1 ]]; then
+        fmt_note "dfs updated. re-running install.sh ..."
+        "${DOTFILES}/install.sh" && exit
+    fi
 }
 
 uninstall_update(){
@@ -228,8 +232,8 @@ uninstall_update(){
 }
 
 install(){
-    preinstall_check
     install_update
+    preinstall_check
     install_crontab
     install_file_content
     install_symlink
