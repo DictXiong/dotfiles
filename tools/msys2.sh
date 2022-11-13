@@ -13,7 +13,7 @@ set_mirror()
 pacman_S()
 {
     pacman -Syu
-    pacman -S tmux git zsh curl vim wget base-devel mingw-w64-x86_64-toolchain make cmake gcc zip unzip python3 python3-pip
+    pacman -S tmux git zsh curl vim wget base-devel mingw-w64-x86_64-toolchain make cmake gcc zip unzip python3 python3-pip man-pages-posix
 }
 
 router()

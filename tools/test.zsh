@@ -20,6 +20,7 @@ dfs log 1
 z ~
 test ~ -ef "$(pwd)"
 dogo
+doll
 dfs cd
 tools/common.sh get_os_type
 tools/common.sh get_linux_dist

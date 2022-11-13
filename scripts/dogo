@@ -3,8 +3,28 @@
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
 
-if [[ -z "$1" || "$1" =~ "-h|--help" ]]; then
-    fmt_info "usage: dogo <container>"
+DOCKER_FORMAT="{{.ID}} {{.Image}} {{.Names}}"
+if [[ -z "$1" || "$1" =~ ^(-h|--help)$ ]]; then
+    fmt_info "usage: $0 <container> or -[0-9]*"
+    exit
+elif [[ "$1" =~ ^-[0-9]*$ ]]; then
+    LAST="${1:1}"
+    if [[ "$LAST" == "0" ]]; then
+        # the latest running container
+        CONTAINER_META=($($SUDO docker container ls -l --filter "status=running" --format "$DOCKER_FORMAT"))
+    else
+        # the last nth container (all status)
+        CONTAINER_META=($($SUDO docker container ls -n ${LAST:-1} --format "$DOCKER_FORMAT" | tail -n 1))
+    fi
+    CONTAINER=${CONTAINER_META[0]}
 else
-    $SUDO docker exec -it $1 zsh
+    CONTAINER_META="$1"
+    CONTAINER="$1"
+fi
+
+if [[ -z "$CONTAINER" ]]; then
+    fmt_error "container not found"
+else
+    echo "--> ${CONTAINER_META[@]}"
+    $SUDO docker exec -it $CONTAINER sh -c 'if [ -x "$(command -v zsh)" ]; then echo "--> zsh"; zsh; elif [ -x "$(command -v bash)" ]; then echo "--> bash"; bash; else echo "--> sh"; sh; fi'
 fi
