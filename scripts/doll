@@ -3,8 +3,23 @@
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
 
+DOCKER_FORMAT="{{.ID}} {{.Repository}}:{{.Tag}}"
 if [[ -z "$1" || "$1" =~ ^(-h|--help)$ ]]; then
-    fmt_info "usage: $0 <image>"
+    fmt_info "usage: $0 <image> or -[0-9]*"
+    exit
+elif [[ "$1" =~ ^-[0-9]*$ ]]; then
+    LAST="${1:1}"
+    # the last nth image
+    IMAGE_META=($($SUDO docker image ls --format "$DOCKER_FORMAT" | head -n ${LAST:-1} | tail -n 1))
+    IMAGE=${IMAGE_META[0]}
 else
-    $SUDO docker run -itd $1 sh
+    IMAGE_META="$1"
+    IMAGE="$1"
+fi
+
+if [[ -z "$IMAGE" ]]; then
+    fmt_error "image not found"
+else
+    echo "--> ${IMAGE_META[@]}"
+    echo $SUDO docker run -itd $IMAGE sh
 fi
