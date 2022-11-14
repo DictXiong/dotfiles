@@ -107,6 +107,8 @@ piv-agent()
             break
         fi
     done
+    echo "opensc-pkcs11.so not found"
+    return 1
 }
 
 # key bindings

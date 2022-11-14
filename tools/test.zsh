@@ -27,7 +27,8 @@ tools/common.sh get_linux_dist
 
 # check alias
 alias p114
-which sibd
+sibd || which sibd
+piv-agent || which piv-agent
 
 # check update
 DFS_VERSION=`dfs version`
