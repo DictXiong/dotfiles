@@ -64,8 +64,7 @@ ANTIGEN_PLUGINS+=( \
     "ufw" \
     "z" \
 )
-for i in ${ANTIGEN_PLUGINS[*]}
-do
+for i in ${ANTIGEN_PLUGINS[*]}; do
     if [[ -z $ANTIGEN_EXCLUDE || ! $i =~ $ANTIGEN_EXCLUDE ]]; then
         antigen bundle $i
     fi
@@ -89,22 +88,49 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
-sibd() {ssh -p 12022 root@$1${1:+.}ibd.ink}
-sob() {ssh -p 24022 root@$1${1:+.}ob.ac.cn}
+sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
+sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
 case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
     *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
 esac
+piv-agent()
+{
+    # they are: ubuntu, macos, respectively
+    local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" )
+    for i in ${SO_PATHS[*]}; do
+        if [[ -f "$i" ]]; then
+            eval $(ssh-agent -P "$i")
+            ssh-add -s "$i"
+            echo "now available keys:"
+            ssh-add -l
+            break
+        fi
+    done
+}
 
 # key bindings
-bindkey "^b" beginning-of-line
-bindkey "^e" end-of-line
-bindkey "^[[H" beginning-of-line
-bindkey "^[[F" end-of-line
-bindkey "^[[1~" beginning-of-line
-bindkey "^[[4~" end-of-line
-bindkey "^[OH" beginning-of-line
-bindkey "^[OF" end-of-line
+bindkey "^b" beginning-of-line  # ctrl+b
+bindkey "\eOH" beginning-of-line
+bindkey "\e[H" beginning-of-line  # home; termius
+bindkey "\e[1~" beginning-of-line
+
+bindkey "^e" end-of-line  # ctrl+e
+bindkey "\eOF" end-of-line
+bindkey "\e[F" end-of-line  # end; termius
+bindkey "\e[4~" end-of-line
+
+bindkey "\ef" forward-word  # alt+f
+bindkey "\e[5C" forward-word
+bindkey "\e\e[C" forward-word  # alt+right_arrow; iterm2
+bindkey "\e[1;5C" forward-word  # alt+right_arrow; termius
+
+bindkey "\eb" backward-word  # alt+e
+bindkey "\e[5D" backward-word
+bindkey "\e\e[D" backward-word  # alt+left_arrow; iterm2
+bindkey "\e[1;5D" backward-word  # alt+left_arrow; termius
+
+bindkey "\ed" delete-char  # alt+d
 
 # dfs
 dfs()
@@ -115,7 +141,7 @@ dfs()
             cd "$DOTFILES" 
             git fetch --all
             ref=$(git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(git rev-parse --short HEAD 2> /dev/null)  || return 0
-            for b in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${b#refs/heads/} ; git pull --ff-only ; done
+            for i in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${i#refs/heads/} ; git pull --ff-only ; done
             git checkout -c advice.detachedHead=false $ref)
             ;;
         version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
@@ -132,3 +158,6 @@ dfs()
         *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac
 }
+
+# clean
+unset i

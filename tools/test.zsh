@@ -26,7 +26,8 @@ tools/common.sh get_os_type
 tools/common.sh get_linux_dist
 
 # check alias
-alias p114 > /dev/null
+alias p114
+which sibd
 
 # check update
 DFS_VERSION=`dfs version`
