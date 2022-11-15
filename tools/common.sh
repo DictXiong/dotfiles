@@ -119,7 +119,7 @@ while [[ $# > 0 || -n "$ARG" ]]; do
         ARG=-${ARG:2}
     fi
 done
-unset ARG
+unset ARG ORIGIN_ARG
 
 
 ask_for_yN()

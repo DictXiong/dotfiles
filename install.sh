@@ -257,9 +257,8 @@ uninstall(){
 }
 
 BIN=install
-ARG=""
 for i in ${ARG_PARSED[@]}; do
-    case $ARG in
+    case $i in
         -i ) BIN=install ;;
         -r ) BIN=uninstall ;;
         -d|--dev ) export DFS_DEV=1 ;;
