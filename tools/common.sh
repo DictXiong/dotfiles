@@ -2,11 +2,7 @@
 
 THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
-
-SUDO=''
-if [[ "$EUID" != "0" && -x $(command -v sudo) ]]; then
-    SUDO='sudo'
-fi
+if [[ -f ~/.config/dotfiles/env ]]; then source ~/.config/dotfiles/env; fi
 
 # Color settings
 # Source: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
@@ -100,6 +96,31 @@ setup_color() {
     FMT_RESET=$(printf '\033[0m')
 }
 # END of color settings
+
+SUDO=''
+if [[ "$EUID" != "0" && -x $(command -v sudo) ]]; then
+    SUDO='sudo'
+fi
+
+# arg parse
+ARG=""
+ARG_PARSED=()
+while [[ $# > 0 || -n "$ARG" ]]; do
+    if [[ -z "$ARG" ]]; then ARG=$1 ORIGIN_ARG=$1; shift; fi
+    case $ARG in
+        -q*|--quite ) export DFS_QUIET=1 ;;
+        --* ) ARG_PARSED+=("$ARG") ;;
+        -* ) ARG_PARSED+=("${ARG:0:2}") ;;
+        *  ) fmt_fatal "error parsing argument \"$ORIGIN_ARG\"" ;;
+    esac
+    if [[ "$ARG" == "--"* || ${#ARG} == 2 ]]; then
+        ARG=""
+    else
+        ARG=-${ARG:2}
+    fi
+done
+unset ARG
+
 
 ask_for_yN()
 {
