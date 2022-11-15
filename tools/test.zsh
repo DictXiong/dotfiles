@@ -29,6 +29,7 @@ tools/common.sh get_linux_dist
 alias p114
 sibd || which sibd
 piv-agent || which piv-agent
+git-branches || which git-branches
 
 # check update
 DFS_VERSION=`dfs version`
