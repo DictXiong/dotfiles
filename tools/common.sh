@@ -104,17 +104,17 @@ fi
 
 parse_arg()
 {
-    local ORIGIN_ARG ARG=""
+    local ARG=""
     ARG_PARSED=()
     while [[ $# > 0 || -n "$ARG" ]]; do
-        if [[ -z "$ARG" ]]; then ARG=$1 ORIGIN_ARG=$1; shift; fi
+        if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
         case $ARG in
             -q*|--quite ) export DFS_QUIET=1 ;;
             --* ) ARG_PARSED+=("$ARG") ;;
             -* ) ARG_PARSED+=("${ARG:0:2}") ;;
-            *  ) fmt_fatal "error parsing argument \"$ORIGIN_ARG\"" ;;
+            *  ) ARG_PARSED+=("$ARG") ;;
         esac
-        if [[ "$ARG" == "--"* || ${#ARG} == 2 ]]; then
+        if [[ "$ARG" == "--"* || ! "$ARG" == "-"* || ${#ARG} -le 2 ]]; then
             ARG=""
         else
             ARG=-${ARG:2}
@@ -190,5 +190,4 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     $1 "${@:2}"
 else
     setup_color
-    parse_arg "$@"
 fi

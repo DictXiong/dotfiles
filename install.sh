@@ -256,15 +256,16 @@ uninstall(){
     fmt_note "done uninstalling!"
 }
 
-BIN=install
+parse_arg "$@"
+FUNC=install
 for i in ${ARG_PARSED[@]}; do
     case $i in
-        -i ) BIN=install ;;
-        -r ) BIN=uninstall ;;
+        -i ) FUNC=install ;;
+        -r ) FUNC=uninstall ;;
         -d|--dev ) export DFS_DEV=1 ;;
         -l|--lite ) export DFS_LITE=1 ;;
         -a|--auto ) install_dependencies ;;
-        * ) fmt_warning "unknown command \"$ORIGIN_ARG\". available: -i, -r, -q, -d, -l, -a"; exit 1 ;;
+        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a" ;;
     esac
 done
-$BIN
+$FUNC
