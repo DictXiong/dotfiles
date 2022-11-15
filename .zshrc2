@@ -96,15 +96,17 @@ case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
 esac
 piv-agent()
 {
+    eval $(ssh-agent -k)
     # they are: ubuntu, macos, respectively
     local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" )
     for i in ${SO_PATHS[*]}; do
         if [[ -f "$i" ]]; then
+            echo "using: $i"
             eval $(ssh-agent -P "$i")
             ssh-add -s "$i"
             echo "now available keys:"
             ssh-add -l
-            break
+            return 0
         fi
     done
     echo "opensc-pkcs11.so not found"
