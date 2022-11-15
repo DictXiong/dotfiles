@@ -102,25 +102,25 @@ if [[ "$EUID" != "0" && -x $(command -v sudo) ]]; then
     SUDO='sudo'
 fi
 
-# arg parse
-ARG=""
-ARG_PARSED=()
-while [[ $# > 0 || -n "$ARG" ]]; do
-    if [[ -z "$ARG" ]]; then ARG=$1 ORIGIN_ARG=$1; shift; fi
-    case $ARG in
-        -q*|--quite ) export DFS_QUIET=1 ;;
-        --* ) ARG_PARSED+=("$ARG") ;;
-        -* ) ARG_PARSED+=("${ARG:0:2}") ;;
-        *  ) fmt_fatal "error parsing argument \"$ORIGIN_ARG\"" ;;
-    esac
-    if [[ "$ARG" == "--"* || ${#ARG} == 2 ]]; then
-        ARG=""
-    else
-        ARG=-${ARG:2}
-    fi
-done
-unset ARG ORIGIN_ARG
-
+parse_arg()
+{
+    local ORIGIN_ARG ARG=""
+    ARG_PARSED=()
+    while [[ $# > 0 || -n "$ARG" ]]; do
+        if [[ -z "$ARG" ]]; then ARG=$1 ORIGIN_ARG=$1; shift; fi
+        case $ARG in
+            -q*|--quite ) export DFS_QUIET=1 ;;
+            --* ) ARG_PARSED+=("$ARG") ;;
+            -* ) ARG_PARSED+=("${ARG:0:2}") ;;
+            *  ) fmt_fatal "error parsing argument \"$ORIGIN_ARG\"" ;;
+        esac
+        if [[ "$ARG" == "--"* || ${#ARG} == 2 ]]; then
+            ARG=""
+        else
+            ARG=-${ARG:2}
+        fi
+    done
+}
 
 ask_for_yN()
 {
@@ -190,4 +190,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     $1 "${@:2}"
 else
     setup_color
+    parse_arg "$@"
 fi
