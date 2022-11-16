@@ -88,14 +88,14 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
-alias "git-branches"='git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d %H:%M)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|"'
-sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
-sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
-snasp() { ssh -o ProxyJump="ssh@nasp.ob.ac.cn:36022" dictxiong@$1 }
 case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
     *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
 esac
+sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
+sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
+snasp() { ssh -o ProxyJump="ssh@nasp.ob.ac.cn:36022" dictxiong@$1 }
+git-branches() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always --count=${1:-10} | column -ts"|" }
 piv-agent()
 {
     eval $(ssh-agent -k)

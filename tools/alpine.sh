@@ -14,7 +14,7 @@ apk_add()
     apk update
 
     # mass installation
-    apk add zsh git tmux vim curl wget bash python3 py3-pip htop gcc g++ cmake make fzf perl linux-headers bind-tools iputils man-db coreutils
+    apk add zsh git tmux vim curl wget bash python3 py3-pip htop gcc g++ cmake make fzf perl linux-headers bind-tools iputils man-db coreutils util-linux
     #for i in {fzf,ripgrep}; do apk add $i -y; done
 }
 
