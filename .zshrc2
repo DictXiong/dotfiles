@@ -88,7 +88,7 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
-alias "git-branches"='git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:short) %(color:red)%(objectname:short) %(color:yellow)%(refname:short)%(color:reset) (%(color:green)%(committerdate:relative)%(color:reset)) %(authorname)"'
+alias "git-branches"='git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d %H:%M)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|"'
 sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
 sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
 snasp() { ssh -o ProxyJump="ssh@nasp.ob.ac.cn:36022" dictxiong@$1 }
