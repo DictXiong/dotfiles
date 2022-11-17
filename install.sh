@@ -258,7 +258,7 @@ uninstall(){
 
 parse_arg "$@"
 FUNC=install
-for i in ${ARG_PARSED[@]}; do
+for i in ${PARSE_ARG_RET[@]}; do
     case $i in
         -i ) FUNC=install ;;
         -r ) FUNC=uninstall ;;

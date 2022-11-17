@@ -105,14 +105,14 @@ fi
 parse_arg()
 {
     local ARG=""
-    ARG_PARSED=()
+    PARSE_ARG_RET=()
     while [[ $# > 0 || -n "$ARG" ]]; do
         if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
         case $ARG in
-            -q*|--quite ) export DFS_QUIET=1 ;;
-            --* ) ARG_PARSED+=("$ARG") ;;
-            -* ) ARG_PARSED+=("${ARG:0:2}") ;;
-            *  ) ARG_PARSED+=("$ARG") ;;
+            -q*|--quite ) DFS_QUIET=1 ;;
+            --* ) PARSE_ARG_RET+=("$ARG") ;;
+            -* ) PARSE_ARG_RET+=("${ARG:0:2}") ;;
+            *  ) PARSE_ARG_RET+=("$ARG") ;;
         esac
         if [[ "$ARG" == "--"* || ! "$ARG" == "-"* || ${#ARG} -le 2 ]]; then
             ARG=""
@@ -191,3 +191,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 else
     setup_color
 fi
+
+unset THIS_DIR_COMMON_SH

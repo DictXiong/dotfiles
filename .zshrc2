@@ -95,7 +95,7 @@ esac
 sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
 sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
 snasp() { ssh -o ProxyJump="ssh@nasp.ob.ac.cn:36022" dictxiong@$1 }
-git-branches() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always --count=${1:-10} | column -ts"|" }
+gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
 piv-agent()
 {
     eval $(ssh-agent -k)
