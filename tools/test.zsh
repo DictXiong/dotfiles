@@ -27,7 +27,7 @@ tools/common.sh get_linux_dist
 
 # check alias
 alias p114
-sibd || which sibd
+which sibd
 piv-agent || which piv-agent
 git-branches || which git-branches
 
