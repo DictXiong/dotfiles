@@ -13,12 +13,12 @@ set_mirror()
 apt_install()
 {
     # basic packages
-    apt update
-    for i in {man-db,vim,ca-certificates}; do apt install $i -y; done
+    apt-get update
+    for i in {man-db,vim,ca-certificates}; do apt-get install $i -y; done
 
     # mass installation
-    apt install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake make zip less
-    for i in {fzf,ripgrep}; do apt install $i -y; done
+    apt-get install git tmux zsh curl wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron inetutils-ping openssh-client openssh-server htop gcc g++ cmake make zip less bsdmainutils
+    for i in {fzf,ripgrep}; do apt-get install $i -y; done
 }
 
 set_timezone()

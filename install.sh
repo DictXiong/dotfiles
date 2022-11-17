@@ -34,18 +34,18 @@ install_dependencies()
             case $(get_linux_dist) in
                 "ubuntu"|"debian" )
                     $SUDO apt-get update
-                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less
+                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less bsdmainutils
                     ;;
                 "alpine" )
                     $SUDO apk update
-                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils
+                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils util-linux
                     ;;
                 * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
             esac
             ;;
         "macos" )
             $SUDO brew update
-            $SUDO brew install git python3 zsh curl tmux vim
+            $SUDO brew install git python3 zsh curl tmux vim util-linux
             ;;
         "msys" )
             pacman -Syu
