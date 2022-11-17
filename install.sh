@@ -34,18 +34,18 @@ install_dependencies()
             case $(get_linux_dist) in
                 "ubuntu"|"debian" )
                     $SUDO apt-get update
-                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less
+                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less bsdmainutils
                     ;;
                 "alpine" )
                     $SUDO apk update
-                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils
+                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils util-linux
                     ;;
                 * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
             esac
             ;;
         "macos" )
             $SUDO brew update
-            $SUDO brew install git python3 zsh curl tmux vim
+            $SUDO brew install git python3 zsh curl tmux vim util-linux
             ;;
         "msys" )
             pacman -Syu
@@ -256,23 +256,16 @@ uninstall(){
     fmt_note "done uninstalling!"
 }
 
-BIN=install
-ARG=""
-while [[ $# > 0 || -n "$ARG" ]]; do
-    if [[ -z "$ARG" ]]; then ARG=$1 ORIGIN_ARG=$1; shift; fi
-    case $ARG in
-        -i* ) BIN=install ;;
-        -r* ) BIN=uninstall ;;
-        -q*|--quite ) export DFS_QUIET=1 ;;
-        -d*|--dev ) export DFS_DEV=1 ;;
-        -l*|--lite ) export DFS_LITE=1 ;;
-        -a*|--auto ) install_dependencies ;;
-        *  ) fmt_warning "unknown command \"$ORIGIN_ARG\". available: -i, -r, -q, -d, -l, -a"; exit 1 ;;
+parse_arg "$@"
+FUNC=install
+for i in ${PARSE_ARG_RET[@]}; do
+    case $i in
+        -i ) FUNC=install ;;
+        -r ) FUNC=uninstall ;;
+        -d|--dev ) export DFS_DEV=1 ;;
+        -l|--lite ) export DFS_LITE=1 ;;
+        -a|--auto ) install_dependencies ;;
+        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a" ;;
     esac
-    if [[ "$ARG" == "--"* || ${#ARG} == 2 ]]; then
-        ARG=""
-    else
-        ARG=-${ARG:2}
-    fi
 done
-$BIN
+$FUNC
