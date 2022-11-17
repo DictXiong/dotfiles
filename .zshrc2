@@ -142,7 +142,13 @@ bindkey "\ed" delete-char  # alt+d
 dfs()
 {
     case $1 in
+        cd     ) cd "$DOTFILES" ;;
         update ) "$DOTFILES/update.sh" ;;
+        version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
+        config )
+            mkdir -p ~/.config/dotfiles
+            $EDITOR ~/.config/dotfiles/env
+            ;;
         force-update ) (
             cd "$DOTFILES" 
             git fetch --all
@@ -150,7 +156,6 @@ dfs()
             for i in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${i#refs/heads/} ; git pull --ff-only ; done
             git checkout -c advice.detachedHead=false $ref)
             ;;
-        version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
         reset  )
             antigen reset 1> /dev/null
             rm -rf $HOME/.antigen
@@ -159,7 +164,6 @@ dfs()
             "$DOTFILES/install.sh" -i
             echo 'Done. Please open a new shell to see the changes.'
             ;;
-        cd     ) cd "$DOTFILES" ;;
         log    ) "$DOTFILES/tools/common.sh" "post_log" "INFO" "dfs" "$2" ;;
         *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac

@@ -67,8 +67,8 @@ install_dependencies()
 preinstall_check()
 {
     fmt_note "checking requirements ..."
-    mandatory_commands=( "git" "zsh" "curl" "ping" )
-    optional_commands=( "python3" "vim" "tmux" )
+    local mandatory_commands=( "git" "zsh" "curl" )
+    local optional_commands=( "python3" "vim" "tmux" "ping" )
     for i in "${mandatory_commands[@]}"; do
         if [[ ! -x "$(command -v $i)" ]]; then
             fmt_info "all this utils are required: ${mandatory_commands[@]}"
