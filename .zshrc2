@@ -14,18 +14,18 @@ export LESS_TERMCAP_md=$'\E[01;33m'
 if [[ -z "$DFS_NO_WALL" ]]; then
     ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
     ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
-    ANTIGEN_PLUGINS=( \
-        "https://gitee.com/dictxiong/zsh-syntax-highlighting" \
-        "https://gitee.com/dictxiong/zsh-completions" \
-        "https://gitee.com/dictxiong/zsh-autosuggestions" \
+    ANTIGEN_PLUGINS=(
+        "https://gitee.com/dictxiong/zsh-syntax-highlighting"
+        "https://gitee.com/dictxiong/zsh-completions"
+        "https://gitee.com/dictxiong/zsh-autosuggestions"
     )
 else
     ANTIGEN_URL="https://raw.githubusercontent.com/zsh-users/antigen/develop/bin/antigen.zsh"
     ANTIGEN_OMZ_REPO_URL="https://github.com/ohmyzsh/ohmyzsh.git"
-    ANTIGEN_PLUGINS=( \
-        "https://github.com/zsh-users/zsh-syntax-highlighting" \
-        "https://github.com/zsh-users/zsh-completions" \
-        "https://github.com/zsh-users/zsh-autosuggestions" \
+    ANTIGEN_PLUGINS=(
+        "https://github.com/zsh-users/zsh-syntax-highlighting"
+        "https://github.com/zsh-users/zsh-completions"
+        "https://github.com/zsh-users/zsh-autosuggestions"
     )
 fi
 ANTIGEN="$HOME/antigen.zsh"
@@ -53,16 +53,16 @@ fi
 source "$ANTIGEN"
 # enable plugins
 antigen use oh-my-zsh
-ANTIGEN_PLUGINS+=( \
-    "command-not-found" \
-    "docker" \
-    "extract" \
-    "fzf" \
-    "git" \
-    "ripgrep" \
-    "tmux" \
-    "ufw" \
-    "z" \
+ANTIGEN_PLUGINS+=(
+    "command-not-found"
+    "docker"
+    "extract"
+    "fzf"
+    "git"
+    "ripgrep"
+    "tmux"
+    "ufw"
+    "z"
 )
 for i in ${ANTIGEN_PLUGINS[*]}; do
     if [[ -z $ANTIGEN_EXCLUDE || ! $i =~ $ANTIGEN_EXCLUDE ]]; then
