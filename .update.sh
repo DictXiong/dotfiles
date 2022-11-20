@@ -19,7 +19,7 @@ fi
 # get the specified commit id
 case $DFS_UPDATE_CHANNEL in
     "main" ) DFS_COMMIT=$(curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id) ;;
-    "dev" ) DFS_COMMIT=$(git rev-parse origin/dev) ;;
+    "dev" ) DFS_COMMIT=$(git rev-parse origin/dev 2> /dev/null) || DFS_COMMIT=$(git rev-parse origin/main) ;;
     "latest" ) DFS_COMMIT=$(git for-each-ref --sort=-committerdate refs/heads refs/remotes --format='%(objectname)' | head -n 1) ;;
     * ) fmt_fatal "invalid update channel: $DFS_UPDATE_CHANNEL" ;;
 esac
