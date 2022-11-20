@@ -93,7 +93,7 @@ case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
 esac
 if [[ -x $(command -v trash) ]]; then
-    alias "rm"="echo use the full path i.e. '/bin/rm'; consider using trash"
+    alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
 fi
 sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
 sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
