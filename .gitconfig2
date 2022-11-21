@@ -6,6 +6,7 @@
     # test this by `git update-index --test-untracked-cache`
     # disable this by setting `GIT_DISABLE_UNTRACKED_CACHE`
     untrackedCache = true
+    quotepath = false  # chinese chars
 [push]
     autoSetupRemote = true
 [branch]
