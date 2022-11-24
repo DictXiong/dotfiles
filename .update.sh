@@ -9,7 +9,7 @@ DFS_UPDATE_CHANNEL=${DFS_UPDATE_CHANNEL:-"main"}
 
 # fetch origin
 cd $DOTFILES
-git fetch --all
+git fetch --all --prune
 if [[ -n "$(git status -s)" ]]; then
     fmt_error "directory not clean"
     post_log "ERROR" "$THIS_FILE" "directory not clean"
