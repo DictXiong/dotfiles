@@ -148,6 +148,7 @@ dfs()
         cd     ) cd "$DOTFILES" ;;
         update ) "$DOTFILES/update.sh" ;;
         version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
+        vversion ) (cd "$DOTFILES" && git show) ;;
         config )
             mkdir -p ~/.config/dotfiles
             $EDITOR ~/.config/dotfiles/env
