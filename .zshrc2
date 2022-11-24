@@ -14,18 +14,18 @@ export LESS_TERMCAP_md=$'\E[01;33m'
 if [[ -z "$DFS_NO_WALL" ]]; then
     ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
     ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
-    ANTIGEN_PLUGINS=( \
-        "https://gitee.com/dictxiong/zsh-syntax-highlighting" \
-        "https://gitee.com/dictxiong/zsh-completions" \
-        "https://gitee.com/dictxiong/zsh-autosuggestions" \
+    ANTIGEN_PLUGINS=(
+        "https://gitee.com/dictxiong/zsh-syntax-highlighting"
+        "https://gitee.com/dictxiong/zsh-completions"
+        "https://gitee.com/dictxiong/zsh-autosuggestions"
     )
 else
     ANTIGEN_URL="https://raw.githubusercontent.com/zsh-users/antigen/develop/bin/antigen.zsh"
     ANTIGEN_OMZ_REPO_URL="https://github.com/ohmyzsh/ohmyzsh.git"
-    ANTIGEN_PLUGINS=( \
-        "https://github.com/zsh-users/zsh-syntax-highlighting" \
-        "https://github.com/zsh-users/zsh-completions" \
-        "https://github.com/zsh-users/zsh-autosuggestions" \
+    ANTIGEN_PLUGINS=(
+        "https://github.com/zsh-users/zsh-syntax-highlighting"
+        "https://github.com/zsh-users/zsh-completions"
+        "https://github.com/zsh-users/zsh-autosuggestions"
     )
 fi
 ANTIGEN="$HOME/antigen.zsh"
@@ -53,16 +53,16 @@ fi
 source "$ANTIGEN"
 # enable plugins
 antigen use oh-my-zsh
-ANTIGEN_PLUGINS+=( \
-    "command-not-found" \
-    "docker" \
-    "extract" \
-    "fzf" \
-    "git" \
-    "ripgrep" \
-    "tmux" \
-    "ufw" \
-    "z" \
+ANTIGEN_PLUGINS+=(
+    "command-not-found"
+    "docker"
+    "extract"
+    "fzf"
+    "git"
+    "ripgrep"
+    "tmux"
+    "ufw"
+    "z"
 )
 for i in ${ANTIGEN_PLUGINS[*]}; do
     if [[ -z $ANTIGEN_EXCLUDE || ! $i =~ $ANTIGEN_EXCLUDE ]]; then
@@ -92,6 +92,9 @@ case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
     *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
 esac
+if [[ -x $(command -v trash) ]]; then
+    alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
+fi
 sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
 sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
 snasp() { ssh -o ProxyJump="ssh@nasp.ob.ac.cn:36022" dictxiong@$1 }
@@ -142,7 +145,14 @@ bindkey "\ed" delete-char  # alt+d
 dfs()
 {
     case $1 in
+        cd     ) cd "$DOTFILES" ;;
         update ) "$DOTFILES/update.sh" ;;
+        version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
+        vversion ) (cd "$DOTFILES" && git show) ;;
+        config )
+            mkdir -p ~/.config/dotfiles
+            $EDITOR ~/.config/dotfiles/env
+            ;;
         force-update ) (
             cd "$DOTFILES" 
             git fetch --all
@@ -150,7 +160,6 @@ dfs()
             for i in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${i#refs/heads/} ; git pull --ff-only ; done
             git checkout -c advice.detachedHead=false $ref)
             ;;
-        version ) (cd "$DOTFILES" && git rev-parse HEAD) ;;
         reset  )
             antigen reset 1> /dev/null
             rm -rf $HOME/.antigen
@@ -159,7 +168,6 @@ dfs()
             "$DOTFILES/install.sh" -i
             echo 'Done. Please open a new shell to see the changes.'
             ;;
-        cd     ) cd "$DOTFILES" ;;
         log    ) "$DOTFILES/tools/common.sh" "post_log" "INFO" "dfs" "$2" ;;
         *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac

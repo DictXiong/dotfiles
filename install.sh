@@ -67,8 +67,8 @@ install_dependencies()
 preinstall_check()
 {
     fmt_note "checking requirements ..."
-    mandatory_commands=( "git" "zsh" "curl" "ping" )
-    optional_commands=( "python3" "vim" "tmux" )
+    local mandatory_commands=( "git" "zsh" "curl" )
+    local optional_commands=( "python3" "vim" "tmux" "ping" )
     for i in "${mandatory_commands[@]}"; do
         if [[ ! -x "$(command -v $i)" ]]; then
             fmt_info "all this utils are required: ${mandatory_commands[@]}"
@@ -233,6 +233,7 @@ uninstall_update(){
 
 install(){
     install_update
+    if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
     preinstall_check
     install_crontab
     install_file_content
@@ -258,13 +259,14 @@ uninstall(){
 
 parse_arg "$@"
 FUNC=install
+INSTALL_DEP=0
 for i in ${PARSE_ARG_RET[@]}; do
     case $i in
         -i ) FUNC=install ;;
         -r ) FUNC=uninstall ;;
         -d|--dev ) export DFS_DEV=1 ;;
         -l|--lite ) export DFS_LITE=1 ;;
-        -a|--auto ) install_dependencies ;;
+        -a|--auto ) INSTALL_DEP=1 ;;
         * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a" ;;
     esac
 done
