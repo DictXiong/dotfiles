@@ -148,7 +148,12 @@ ask_for_Yn()
 
 post_log()
 {
-    python3 "${DOTFILES}/tools/log.py" "[$1] $2: $3"
+    "${DOTFILES}/tools/logger.sh" "log" "[$1][$2] $3"
+}
+
+post_beacon()
+{
+    "${DOTFILES}/tools/logger.sh" "beacon" "$1"
 }
 
 get_os_type() {
