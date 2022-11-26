@@ -32,11 +32,10 @@ fi
 # update
 if [[ "$(git rev-parse HEAD)" == "$DFS_COMMIT" ]]; then
     fmt_info "nothing to do"
-    post_log "INFO" "$THIS_FILE" "nothing to do"
 else
     fmt_info "checking out to commit $DFS_COMMIT ..."
     if [[ -z "$DFS_DEV" ]]; then
-        post_log "INFO" "$THIS_FILE" "will check out to commit $DFS_COMMIT"
+        post_beacon "dfs-update"
         git -c advice.detachedHead=false checkout $DFS_COMMIT
         cp ./.update.sh ./update.sh && chmod +x ./update.sh && exit $DFS_UPDATED_RET
     else
