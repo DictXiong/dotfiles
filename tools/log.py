@@ -33,13 +33,6 @@ def get_uuid() -> str:
     return str(uuid.uuid5(namespace, get_uuid_raw()))
 
 
-def get_hostname() -> str:
-    ans = socket.gethostname()
-    if '-' not in ans:
-        ans += "-ibd-ink"
-    return ans
-
-
 def post_log(url:str, hostname:str, uuid:str, content:str):
     ans = requests.post(url, params={"hostname": hostname, "uuid": uuid}, data=content)
     return ans
@@ -52,7 +45,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     url = args.url
     content = args.content
-    hostname = get_hostname()
+    hostname = socket.gethostname()
     uuid = get_uuid()
     content=content.strip()
     if not content:
