@@ -232,8 +232,8 @@ uninstall_update(){
 }
 
 install(){
-    install_update
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
+    install_update
     preinstall_check
     install_crontab
     install_file_content
