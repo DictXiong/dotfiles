@@ -219,8 +219,8 @@ install_update(){
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
     fmt_note "running update.sh ..."
-    DFS_UPDATED_RET=1 ${DOTFILES}/update.sh
-    if [[ $? == 1 ]]; then
+    DFS_UPDATED_RET=85 ${DOTFILES}/update.sh
+    if [[ $? == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
         "${DOTFILES}/install.sh" && exit
     fi
