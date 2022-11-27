@@ -34,22 +34,22 @@ install_dependencies()
             case $(get_linux_dist) in
                 "ubuntu"|"debian" )
                     $SUDO apt-get update
-                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less bsdmainutils
+                    $SUDO apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
                     ;;
                 "alpine" )
                     $SUDO apk update
-                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils util-linux
+                    $SUDO apk add zsh bash git tmux vim curl fzf iputils coreutils util-linux
                     ;;
                 * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
             esac
             ;;
         "macos" )
             $SUDO brew update
-            $SUDO brew install git python3 zsh curl tmux vim util-linux
+            $SUDO brew install git zsh curl tmux vim util-linux
             ;;
         "msys" )
             pacman -Syu
-            pacman -S tmux git zsh bash curl vim python3 python3-pip
+            pacman -S tmux git zsh bash curl vim
             SUDO=""
             ;;
         * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_type)"
@@ -67,17 +67,17 @@ install_dependencies()
 preinstall_check()
 {
     fmt_note "checking requirements ..."
-    local mandatory_commands=( "git" "zsh" "curl" )
+    local mandatory_commands=( "git" "zsh" "curl" "grep" "cat" "cp" "bash" "mkdir" )
     local optional_commands=( "python3" "vim" "tmux" "ping" )
     for i in "${mandatory_commands[@]}"; do
-        if [[ ! -x "$(command -v $i)" ]]; then
+        if ! command -v $i 1>/dev/null; then
             fmt_info "all this utils are required: ${mandatory_commands[@]}"
             fmt_info "install them manually or check scripts in tools/"
             fmt_fatal "\"$i\" not found. aborting ..."
         fi
     done
     for i in "${optional_commands[@]}"; do
-        if [[ ! -x "$(command -v $i)" ]]; then
+        if ! command -v $i 1>/dev/null; then
             fmt_warning "\"$i\" not found"
             ask_for_Yn "continue anyway?"
             if [[ "$?" == "0" ]]; then
