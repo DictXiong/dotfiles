@@ -261,7 +261,8 @@ for i in ${PARSE_ARG_RET[@]}; do
         -d|--dev ) export DFS_DEV=1 ;;
         -l|--lite ) export DFS_LITE=1 ;;
         -a|--auto ) INSTALL_DEP=1 ;;
-        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a" ;;
+        -s|--secure ) export DFS_DEV=0 ;;
+        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a, -s" ;;
     esac
 done
 $FUNC

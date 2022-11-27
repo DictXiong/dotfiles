@@ -109,7 +109,7 @@ parse_arg()
     while [[ $# > 0 || -n "$ARG" ]]; do
         if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
         case $ARG in
-            -q*|--quite ) DFS_QUIET=1 ;;
+            -q*|--quite ) export DFS_QUIET=1 ;;
             --* ) PARSE_ARG_RET+=("$ARG") ;;
             -* ) PARSE_ARG_RET+=("${ARG:0:2}") ;;
             *  ) PARSE_ARG_RET+=("$ARG") ;;
