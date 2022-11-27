@@ -54,21 +54,13 @@ install_dependencies()
             ;;
         * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_type)"
     esac
-
-    if [[ -x $(command -v pip3) ]]; then
-        $SUDO pip3 install requests
-    elif [[ -x $(command -v pip) ]]; then
-        $SUDO pip install requests
-    else
-        fmt_error "pip3 and pip not found. is pip correctly installed?"
-    fi
 }
 
 preinstall_check()
 {
     fmt_note "checking requirements ..."
     local mandatory_commands=( "git" "zsh" "curl" "grep" "cat" "cp" "bash" "mkdir" )
-    local optional_commands=( "python3" "vim" "tmux" "ping" )
+    local optional_commands=( "vim" "tmux" "ping" )
     for i in "${mandatory_commands[@]}"; do
         if ! command -v $i 1>/dev/null; then
             fmt_info "all this utils are required: ${mandatory_commands[@]}"
