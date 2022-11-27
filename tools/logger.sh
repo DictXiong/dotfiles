@@ -43,9 +43,13 @@ post_beacon()
     if [[ -z "$beacon_type" ]]; then
         fmt_fatal "beacon type is required"
     fi
-    exec 9>&1
-    resp=$(curl -sSL -X POST "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type" | tee >(cat - >&9))
-    (grep -q "200" <<< "$resp") || fmt_fatal "error posting beacon"
+    resp=$(curl -sSL -X POST "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
+    if grep -q "200" <<< "$resp"; then
+        echo $resp
+    else
+        echo $resp >&2
+        fmt_fatal "error posting beacon"
+    fi
 }
 
 post_log()
@@ -55,17 +59,18 @@ post_log()
         fmt_fatal "log content is required"
     fi
     init_uuid
-    exec 9>&1
-    resp=$(curl -sSL -X POST -H "Content-Type: text/plain" -d "$1" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid" | tee >(cat - >&9))
-    if ! grep -q "200" <<< "$resp"; then
-        if grep -q "403" <<< "$resp"; then
-            fmt_error "error posting log: authentification failed"
-            fmt_info "try to register you hostname and uuid"
-            fmt_info "hostname: $hostname"
-            fmt_info "uuid: $uuid"
-        else
-            fmt_fatal "error posting log"
-        fi
+    resp=$(curl -sSL -X POST -H "Content-Type: text/plain" -d "$1" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
+    if grep -q "200" <<< "$resp"; then
+        echo $resp
+    elif grep -q "403" <<< "$resp"; then
+        echo $resp >&2
+        fmt_error "error posting log: authentification failed"
+        fmt_info "try to register you hostname and uuid"
+        fmt_info "hostname: $hostname"
+        fmt_info "uuid: $uuid"
+    else
+        echo $resp >&2
+        fmt_fatal "error posting log"
     fi
 }
 
@@ -75,7 +80,7 @@ print_help()
 }
 
 if [[ $# != 2 ]]; then
-    print_help
+    print_help >&2
     exit 1
 fi
 
