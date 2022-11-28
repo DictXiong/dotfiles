@@ -34,50 +34,42 @@ install_dependencies()
             case $(get_linux_dist) in
                 "ubuntu"|"debian" )
                     $SUDO apt-get update
-                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less bsdmainutils
+                    $SUDO apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
                     ;;
                 "alpine" )
                     $SUDO apk update
-                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils util-linux
+                    $SUDO apk add zsh bash git tmux vim curl fzf iputils coreutils util-linux
                     ;;
                 * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
             esac
             ;;
         "macos" )
             $SUDO brew update
-            $SUDO brew install git python3 zsh curl tmux vim util-linux
+            $SUDO brew install git zsh curl tmux vim util-linux
             ;;
         "msys" )
             pacman -Syu
-            pacman -S tmux git zsh bash curl vim python3 python3-pip
+            pacman -S tmux git zsh bash curl vim
             SUDO=""
             ;;
         * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_type)"
     esac
-
-    if [[ -x $(command -v pip3) ]]; then
-        $SUDO pip3 install requests
-    elif [[ -x $(command -v pip) ]]; then
-        $SUDO pip install requests
-    else
-        fmt_error "pip3 and pip not found. is pip correctly installed?"
-    fi
 }
 
 preinstall_check()
 {
     fmt_note "checking requirements ..."
-    local mandatory_commands=( "git" "zsh" "curl" )
-    local optional_commands=( "python3" "vim" "tmux" "ping" )
+    local mandatory_commands=( "git" "zsh" "curl" "grep" "cat" "cp" "bash" "mkdir" )
+    local optional_commands=( "vim" "tmux" "ping" )
     for i in "${mandatory_commands[@]}"; do
-        if [[ ! -x "$(command -v $i)" ]]; then
+        if ! command -v $i 1>/dev/null; then
             fmt_info "all this utils are required: ${mandatory_commands[@]}"
             fmt_info "install them manually or check scripts in tools/"
             fmt_fatal "\"$i\" not found. aborting ..."
         fi
     done
     for i in "${optional_commands[@]}"; do
-        if [[ ! -x "$(command -v $i)" ]]; then
+        if ! command -v $i 1>/dev/null; then
             fmt_warning "\"$i\" not found"
             ask_for_Yn "continue anyway?"
             if [[ "$?" == "0" ]]; then
@@ -219,8 +211,8 @@ install_update(){
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
     fmt_note "running update.sh ..."
-    DFS_UPDATED_RET=1 ${DOTFILES}/update.sh
-    if [[ $? == 1 ]]; then
+    DFS_UPDATED_RET=85 ${DOTFILES}/update.sh
+    if [[ $? == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
         "${DOTFILES}/install.sh" && exit
     fi
@@ -232,12 +224,13 @@ uninstall_update(){
 }
 
 install(){
-    install_update
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
+    install_update
     preinstall_check
     install_crontab
     install_file_content
     install_symlink
+    post_beacon "dfs.installed" 1>/dev/null &
     # those that won't be uninstalled in the future
     install_tmux_tpm
     install_vim_vundle
@@ -254,6 +247,7 @@ uninstall(){
     uninstall_crontab
     uninstall_file_content
     uninstall_symlink
+    post_beacon "dfs.uninstalled" 1>/dev/null &
     fmt_note "done uninstalling!"
 }
 
@@ -267,7 +261,8 @@ for i in ${PARSE_ARG_RET[@]}; do
         -d|--dev ) export DFS_DEV=1 ;;
         -l|--lite ) export DFS_LITE=1 ;;
         -a|--auto ) INSTALL_DEP=1 ;;
-        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a" ;;
+        -s|--secure ) export DFS_DEV=0 ;;
+        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a, -s" ;;
     esac
 done
 $FUNC

@@ -109,7 +109,7 @@ parse_arg()
     while [[ $# > 0 || -n "$ARG" ]]; do
         if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
         case $ARG in
-            -q*|--quite ) DFS_QUIET=1 ;;
+            -q*|--quite ) export DFS_QUIET=1 ;;
             --* ) PARSE_ARG_RET+=("$ARG") ;;
             -* ) PARSE_ARG_RET+=("${ARG:0:2}") ;;
             *  ) PARSE_ARG_RET+=("$ARG") ;;
@@ -148,7 +148,12 @@ ask_for_Yn()
 
 post_log()
 {
-    python3 "${DOTFILES}/tools/log.py" "[$1] $2: $3"
+    "${DOTFILES}/tools/logger.sh" "log" "[$1][$2] $3"
+}
+
+post_beacon()
+{
+    "${DOTFILES}/tools/logger.sh" "beacon" "$1"
 }
 
 get_os_type() {
