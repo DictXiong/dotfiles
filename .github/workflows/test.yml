@@ -37,6 +37,7 @@ jobs:
           source tools/test.zsh
           antigen reset
           rm -rf $ANTIGEN $HOME/.antigen
+          ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
@@ -57,7 +58,7 @@ jobs:
       - name: install dependencies
         run: |
           brew update
-          brew install git python3 zsh curl
+          brew install git python3 zsh curl e2fsprogs
           sudo pip3 install requests
 
       - name: checkout repo
@@ -84,6 +85,7 @@ jobs:
           source tools/test.zsh
           antigen reset
           rm -rf $ANTIGEN $HOME/.antigen
+          ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
@@ -103,7 +105,7 @@ jobs:
     steps:
       - name: remove dependencies
         run: |
-          sudo apt-get -y remove curl vim
+          sudo apt-get -y remove curl vim python3
 
       - name: checkout repo
         uses: actions/checkout@v3

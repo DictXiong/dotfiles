@@ -45,7 +45,7 @@ install_dependencies()
             ;;
         "macos" )
             $SUDO brew update
-            $SUDO brew install git zsh curl tmux vim util-linux
+            $SUDO brew install git zsh curl tmux vim util-linux e2fsprogs
             ;;
         "msys" )
             pacman -Syu
