@@ -26,7 +26,7 @@ esac
 if [[ ${#DFS_COMMIT} != 40 ]]; then
     fmt_error "invalid commit id"
     apost_beacon "dfs.invalid-commit"
-    post_log "ERROR" "$THIS_FILE" "invalid commit id: ${DFS_COMMIT}"
+    apost_log "ERROR" "$THIS_FILE" "invalid commit id: ${DFS_COMMIT}"
     exit
 fi
 
@@ -36,7 +36,7 @@ if [[ "$(git rev-parse HEAD)" == "$DFS_COMMIT" ]]; then
 else
     fmt_info "checking out to commit $DFS_COMMIT ..."
     if [[ -z "$DFS_DEV" ]]; then
-        apost_beacon "dfs.updated"
+        post_beacon "dfs.updated"
         git -c advice.detachedHead=false checkout $DFS_COMMIT
         cp ./.update.sh ./update.sh && chmod +x ./update.sh && exit $DFS_UPDATED_RET
     else
