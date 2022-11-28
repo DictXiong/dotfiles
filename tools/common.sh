@@ -151,9 +151,19 @@ post_log()
     "${DOTFILES}/tools/logger.sh" "log" "[$1][$2] $3"
 }
 
+apost_log()
+{
+    post_log "$@" 1>/dev/null &
+}
+
 post_beacon()
 {
     "${DOTFILES}/tools/logger.sh" "beacon" "$1"
+}
+
+apost_beacon()
+{
+    post_beacon "$@" 1>/dev/null &
 }
 
 get_os_type() {

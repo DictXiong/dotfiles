@@ -230,7 +230,7 @@ install(){
     install_crontab
     install_file_content
     install_symlink
-    post_beacon "dfs.installed" 1>/dev/null &
+    apost_beacon "dfs.installed"
     # those that won't be uninstalled in the future
     install_tmux_tpm
     install_vim_vundle
@@ -247,7 +247,7 @@ uninstall(){
     uninstall_crontab
     uninstall_file_content
     uninstall_symlink
-    post_beacon "dfs.uninstalled" 1>/dev/null &
+    apost_beacon "dfs.uninstalled"
     fmt_note "done uninstalling!"
 }
 

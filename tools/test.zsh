@@ -17,7 +17,7 @@ grep -q ".zshrc2" ~/.zshrc
 # check scripts and functions
 dfs version
 dfs log 1
-dfs beacon github-ci
+dfs beacon gh.ci
 z ~
 test ~ -ef "$(pwd)"
 dogo
