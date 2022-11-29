@@ -151,6 +151,7 @@ bindkey "\ed" delete-char  # alt+d
 # dfs
 dfs()
 {
+    setopt local_options err_return pipe_fail
     case $1 in
         cd     ) cd "$DOTFILES" ;;
         update ) "$DOTFILES/update.sh" ;;
