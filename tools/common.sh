@@ -148,6 +148,7 @@ ask_for_Yn()
 
 post_log()
 {
+    test $# -eq 3 || fmt_fatal "usage: post_log <level> <section> <content>"
     "${DOTFILES}/tools/logger.sh" "log" "[$1][$2] $3"
 }
 
@@ -158,6 +159,7 @@ apost_log()
 
 post_beacon()
 {
+    test $# -eq 1 || fmt_fatal "usage: post_beacon <beacon>"
     "${DOTFILES}/tools/logger.sh" "beacon" "$1"
 }
 
