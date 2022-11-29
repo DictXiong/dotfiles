@@ -22,7 +22,6 @@ fi
 
 init_uuid()
 {
-    local uuid
     if  [[ -f ~/.config/dotfiles/uuid ]]; then
         uuid=$(cat ~/.config/dotfiles/uuid)
     else
