@@ -22,19 +22,20 @@ fi
 
 init_uuid()
 {
-    local raw_uuid
-    if [[ -f /var/lib/dbus/machine-id ]]; then
-        raw_uuid=$(cat /var/lib/dbus/machine-id)
-    elif [[ -f /etc/machine-id ]]; then
-        raw_uuid=$(cat /etc/machine-id)
-    elif [[ -f ~/.config/dotfiles/uuid ]]; then
-        raw_uuid=$(cat ~/.config/dotfiles/uuid)
+    local uuid
+    if  [[ -f ~/.config/dotfiles/uuid ]]; then
+        uuid=$(cat ~/.config/dotfiles/uuid)
     else
+        if [[ -x $(command -v uuidgen) ]]; then
+            uuid=$(uuidgen)
+        elif [[ -f /proc/sys/kernel/random/uuid ]]; then
+            uuid=$(cat /proc/sys/kernel/random/uuid)
+        else
+            fmt_fatal "unable to generate uuid"
+        fi
         mkdir -p ~/.config/dotfiles
-        raw_uuid=$(uuidgen)
-        echo "$raw_uuid" > ~/.config/dotfiles/uuid
+        echo "$uuid" > ~/.config/dotfiles/uuid
     fi
-    uuid=$(uuidgen -n "cc23b903-1993-44eb-9c90-48bd841eeac3" -s -N "$raw_uuid")
 }
 
 post_beacon()

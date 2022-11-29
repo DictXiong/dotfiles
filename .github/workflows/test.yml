@@ -58,7 +58,7 @@ jobs:
       - name: install dependencies
         run: |
           brew update
-          brew install git python3 zsh curl e2fsprogs
+          brew install git python3 zsh curl
           sudo pip3 install requests
 
       - name: checkout repo
