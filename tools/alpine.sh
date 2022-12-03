@@ -5,8 +5,7 @@ set -e
 set_mirror()
 {
     MIRROR=${1:-"mirrors.tuna.tsinghua.edu.cn"}
-    MIRROR=${MIRROR//\//\\\/}
-    sed -i "s/dl-cdn.alpinelinux.org/$MIRROR/g" /etc/apk/repositories
+    sed -i "s@dl-cdn.alpinelinux.org@$MIRROR@g" /etc/apk/repositories
 }
 
 apk_add()
