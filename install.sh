@@ -31,16 +31,16 @@ install_dependencies()
     fmt_note "installing dependencies ..."
     case $(get_os_name) in
         "ubuntu"|"debian" )
-            $SUDO DFS_LITE=$DFS_LITE "$DOTFILES/tools/ubuntu.sh" apt-install
+            $SUDO "$DOTFILES/tools/ubuntu.sh" apt-install
             ;;
         "alpine" )
-            $SUDO DFS_LITE=$DFS_LITE "$DOTFILES/tools/alpine.sh" apk-add
+            $SUDO "$DOTFILES/tools/alpine.sh" apk-add
             ;;
         "macos" )
-            DFS_LITE=$DFS_LITE "$DOTFILES/tools/macos.sh" brew-install
+            "$DOTFILES/tools/macos.sh" brew-install
             ;;
         "msys" )
-            DFS_LITE=$DFS_LITE "$DOTFILES/tools/msys2.sh" pacman-S
+            "$DOTFILES/tools/msys2.sh" pacman-S
             ;;
         * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_name)"
     esac
