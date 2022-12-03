@@ -204,7 +204,7 @@ install_update(){
     DFS_UPDATED_RET=85 ${DOTFILES}/update.sh
     if [[ $? == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
-        "${DOTFILES}/install.sh" && exit
+        "${DOTFILES}/install.sh" "$ORIGIN_ARGS" && exit
     fi
 }
 
@@ -241,6 +241,7 @@ uninstall(){
     fmt_note "done uninstalling!"
 }
 
+ORIGIN_ARGS="$@"
 parse_arg "$@"
 FUNC=install
 INSTALL_DEP=0
