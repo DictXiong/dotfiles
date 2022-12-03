@@ -11,8 +11,8 @@ brew_install()
 router()
 {
     case $1 in
-        brew_install ) brew_install ;;
-        *            ) echo unknown command "$1". available: brew_install;;
+        brew-install ) brew_install ;;
+        *            ) echo unknown command "$1". available: brew-install;;
     esac
 }
 
