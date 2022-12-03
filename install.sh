@@ -29,30 +29,20 @@ HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
 install_dependencies()
 {
     fmt_note "installing dependencies ..."
-    case $(get_os_type) in
-        "linux" )
-            case $(get_linux_dist) in
-                "ubuntu"|"debian" )
-                    $SUDO apt-get update
-                    $SUDO apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
-                    ;;
-                "alpine" )
-                    $SUDO apk update
-                    $SUDO apk add zsh bash git tmux vim curl fzf iputils coreutils util-linux
-                    ;;
-                * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
-            esac
+    case $(get_os_name) in
+        "ubuntu"|"debian" )
+            DFS_LITE=$DFS_LITE $SUDO $DOTFILES/tools/ubuntu.sh apt-install
+            ;;
+        "alpine" )
+            DFS_LITE=$DFS_LITE $SUDO $DOTFILES/tools/alpine.sh apk-add
             ;;
         "macos" )
-            $SUDO brew update
-            $SUDO brew install git zsh curl tmux vim util-linux
+            DFS_LITE=$DFS_LITE $SUDO $DOTFILES/tools/macos.sh brew-install
             ;;
         "msys" )
-            pacman -Syu
-            pacman -S tmux git zsh bash curl vim
-            SUDO=""
+            DFS_LITE=$DFS_LITE $SUDO $DOTFILES/tools/msys2.sh pacman-S
             ;;
-        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_type)"
+        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_name)"
     esac
 }
 

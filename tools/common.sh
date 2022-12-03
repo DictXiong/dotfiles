@@ -172,7 +172,8 @@ apost_beacon()
     post_beacon "$@" 1>/dev/null &
 }
 
-get_os_type() {
+get_os_type()
+{
     local ans="unknown"
     case "$(uname -s)" in
         Darwin*)    ans="MacOS";;
@@ -184,7 +185,8 @@ get_os_type() {
     echo $ans | tr '[:upper:]' '[:lower:]'
 }
 
-get_linux_dist() {
+get_linux_dist()
+{
     local ans="unknown"
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -204,6 +206,15 @@ get_linux_dist() {
         ans="unknown"
     fi
     echo $ans | tr '[:upper:]' '[:lower:]'
+}
+
+get_os_name()
+{
+    local ans=$(get_os_type)
+    if [[ "$ans" == "linux" ]]; then
+        ans=$(get_linux_dist)
+    fi
+    echo $ans
 }
 
 # if bash-ed, else source-d

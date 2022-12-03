@@ -11,17 +11,15 @@ set_mirror()
 
 apt_install()
 {
-    # basic packages
-    apt-get update
-    for i in {man-db,vim,ca-certificates}; do apt-get install $i -y; done
+    apt-get update -y
 
     # lite
-    apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
+    apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils ca-certificates
 
     # full
     if [[ -z "$DFS_LITE" ]]; then
         apt-get install wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron openssh-client openssh-server htop gcc g++ cmake make zip
-        for i in {fzf,ripgrep}; do apt-get install -y $i; done
+        for i in {fzf,ripgrep,man-db}; do apt-get install -y $i; done
     fi
 }
 
