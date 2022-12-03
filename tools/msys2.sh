@@ -1,6 +1,7 @@
 #!/bin/bash
-
 set -e
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/common.sh"
 
 set_mirror()
 {
@@ -13,7 +14,12 @@ set_mirror()
 pacman_S()
 {
     pacman -Syu
-    pacman -S tmux git zsh curl vim wget base-devel mingw-w64-x86_64-toolchain make cmake gcc zip unzip python3 python3-pip man-pages-posix
+    # lite
+    pacman -S tmux git zsh bash curl vim
+    # full
+    if [[ -z "$DFS_LITE" ]]; then
+        pacman -S wget base-devel mingw-w64-x86_64-toolchain make cmake gcc zip unzip python3 python3-pip man-pages-posix
+    fi
 }
 
 router()

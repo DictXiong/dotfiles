@@ -109,7 +109,7 @@ parse_arg()
     while [[ $# > 0 || -n "$ARG" ]]; do
         if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
         case $ARG in
-            -q*|--quite ) DFS_QUIET=1 ;;
+            -q*|--quite ) export DFS_QUIET=1 ;;
             --* ) PARSE_ARG_RET+=("$ARG") ;;
             -* ) PARSE_ARG_RET+=("${ARG:0:2}") ;;
             *  ) PARSE_ARG_RET+=("$ARG") ;;
@@ -148,10 +148,32 @@ ask_for_Yn()
 
 post_log()
 {
-    python3 "${DOTFILES}/tools/log.py" "[$1] $2: $3"
+    if [[ $# != 3 || -z "$1" || -z "$2" || -z "$3" ]]; then
+        fmt_fatal "usage: post_log <level> <section> <content>"
+    fi
+    "${DOTFILES}/tools/logger.sh" "log" "[$1][$2] $3"
 }
 
-get_os_type() {
+apost_log()
+{
+    post_log "$@" 1>/dev/null &
+}
+
+post_beacon()
+{
+    if [[ $# != 1 || -z "$1" ]]; then
+        fmt_fatal "usage: post_beacon <beacon>"
+    fi
+    "${DOTFILES}/tools/logger.sh" "beacon" "$1"
+}
+
+apost_beacon()
+{
+    post_beacon "$@" 1>/dev/null &
+}
+
+get_os_type()
+{
     local ans="unknown"
     case "$(uname -s)" in
         Darwin*)    ans="MacOS";;
@@ -163,7 +185,8 @@ get_os_type() {
     echo $ans | tr '[:upper:]' '[:lower:]'
 }
 
-get_linux_dist() {
+get_linux_dist()
+{
     local ans="unknown"
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -183,6 +206,15 @@ get_linux_dist() {
         ans="unknown"
     fi
     echo $ans | tr '[:upper:]' '[:lower:]'
+}
+
+get_os_name()
+{
+    local ans=$(get_os_type)
+    if [[ "$ans" == "linux" ]]; then
+        ans=$(get_linux_dist)
+    fi
+    echo $ans
 }
 
 # if bash-ed, else source-d

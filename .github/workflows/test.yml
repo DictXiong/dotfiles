@@ -7,12 +7,6 @@ jobs:
     name: test on ubuntu
     runs-on: ubuntu-latest
     steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git python3 python3-pip zsh curl inetutils-ping
-          sudo pip3 install requests
-      
       - name: checkout repo
         uses: actions/checkout@v3
         with:
@@ -22,7 +16,8 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          ./install.sh -dl
+          set -x
+          ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -37,6 +32,7 @@ jobs:
           source tools/test.zsh
           antigen reset
           rm -rf $ANTIGEN $HOME/.antigen
+          ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
@@ -54,12 +50,6 @@ jobs:
     name: test on macos
     runs-on: macos-12
     steps:
-      - name: install dependencies
-        run: |
-          brew update
-          brew install git python3 zsh curl
-          sudo pip3 install requests
-
       - name: checkout repo
         uses: actions/checkout@v3
         with:
@@ -69,7 +59,8 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
-          ./install.sh -dl
+          set -x
+          ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -84,6 +75,7 @@ jobs:
           source tools/test.zsh
           antigen reset
           rm -rf $ANTIGEN $HOME/.antigen
+          ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
@@ -103,7 +95,7 @@ jobs:
     steps:
       - name: remove dependencies
         run: |
-          sudo apt-get -y remove curl vim
+          sudo apt-get -y remove curl vim python3
 
       - name: checkout repo
         uses: actions/checkout@v3
@@ -113,6 +105,7 @@ jobs:
       - name: install dfs
         run: |
           rev=`git rev-parse HEAD`
+          set -x
           ./install.sh -dal
           test `git rev-parse HEAD` = "$rev"
 

@@ -1,7 +1,12 @@
 # env for shell
 export TERM="xterm-256color"
-export LC_ALL=C.UTF-8
-export LANG=C.UTF-8
+if ( locale -a | grep -qxE "C.UTF-8|C.utf8" ); then
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+else
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+fi
 export DOTFILES=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export PATH="$PATH:$DOTFILES/scripts"
 export EDITOR='vim'
@@ -82,6 +87,13 @@ antigen theme ${ZSH_THEME:-$TMP_THEME}
 antigen apply
 # end of antigen config
 
+# beacon
+if [[ "$EUID" == "0" ]]; then
+    "$DOTFILES/tools/common.sh" apost_beacon "sys.login.root"
+else
+    "$DOTFILES/tools/common.sh" apost_beacon "sys.login.user"
+fi
+
 # alias
 alias "pls"='sudo $(fc -ln -1)'
 alias "se"='sudo -sE'
@@ -144,6 +156,7 @@ bindkey "\ed" delete-char  # alt+d
 # dfs
 dfs()
 {
+    setopt local_options err_return pipe_fail
     case $1 in
         cd     ) cd "$DOTFILES" ;;
         update ) "$DOTFILES/update.sh" ;;
@@ -169,6 +182,7 @@ dfs()
             echo 'Done. Please open a new shell to see the changes.'
             ;;
         log    ) "$DOTFILES/tools/common.sh" "post_log" "INFO" "dfs" "$2" ;;
+        beacon ) "$DOTFILES/tools/common.sh" "post_beacon" "$2" ;;
         *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac
 }

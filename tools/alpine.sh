@@ -1,21 +1,23 @@
 #!/bin/bash
-
 set -e
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/common.sh"
 
 set_mirror()
 {
     MIRROR=${1:-"mirrors.tuna.tsinghua.edu.cn"}
-    MIRROR=${MIRROR//\//\\\/}
-    sed -i "s/dl-cdn.alpinelinux.org/$MIRROR/g" /etc/apk/repositories
+    sed -i "s@dl-cdn.alpinelinux.org@${MIRROR}@g" /etc/apk/repositories
 }
 
 apk_add()
 {
     apk update
-
-    # mass installation
-    apk add zsh git tmux vim curl wget bash python3 py3-pip htop gcc g++ cmake make fzf perl linux-headers bind-tools iputils man-db coreutils util-linux
-    #for i in {fzf,ripgrep}; do apk add $i -y; done
+    # lite
+    apk add zsh bash git tmux vim curl fzf iputils coreutils util-linux
+    # full
+    if [[ -z "$DFS_LITE" ]]; then
+        apk add wget python3 py3-pip htop gcc g++ cmake make perl linux-headers bind-tools man-db
+    fi
 }
 
 set_timezone()

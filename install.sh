@@ -29,55 +29,37 @@ HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
 install_dependencies()
 {
     fmt_note "installing dependencies ..."
-    case $(get_os_type) in
-        "linux" )
-            case $(get_linux_dist) in
-                "ubuntu"|"debian" )
-                    $SUDO apt-get update
-                    $SUDO apt-get install -y git zsh bash tmux vim python3 python3-pip curl inetutils-ping cmake less bsdmainutils
-                    ;;
-                "alpine" )
-                    $SUDO apk update
-                    $SUDO apk add zsh bash git tmux vim curl python3 py3-pip fzf iputils coreutils util-linux
-                    ;;
-                * ) fmt_error "dfs auto-install is not implemented on linux distribution: $(get_linux_dist)"
-            esac
+    case $(get_os_name) in
+        "ubuntu"|"debian" )
+            $SUDO DFS_LITE=$DFS_LITE "$DOTFILES/tools/ubuntu.sh" apt-install
+            ;;
+        "alpine" )
+            $SUDO DFS_LITE=$DFS_LITE "$DOTFILES/tools/alpine.sh" apk-add
             ;;
         "macos" )
-            $SUDO brew update
-            $SUDO brew install git python3 zsh curl tmux vim util-linux
+            DFS_LITE=$DFS_LITE "$DOTFILES/tools/macos.sh" brew-install
             ;;
         "msys" )
-            pacman -Syu
-            pacman -S tmux git zsh bash curl vim python3 python3-pip
-            SUDO=""
+            DFS_LITE=$DFS_LITE "$DOTFILES/tools/msys2.sh" pacman-S
             ;;
-        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_type)"
+        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_name)"
     esac
-
-    if [[ -x $(command -v pip3) ]]; then
-        $SUDO pip3 install requests
-    elif [[ -x $(command -v pip) ]]; then
-        $SUDO pip install requests
-    else
-        fmt_error "pip3 and pip not found. is pip correctly installed?"
-    fi
 }
 
 preinstall_check()
 {
     fmt_note "checking requirements ..."
-    local mandatory_commands=( "git" "zsh" "curl" )
-    local optional_commands=( "python3" "vim" "tmux" "ping" )
+    local mandatory_commands=( "git" "zsh" "curl" "grep" "cat" "cp" "bash" "mkdir" )
+    local optional_commands=( "vim" "tmux" "ping" )
     for i in "${mandatory_commands[@]}"; do
-        if [[ ! -x "$(command -v $i)" ]]; then
+        if ! command -v $i 1>/dev/null; then
             fmt_info "all this utils are required: ${mandatory_commands[@]}"
             fmt_info "install them manually or check scripts in tools/"
             fmt_fatal "\"$i\" not found. aborting ..."
         fi
     done
     for i in "${optional_commands[@]}"; do
-        if [[ ! -x "$(command -v $i)" ]]; then
+        if ! command -v $i 1>/dev/null; then
             fmt_warning "\"$i\" not found"
             ask_for_Yn "continue anyway?"
             if [[ "$?" == "0" ]]; then
@@ -167,7 +149,8 @@ uninstall_symlink()
     done
 }
 
-install_crontab(){
+install_crontab()
+{
     if [[ -x $(command -v crontab) ]]; then
         fmt_note "installing \"$CRON_JOB\" to crontab ..."
         ( crontab -l | grep -vxF "${CRON_JOB}" | grep -v "no crontab for"; echo "$CRON_JOB" ) | crontab -
@@ -176,7 +159,8 @@ install_crontab(){
     fi
 }
 
-uninstall_crontab(){
+uninstall_crontab()
+{
     if [[ -x $(command -v crontab) ]]; then
         fmt_note "removing \"$CRON_JOB\" from crontab ..."
         ( crontab -l | grep -vxF "$CRON_JOB" ) | crontab -
@@ -185,7 +169,8 @@ uninstall_crontab(){
     fi
 }
 
-install_tmux_tpm(){
+install_tmux_tpm()
+{
     TMUX_TPM="$HOME/.tmux/plugins/tpm"
     if [[ -x $(command -v tmux) && ! -d "$TMUX_TPM" ]]; then
         fmt_note "installing tmux tpm ..."
@@ -204,7 +189,8 @@ install_tmux_tpm(){
     fi
 }
 
-install_vim_vundle(){
+install_vim_vundle()
+{
     VIM_VUNDLE="$HOME/.vim/bundle/Vundle.vim"
     if [[ -x $(command -v vim) && ! -d "$VIM_VUNDLE" ]]; then
         fmt_note "installing vim vundle ..."
@@ -214,37 +200,42 @@ install_vim_vundle(){
     fi
 }
 
-install_update(){
+install_update()
+{
     fmt_note "installing update.sh ..."
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
     fmt_note "running update.sh ..."
-    DFS_UPDATED_RET=1 ${DOTFILES}/update.sh
-    if [[ $? == 1 ]]; then
+    DFS_UPDATED_RET=85 ${DOTFILES}/update.sh
+    if [[ $? == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
-        "${DOTFILES}/install.sh" && exit
+        "${DOTFILES}/install.sh" "$ORIGIN_ARGS" && exit
     fi
 }
 
-uninstall_update(){
+uninstall_update()
+{
     fmt_note "removing update.sh ..."
     rm "${DOTFILES}/update.sh"
 }
 
-install(){
-    install_update
+install()
+{
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
+    install_update
     preinstall_check
     install_crontab
     install_file_content
     install_symlink
+    apost_beacon "dfs.installed"
     # those that won't be uninstalled in the future
     install_tmux_tpm
     install_vim_vundle
     fmt_note "done installing!"
 }
 
-uninstall(){
+uninstall()
+{
     ask_for_yN "do you really want to uninstall?"
     if [[ $? != 1 ]]; then
         fmt_error "aborting this job ..."
@@ -254,9 +245,11 @@ uninstall(){
     uninstall_crontab
     uninstall_file_content
     uninstall_symlink
+    apost_beacon "dfs.uninstalled"
     fmt_note "done uninstalling!"
 }
 
+ORIGIN_ARGS="$@"
 parse_arg "$@"
 FUNC=install
 INSTALL_DEP=0
@@ -267,7 +260,8 @@ for i in ${PARSE_ARG_RET[@]}; do
         -d|--dev ) export DFS_DEV=1 ;;
         -l|--lite ) export DFS_LITE=1 ;;
         -a|--auto ) INSTALL_DEP=1 ;;
-        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a" ;;
+        -s|--secure ) export DFS_DEV=0 ;;
+        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a, -s" ;;
     esac
 done
 $FUNC
