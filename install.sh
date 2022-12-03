@@ -37,10 +37,10 @@ install_dependencies()
             $SUDO DFS_LITE=$DFS_LITE "$DOTFILES/tools/alpine.sh" apk-add
             ;;
         "macos" )
-            $SUDO DFS_LITE=$DFS_LITE "$DOTFILES/tools/macos.sh" brew-install
+            DFS_LITE=$DFS_LITE "$DOTFILES/tools/macos.sh" brew-install
             ;;
         "msys" )
-            $SUDO DFS_LITE=$DFS_LITE "$DOTFILES/tools/msys2.sh" pacman-S
+            DFS_LITE=$DFS_LITE "$DOTFILES/tools/msys2.sh" pacman-S
             ;;
         * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_name)"
     esac

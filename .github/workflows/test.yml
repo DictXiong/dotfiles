@@ -16,6 +16,7 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
+          set -x
           ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
@@ -58,6 +59,7 @@ jobs:
         run: |
           rev=`git rev-parse HEAD`
           pwd
+          set -x
           ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
@@ -103,6 +105,7 @@ jobs:
       - name: install dfs
         run: |
           rev=`git rev-parse HEAD`
+          set -x
           ./install.sh -dal
           test `git rev-parse HEAD` = "$rev"
 
