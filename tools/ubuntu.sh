@@ -1,6 +1,7 @@
 #!/bin/bash
-
 set -e
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/common.sh"
 
 set_mirror()
 {
@@ -12,10 +13,8 @@ set_mirror()
 apt_install()
 {
     apt-get update -y
-
     # lite
-    apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils ca-certificates
-
+    apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
     # full
     if [[ -z "$DFS_LITE" ]]; then
         apt-get install wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron openssh-client openssh-server htop gcc g++ cmake make zip

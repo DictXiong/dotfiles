@@ -149,7 +149,8 @@ uninstall_symlink()
     done
 }
 
-install_crontab(){
+install_crontab()
+{
     if [[ -x $(command -v crontab) ]]; then
         fmt_note "installing \"$CRON_JOB\" to crontab ..."
         ( crontab -l | grep -vxF "${CRON_JOB}" | grep -v "no crontab for"; echo "$CRON_JOB" ) | crontab -
@@ -158,7 +159,8 @@ install_crontab(){
     fi
 }
 
-uninstall_crontab(){
+uninstall_crontab()
+{
     if [[ -x $(command -v crontab) ]]; then
         fmt_note "removing \"$CRON_JOB\" from crontab ..."
         ( crontab -l | grep -vxF "$CRON_JOB" ) | crontab -
@@ -167,7 +169,8 @@ uninstall_crontab(){
     fi
 }
 
-install_tmux_tpm(){
+install_tmux_tpm()
+{
     TMUX_TPM="$HOME/.tmux/plugins/tpm"
     if [[ -x $(command -v tmux) && ! -d "$TMUX_TPM" ]]; then
         fmt_note "installing tmux tpm ..."
@@ -186,7 +189,8 @@ install_tmux_tpm(){
     fi
 }
 
-install_vim_vundle(){
+install_vim_vundle()
+{
     VIM_VUNDLE="$HOME/.vim/bundle/Vundle.vim"
     if [[ -x $(command -v vim) && ! -d "$VIM_VUNDLE" ]]; then
         fmt_note "installing vim vundle ..."
@@ -196,7 +200,8 @@ install_vim_vundle(){
     fi
 }
 
-install_update(){
+install_update()
+{
     fmt_note "installing update.sh ..."
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
@@ -208,12 +213,14 @@ install_update(){
     fi
 }
 
-uninstall_update(){
+uninstall_update()
+{
     fmt_note "removing update.sh ..."
     rm "${DOTFILES}/update.sh"
 }
 
-install(){
+install()
+{
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
     install_update
     preinstall_check
@@ -227,7 +234,8 @@ install(){
     fmt_note "done installing!"
 }
 
-uninstall(){
+uninstall()
+{
     ask_for_yN "do you really want to uninstall?"
     if [[ $? != 1 ]]; then
         fmt_error "aborting this job ..."
