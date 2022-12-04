@@ -1,6 +1,6 @@
 # env for shell
 export TERM="xterm-256color"
-if ( locale -a | grep -qxE "C.UTF-8|C.utf8" ); then
+if (command -v locale >/dev/null) && ( locale -a | grep -qxE "C.UTF-8|C.utf8" ); then
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
 else
