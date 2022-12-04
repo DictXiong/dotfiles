@@ -1,8 +1,8 @@
 #!/bin/bash
-
+set -e
 THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
-if [[ -f ~/.config/dotfiles/env ]]; then source ~/.config/dotfiles/env; fi
+if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
 
 # Color settings
 # Source: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
