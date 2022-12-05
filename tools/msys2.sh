@@ -17,7 +17,7 @@ pacman_S()
     # lite
     pacman -S tmux git zsh bash curl vim
     # full
-    if [[ -z "$DFS_LITE" ]]; then
+    if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
         pacman -S wget base-devel mingw-w64-x86_64-toolchain make cmake gcc zip unzip python3 python3-pip man-pages-posix
     fi
 }

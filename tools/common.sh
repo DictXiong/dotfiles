@@ -6,7 +6,7 @@ if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; 
 
 # Color settings
 # Source: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
-if [ -t 1 ]; then
+if [[ -t 1 || "$DFS_COLOR" == "1" ]]; then
     is_tty() {
         true
     }
@@ -110,6 +110,8 @@ parse_arg()
         if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
         case $ARG in
             -q*|--quite ) export DFS_QUIET=1 ;;
+            -l*|--lite ) export DFS_LITE=1 ;;
+            --color ) export DFS_COLOR=1; is_tty() { true }; setup_color ;;
             --* ) PARSE_ARG_RET+=("$ARG") ;;
             -* ) PARSE_ARG_RET+=("${ARG:0:2}") ;;
             *  ) PARSE_ARG_RET+=("$ARG") ;;

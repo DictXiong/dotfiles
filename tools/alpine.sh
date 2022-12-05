@@ -15,7 +15,7 @@ apk_add()
     # lite
     apk add zsh bash git tmux vim curl fzf iputils coreutils util-linux
     # full
-    if [[ -z "$DFS_LITE" ]]; then
+    if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
         apk add wget python3 py3-pip htop gcc g++ cmake make perl linux-headers bind-tools man-db
     fi
 }

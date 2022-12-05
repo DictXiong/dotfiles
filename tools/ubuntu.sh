@@ -16,7 +16,7 @@ apt_install()
     # lite
     apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
     # full
-    if [[ -z "$DFS_LITE" ]]; then
+    if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
         apt-get install wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron openssh-client openssh-server htop gcc g++ cmake make zip
         for i in {fzf,ripgrep,man-db}; do apt-get install -y $i; done
     fi
