@@ -23,6 +23,7 @@ test ~ -ef "$(pwd)"
 dogo
 doll
 dfs cd
+./tools/test-getopts.sh
 tools/common.sh get_os_type
 tools/common.sh get_linux_dist
 
