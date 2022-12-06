@@ -209,7 +209,7 @@ install_update()
     DFS_UPDATED_RET=85 ${DOTFILES}/update.sh
     if [[ $? == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
-        "${DOTFILES}/install.sh" "$ORIGIN_ARGS" && exit
+        "${DOTFILES}/install.sh" "$@" && exit
     fi
 }
 
@@ -249,19 +249,16 @@ uninstall()
     fmt_note "done uninstalling!"
 }
 
-ORIGIN_ARGS="$@"
-parse_arg "$@"
 FUNC=install
 INSTALL_DEP=0
-for i in ${PARSE_ARG_RET[@]}; do
+for i in ${GOT_OPTS[@]}; do
     case $i in
         -i ) FUNC=install ;;
         -r ) FUNC=uninstall ;;
         -d|--dev ) export DFS_DEV=1 ;;
-        -l|--lite ) export DFS_LITE=1 ;;
         -a|--auto ) INSTALL_DEP=1 ;;
         -s|--secure ) export DFS_DEV=0 ;;
-        * ) fmt_fatal "unknown option \"$i\". available: -i, -r, -q, -d, -l, -a, -s" ;;
+        * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
 done
 $FUNC

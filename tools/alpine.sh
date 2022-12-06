@@ -34,8 +34,8 @@ router()
         apk-add ) apk_add ;;
         set-timezone | set-tz ) set_timezone ;;
         set-mirror  ) set_mirror $2 ;;
-        *           ) echo unknown command "$1". available: apk-add, set-timezone;;
+        *           ) echo unknown command \"$1\". available: apk-add, set-timezone;;
     esac
 }
 
-router $@
+router "${GOT_OPTS[@]}"

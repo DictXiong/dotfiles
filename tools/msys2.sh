@@ -27,8 +27,8 @@ router()
     case $1 in
         pacman-S    ) pacman_S ;;
         set-mirror  ) set_mirror $2 ;;  
-        *           ) echo unknown command "$1". available: pacman-S, set-mirror ;;
+        *           ) echo unknown command \"$1\". available: pacman-S, set-mirror ;;
     esac
 }
 
-router $@
+router "${GOT_OPTS[@]}"

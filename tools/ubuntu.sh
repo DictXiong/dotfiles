@@ -35,8 +35,8 @@ router()
         set-mirror  ) set_mirror $2 ;;  
         set-timezone\
         | set-tz    ) set_timezone $2 ;;
-        *           ) echo unknown command "$1". available: apt-install, set-mirror, set-timezone;;
+        *           ) echo unknown command \"$1\". available: apt-install, set-mirror, set-timezone;;
     esac
 }
 
-router $@
+router "${GOT_OPTS[@]}"
