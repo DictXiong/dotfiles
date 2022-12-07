@@ -6,7 +6,7 @@ if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; 
 
 # parse args and set env, when it is sourced
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
-    ORIGIN_ARGS="$@"
+    ORIGIN_ARGS=("$@")
     ARG=""
     GOT_OPTS=()
     while [[ $# > 0 || -n "$ARG" ]]; do
@@ -26,7 +26,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
             ARG=-${ARG:2}
         fi
     done
-    set -- "$ORIGIN_ARGS"
+    set -- "${ORIGIN_ARGS[@]}"
     unset ARG
     unset ORIGIN_ARGS
 fi
