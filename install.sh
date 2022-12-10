@@ -206,11 +206,16 @@ install_update()
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
     fmt_note "running update.sh ..."
+    set +e
     DFS_UPDATED_RET=85 ${DOTFILES}/update.sh
-    if [[ $? == 85 ]]; then
+    RET=$?
+    if [[ $RET == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
         "${DOTFILES}/install.sh" "$ORIGIN_ARGS" && exit
+    elif [[ $RET != 0 ]]; then
+        fmt_fatal "update.sh failed with exit code $RET"
     fi
+    set -e
 }
 
 uninstall_update()
