@@ -1,0 +1,46 @@
+#!/bin/bash
+# connect to iot services
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/../tools/common.sh"
+
+# proxy server and port
+SERVER=${SERVER:-bj1.ob.ac.cn}
+get_server_port()
+{
+    local tmp
+    tmp=$(sha256sum <<< "$1" | tr -cd "[:digit:]")
+    tmp=${tmp:0:4}
+    echo $((tmp+36000))
+}
+
+# ssh
+SSH_USERNAME=${SSH_USERNAME:-root}
+_ssh()
+{
+    ssh -p $(get_server_port "$1") "$SSH_USERNAME@$SERVER"
+}
+
+# main
+print_help()
+{
+    fmt_info "usage: $0 <command> <service> [options]"
+    echo "available commands: ssh"
+}
+
+router()
+{
+    case $1 in
+        -h|--help)
+            print_help
+            ;;
+        ssh )
+            _ssh "$2"
+            ;;
+        * )
+            print_help
+            fmt_fatal "unknown command: $1"
+            ;;
+    esac
+}
+
+router "${GOT_OPTS[@]}"
