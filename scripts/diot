@@ -1,0 +1,80 @@
+#!/bin/bash
+# connect to iot services
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/../tools/common.sh"
+
+# get target settings
+# provides:
+SERVER=""
+PORT=""
+SSH_USERNAME=""
+SSH_OPTIONS=""
+get_server_meta()
+{
+    local domain=${1##*.}
+    local host=${1%.*}
+    if [[ "$host" == "$domain" ]]; then
+        domain=""
+    fi
+    case $domain in
+        ibd )
+            SERVER=$host.ibd.ink
+            PORT=12022
+            SSH_USERNAME=root
+            ;;
+        ob )
+            SERVER=$host.ob.ac.cn
+            PORT=24022
+            SSH_USERNAME=root
+            ;;
+        nasp )
+            SERVER=$host
+            PORT=22
+            SSH_USERNAME=dictxiong
+            SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
+            ;;
+        "" )
+            SERVER=bj1.ob.ac.cn
+            local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
+            tmp=${tmp:0:4}
+            PORT=$((tmp+36000))
+            SSH_USERNAME=root
+            ;;
+        * )
+            fmt_fatal "unknown domain: $domain"
+    esac
+}
+
+# ssh
+_ssh()
+{
+    get_server_meta "$1"
+    fmt_note "--> ssh to $SERVER:$PORT"
+    eval ssh -p $PORT $SSH_OPTIONS $SSH_USERNAME@$SERVER
+}
+
+# main
+print_help()
+{
+    fmt_info "usage: $0 <command> <service> [options]"
+    echo "available commands: ssh"
+}
+
+router()
+{
+    test $# -eq 2 || (print_help && fmt_fatal "invalid arguments")
+    case $1 in
+        -h|--help)
+            print_help
+            ;;
+        ssh )
+            _ssh "$2"
+            ;;
+        * )
+            print_help
+            fmt_fatal "unknown command: $1"
+            ;;
+    esac
+}
+
+router "${GOT_OPTS[@]}"
