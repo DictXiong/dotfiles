@@ -29,7 +29,7 @@ tools/common.sh get_linux_dist
 
 # check alias
 alias p114
-which sibd
+which riot
 piv-agent || which piv-agent
 gbes || which gbes
 
