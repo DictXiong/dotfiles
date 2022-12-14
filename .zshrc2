@@ -100,7 +100,7 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
-alias "gdebug"='git add -A; git commit -m "bug fix"'
+alias "gdebug"='git add -A; git commit -m "bug fix ($(date))"'
 case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
     *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
