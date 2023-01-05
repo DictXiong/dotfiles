@@ -128,7 +128,7 @@ jobs:
 
       - name: run the script
         run: |
-          bash tools/get.dotfiles.cn
+          bash tools/get.dotfiles.cn -al
 
       - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
