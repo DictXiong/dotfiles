@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+DFS_USER=$(whoami)
 ARG=""
 GOT_OPTS=()
 while [[ $# > 0 || -n "$ARG" ]]; do
@@ -32,9 +33,7 @@ while [[ $# > 0 || -n "$ARG" ]]; do
 done
 
 # install
-if [[ -n "$DFS_USER" ]]; then
-    su $DFS_USER
-fi
+su $DFS_USER << EOF
 cd
 if [[ ! -f ~/dotfiles/install.sh ]]; then
     git clone https://gitee.com/dictxiong/dotfiles
@@ -46,5 +45,6 @@ if [[ "$DFS_SECURE" == "1" ]]; then
     git -c advice.detachedHead=false checkout $(curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id)
     cd
 fi
-./dotfiles/install.sh "${GOT_OPTS[@]}"
+./dotfiles/install.sh ${GOT_OPTS[@]}
 zsh -c "source ~/.zshrc"
+EOF
