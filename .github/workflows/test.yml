@@ -60,7 +60,6 @@ jobs:
           rev=`git rev-parse HEAD`
           pwd
           set -x
-          rm -rf /usr/local/bin/2to3-3.11 /usr/local/bin/2to3
           ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
