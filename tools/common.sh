@@ -126,8 +126,10 @@ setup_color() {
 # END of color settings
 
 SUDO=''
+SUDOE=''
 if [[ "$EUID" != "0" && -x $(command -v sudo) ]]; then
     SUDO='sudo'
+    SUDOE='sudo -E'
 fi
 
 ask_for_yN()

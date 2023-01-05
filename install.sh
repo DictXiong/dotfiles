@@ -32,10 +32,10 @@ install_dependencies()
     fmt_note "installing dependencies ..."
     case $(get_os_name) in
         "ubuntu"|"debian" )
-            $SUDO "$DOTFILES/tools/ubuntu.sh" apt-install
+            $SUDOE "$DOTFILES/tools/ubuntu.sh" apt-install
             ;;
         "alpine" )
-            $SUDO "$DOTFILES/tools/alpine.sh" apk-add
+            $SUDOE "$DOTFILES/tools/alpine.sh" apk-add
             ;;
         "macos" )
             "$DOTFILES/tools/macos.sh" brew-install
