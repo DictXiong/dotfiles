@@ -33,7 +33,12 @@ while [[ $# > 0 || -n "$ARG" ]]; do
 done
 
 # install
-su $DFS_USER << EOF
+if command -v su 1>/dev/null; then
+    SUCMD="su $DFS_USER"
+else
+    SUCMD="bash"
+fi
+$SUCMD << EOF
 cd
 if [[ ! -f ~/dotfiles/install.sh ]]; then
     git clone https://gitee.com/dictxiong/dotfiles
