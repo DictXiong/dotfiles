@@ -15,7 +15,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
             -q*|--quite ) export DFS_QUIET=1 ;;
             -l*|--lite ) export DFS_LITE=1 ;;
             --color ) export DFS_COLOR=1 ;;
-            --dry-run ) export DFS_DRY_RUN=1 ;;
+            --dry-run ) export DFS_DRY_RUN=1 ;;  # TODO!!!
             --*=* ) GOT_OPTS+=("${ARG%%=*}" "${ARG#*=}") ;;
             --* ) GOT_OPTS+=("$ARG") ;;
             -* ) GOT_OPTS+=("${ARG:0:2}") ;;
