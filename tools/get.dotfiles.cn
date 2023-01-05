@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-DFS_USER=$(whoami)
 ARG=""
 GOT_OPTS=()
 while [[ $# > 0 || -n "$ARG" ]]; do
@@ -33,7 +32,7 @@ while [[ $# > 0 || -n "$ARG" ]]; do
 done
 
 # install
-if command -v su 1>/dev/null; then
+if command -v su 1>/dev/null || test -n "$DFS_USER"; then
     SUCMD="su $DFS_USER"
 else
     SUCMD="bash"
