@@ -1,4 +1,5 @@
 #!/bin/bash
+# ask_for_Yn is not compatible with `set -e`
 
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/tools/common.sh"
@@ -42,7 +43,7 @@ install_dependencies()
         "msys" )
             "$DOTFILES/tools/msys2.sh" pacman-S
             ;;
-        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_name)"
+        * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_name). skipping ..."
     esac
 }
 

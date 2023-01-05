@@ -116,3 +116,20 @@ jobs:
         run: |
           echo $SHELL
           antigen list
+
+  test-get-dotfiles-cn:
+    name: test of get.dotfiles.cn script
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: run the script
+        run: |
+          bash tools/get.dotfiles.cn
+
+      - name: run tests
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: source tools/test.zsh

@@ -1,0 +1,50 @@
+#!/bin/bash
+set -e
+
+ARG=""
+GOT_OPTS=()
+while [[ $# > 0 || -n "$ARG" ]]; do
+    if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
+    case $ARG in
+        -s*|--secure ) DFS_SECURE=1 ;;
+        -u*|--user ) 
+            if [[ "$ARG" == --*=* ]]; then
+                DFS_USER="${ARG#*=}"
+            else
+                DFS_USER=$1
+                shift
+            fi
+            if [[ -z "$DFS_USER" ]]; then
+                echo "install user is required"
+                exit 1
+            fi
+            ;;
+        --*=* ) GOT_OPTS+=("${ARG%%=*}" "${ARG#*=}") ;;
+        --* ) GOT_OPTS+=("$ARG") ;;
+        -* ) GOT_OPTS+=("${ARG:0:2}") ;;
+        *  ) GOT_OPTS+=("$ARG") ;;
+    esac
+    if [[ "$ARG" == "--"* || ! "$ARG" == "-"* || ${#ARG} -le 2 ]]; then
+        ARG=""
+    else
+        ARG=-${ARG:2}
+    fi
+done
+
+# install
+if [[ -n "$DFS_USER" ]]; then
+    su $DFS_USER
+fi
+cd
+if [[ ! -f ~/dotfiles/install.sh ]]; then
+    git clone https://gitee.com/dictxiong/dotfiles
+fi
+if [[ "$DFS_SECURE" == "1" ]]; then
+    echo "enter secure mode"
+    cd dotfiles
+    git fetch --all
+    git -c advice.detachedHead=false checkout $(curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id)
+    cd
+fi
+./dotfiles/install.sh "${GOT_OPTS[@]}"
+zsh -c "source ~/.zshrc"
