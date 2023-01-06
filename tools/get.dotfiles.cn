@@ -42,6 +42,8 @@ for u in "${DFS_USERS[@]}";do
     else
         SUCMD="su $u"
     fi
+    echo "install for user $u in 3 seconds ..."
+    sleep 3
     $SUCMD<<EOF
 cd
 if [[ ! -f ~/dotfiles/install.sh ]];then
