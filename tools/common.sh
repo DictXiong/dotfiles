@@ -134,26 +134,28 @@ fi
 
 ask_for_yN()
 {
-    while [[ -z "$DFS_QUIET" || "$DFS_QUIET" == "0" ]]; do
+    if [[ "$DFS_QUIET" == "1" ]]; then
+        echo 0
+    else
         read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
         case $yn in
-            [Yy]* ) return 1;;
-            * ) return 0;;
+            [Yy]* ) echo 1;;
+            * ) echo 0;;
         esac
-    done
-    return 0
+    fi
 }
 
 ask_for_Yn()
 {
-    while [[ -z "$DFS_QUIET" || "$DFS_QUIET" == "0" ]]; do
+    if [[ "$DFS_QUIET" == "1" ]]; then
+        echo 1
+    else
         read -p "${FMT_YELLOW}$1${FMT_RESET} [Yn]: " yn
         case $yn in
-            [Nn]* ) return 0;;
-            * ) return 1;;
+            [Nn]* ) echo 0;;
+            * ) echo 1;;
         esac
-    done
-    return 1
+    fi
 }
 
 post_log()

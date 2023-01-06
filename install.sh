@@ -1,6 +1,5 @@
 #!/bin/bash
-# ask_for_Yn is not compatible with `set -e`
-
+set -e
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/tools/common.sh"
 
@@ -29,22 +28,32 @@ HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
 
 install_dependencies()
 {
+    local ret=0
     fmt_note "installing dependencies ..."
+    set +e
     case $(get_os_name) in
         "ubuntu"|"debian" )
             $SUDOE "$DOTFILES/tools/ubuntu.sh" apt-install
+            ret=$?
             ;;
         "alpine" )
             $SUDOE "$DOTFILES/tools/alpine.sh" apk-add
+            ret=$?
             ;;
         "macos" )
             "$DOTFILES/tools/macos.sh" brew-install
+            ret=$?
             ;;
         "msys" )
             "$DOTFILES/tools/msys2.sh" pacman-S
+            ret=$?
             ;;
         * ) fmt_error "dfs auto-install is not implemented on OS: $(get_os_name). skipping ..."
     esac
+    set -e
+    if [[ "$ret" != "0" ]]; then
+        fmt_error "failed to install dependencies."
+    fi
 }
 
 preinstall_check()
@@ -62,8 +71,8 @@ preinstall_check()
     for i in "${optional_commands[@]}"; do
         if ! command -v $i 1>/dev/null; then
             fmt_warning "\"$i\" not found"
-            ask_for_Yn "continue anyway?"
-            if [[ "$?" == "0" ]]; then
+            yn=$(ask_for_Yn "continue anyway?")
+            if [[ "$yn" == "0" ]]; then
                 fmt_info "all this utils are suggested: ${optional_commands[@]}"
                 fmt_info "install them manually or check scripts in tools/"
                 fmt_fatal "aborting ..."
@@ -120,8 +129,8 @@ install_symlink()
             echo ----------
             stat $dst
             echo ----------
-            ask_for_yN "would you like to replace ${dst}?"
-            if [ $? -eq 1 ]; then 
+            yn=$(ask_for_yN "would you like to replace ${dst}?")
+            if [[ "$yn" == "1" ]]; then
                 rm $dst
             else
                 fmt_error "aborting this job ..."
@@ -242,10 +251,9 @@ install()
 
 uninstall()
 {
-    ask_for_yN "do you really want to uninstall?"
-    if [[ $? != 1 ]]; then
-        fmt_error "aborting this job ..."
-        return
+    yn=$(ask_for_yN "do you really want to uninstall?")
+    if [[ "$yn" != "1" ]]; then
+        fmt_fatal "aborting this job ..."
     fi
     uninstall_update
     uninstall_crontab
@@ -257,6 +265,7 @@ uninstall()
 
 FUNC=install
 INSTALL_DEP=0
+store_config=0
 for i in ${GOT_OPTS[@]}; do
     case $i in
         -i ) FUNC=install ;;
@@ -264,6 +273,7 @@ for i in ${GOT_OPTS[@]}; do
         -d|--dev ) export DFS_DEV=1; set -x ;;
         -a|--auto ) INSTALL_DEP=1 ;;
         -s|--secure ) export DFS_DEV=0 ;;
+        -x ) store_config=1 ;;  # TODO: store and write to config
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
 done

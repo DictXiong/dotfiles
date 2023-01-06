@@ -31,8 +31,8 @@ while [[ $# > 0 || -n "$ARG" ]]; do
     fi
 done
 
-# install
-if command -v su 1>/dev/null && test -n "$DFS_USER"; then
+# install TODO: multiple users; remove -a after installed for the first user
+if command -v su 1>/dev/null && test -n "$DFS_USER" && test "$DFS_USER" != "$(whoami)"; then
     SUCMD="su $DFS_USER"
 else
     SUCMD="bash"
