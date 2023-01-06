@@ -87,7 +87,7 @@ prepare_config()
     fmt_note "preparing dotfiles configurations ..."
     local key value
     for i in "${DFS_CONFIGS[@]}"; do
-        if [[ $i =~ *=* ]]; then
+        if [[ "$i" == *"="* ]]; then
             key=${i%%=*}
             value=${i#*=}
         else
