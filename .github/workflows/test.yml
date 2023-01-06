@@ -17,7 +17,7 @@ jobs:
           rev=`git rev-parse HEAD`
           pwd
           set -x
-          ./install.sh -adl
+          DFS_NO_WALL=0 ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -36,8 +36,6 @@ jobs:
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
-        env:
-          DFS_NO_WALL: 1
         run: |
           echo $SHELL
           antigen list
@@ -60,7 +58,7 @@ jobs:
           rev=`git rev-parse HEAD`
           pwd
           set -x
-          ./install.sh -adl
+          DFS_NO_WALL=0 ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -79,8 +77,6 @@ jobs:
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
-        env:
-          DFS_NO_WALL: 1
         run: |
           echo $SHELL
           antigen list
@@ -109,10 +105,8 @@ jobs:
           ./install.sh -dal
           test `git rev-parse HEAD` = "$rev"
 
-      - name: antigen build with DFS_NO_WALL
+      - name: antigen build
         shell: /bin/zsh -ileo PIPE_FAIL {0}
-        env:
-          DFS_NO_WALL: 1
         run: |
           echo $SHELL
           antigen list

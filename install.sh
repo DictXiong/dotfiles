@@ -84,6 +84,13 @@ preinstall_check()
 
 prepare_config()
 {
+    local remote=$(cd "$DOTFILES" && git remote get-url origin)
+    if [[ -z "$DFS_NO_WALL" && $remote == *github* ]]; then
+        DFS_CONFIGS+=("DFS_NO_WALL=1")
+    fi
+    if [[ ${#DFS_CONFIGS[@]} == 0 ]]; then
+        return
+    fi
     fmt_note "preparing dotfiles configurations ..."
     local key value
     for i in "${DFS_CONFIGS[@]}"; do
@@ -107,7 +114,7 @@ install_file_content()
     fmt_note "installing file content ..."
     for ((i=0; i<${#HOME_FILES_PATH[@]}; i++)); do
         local filename="$HOME/${HOME_FILES_PATH[$i]}"
-        local content=${HOME_FILES_CONTENT[$i]}
+        local content="${HOME_FILES_CONTENT[$i]}"
         fmt_info "installing \"$content\" into \"$filename\" ..."
         mkdir -p $(dirname "$filename")
         if [ ! -f "$filename" ]; then
@@ -260,9 +267,7 @@ install()
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
     install_update
     preinstall_check
-    if [[ ${#DFS_CONFIGS[@]} > 0 ]]; then
-        prepare_config
-    fi
+    prepare_config
     install_crontab
     install_file_content
     install_symlink
