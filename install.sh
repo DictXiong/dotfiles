@@ -10,6 +10,7 @@ fi
 DOTFILE_TILDE=${DOTFILES/"$HOME"/\~}
 
 CRON_JOB="0 * * * * ${DOTFILES}/update.sh"
+declare -a DFS_CONFIGS
 declare -a HOME_FILES_PATH
 declare -a HOME_FILES_CONTENT
 HOME_FILES_PATH[0]=".zshrc"
@@ -79,6 +80,26 @@ preinstall_check()
             fi
         fi
     done
+}
+
+prepare_config()
+{
+    fmt_note "preparing dotfiles configurations ..."
+    local key value
+    for i in "${DFS_CONFIGS[@]}"; do
+        if [[ $i =~ *=* ]]; then
+            key=${i%%=*}
+            value=${i#*=}
+        else
+            key=$i
+            value=$(eval echo \$$key)
+        fi
+        HOME_FILES_PATH+=(".config/dotfiles/env")
+        HOME_FILES_CONTENT+=("$key=$value")
+        echo -n "$key=$value"
+        export $key=$value
+    done
+    echo
 }
 
 install_file_content()
@@ -239,6 +260,9 @@ install()
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
     install_update
     preinstall_check
+    if [[ ${#DFS_CONFIGS[@]} > 0 ]]; then
+        prepare_config
+    fi
     install_crontab
     install_file_content
     install_symlink
@@ -267,13 +291,18 @@ FUNC=install
 INSTALL_DEP=0
 store_config=0
 for i in ${GOT_OPTS[@]}; do
+    if [[ "$store_config" == "1" ]]; then
+        store_config=0
+        DFS_CONFIGS+=("$i")
+        continue
+    fi
     case $i in
         -i ) FUNC=install ;;
         -r ) FUNC=uninstall ;;
         -d|--dev ) export DFS_DEV=1; set -x ;;
         -a|--auto ) INSTALL_DEP=1 ;;
         -s|--secure ) export DFS_DEV=0 ;;
-        -x ) store_config=1 ;;  # TODO: store and write to config
+        -x ) store_config=1 ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
 done

@@ -43,9 +43,10 @@ test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commi
 git reset --hard $DFS_VERSION
 
 # then check install.sh
-./install.sh -l
+./install.sh -l -x DFS_CI=1
 dfs version
 test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id`
+grep -q "DFS_CI=1" ~/.config/dotfiles/env
 
 # clean
 git reset --hard $DFS_VERSION
