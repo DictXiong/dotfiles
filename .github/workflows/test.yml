@@ -31,7 +31,7 @@ jobs:
         run: |
           source tools/test.zsh
           antigen reset
-          rm -rf $ANTIGEN $HOME/.antigen
+          rm -rf $ANTIGEN $HOME/.antigen $HOME/.config/dotfiles
           ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL
@@ -72,7 +72,7 @@ jobs:
         run: |
           source tools/test.zsh
           antigen reset
-          rm -rf $ANTIGEN $HOME/.antigen
+          rm -rf $ANTIGEN $HOME/.antigen $HOME/.config/dotfiles
           ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL

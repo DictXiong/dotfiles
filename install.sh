@@ -103,7 +103,7 @@ prepare_config()
         fi
         HOME_FILES_PATH+=(".config/dotfiles/env")
         HOME_FILES_CONTENT+=("$key=$value")
-        echo -n "$key=$value"
+        echo -n "$key=$value "
         export $key=$value
     done
     echo
