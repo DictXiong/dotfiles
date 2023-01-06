@@ -45,7 +45,7 @@ for u in "${DFS_USERS[@]}";do
     $SUCMD<<EOF
 cd
 if [[ ! -f ~/dotfiles/install.sh ]];then
-    git clone https://gitee.com/dictxiong/dotfiles
+    git clone ${repo}
 fi
 if [[ "$DFS_SECURE" == "1" ]];then
     echo "enter secure mode"

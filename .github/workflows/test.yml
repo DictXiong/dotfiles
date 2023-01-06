@@ -122,7 +122,7 @@ jobs:
 
       - name: run the script
         run: |
-          bash tools/get.dotfiles.cn -asl
+          repo=https://github.com/DictXiong/dotfiles bash tools/get.dotfiles.cn -asl
 
       - name: run tests
         shell: /bin/zsh -ileo PIPE_FAIL {0}
