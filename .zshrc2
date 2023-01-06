@@ -18,21 +18,21 @@ export LESS_TERMCAP_md=$'\E[01;33m'
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
 
 # antigen
-if [[ -z "$DFS_NO_WALL" ]]; then
-    ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
-    ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
-    ANTIGEN_PLUGINS=(
-        "https://gitee.com/dictxiong/zsh-syntax-highlighting"
-        "https://gitee.com/dictxiong/zsh-completions"
-        "https://gitee.com/dictxiong/zsh-autosuggestions"
-    )
-else
+if [[ "$DFS_NO_WALL" == "1" ]]; then
     ANTIGEN_URL="https://raw.githubusercontent.com/zsh-users/antigen/develop/bin/antigen.zsh"
     ANTIGEN_OMZ_REPO_URL="https://github.com/ohmyzsh/ohmyzsh.git"
     ANTIGEN_PLUGINS=(
         "https://github.com/zsh-users/zsh-syntax-highlighting"
         "https://github.com/zsh-users/zsh-completions"
         "https://github.com/zsh-users/zsh-autosuggestions"
+    )
+else
+    ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
+    ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
+    ANTIGEN_PLUGINS=(
+        "https://gitee.com/dictxiong/zsh-syntax-highlighting"
+        "https://gitee.com/dictxiong/zsh-completions"
+        "https://gitee.com/dictxiong/zsh-autosuggestions"
     )
 fi
 ANTIGEN="$HOME/antigen.zsh"
