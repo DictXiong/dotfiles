@@ -4,9 +4,37 @@ THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
 
+# parse args and set env, when it is sourced
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    ORIGIN_ARGS=("$@")
+    ARG=""
+    GOT_OPTS=()
+    while [[ $# > 0 || -n "$ARG" ]]; do
+        if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
+        case $ARG in
+            -q*|--quite ) export DFS_QUIET=1 ;;
+            -l*|--lite ) export DFS_LITE=1 ;;
+            --color ) export DFS_COLOR=1 ;;
+            --dry-run ) export DFS_DRY_RUN=1 ;;  # TODO!!!
+            --*=* ) GOT_OPTS+=("${ARG%%=*}" "${ARG#*=}") ;;
+            --* ) GOT_OPTS+=("$ARG") ;;
+            -* ) GOT_OPTS+=("${ARG:0:2}") ;;
+            *  ) GOT_OPTS+=("$ARG") ;;
+        esac
+        if [[ "$ARG" == "--"* || ! "$ARG" == "-"* || ${#ARG} -le 2 ]]; then
+            ARG=""
+        else
+            ARG=-${ARG:2}
+        fi
+    done
+    set -- "${ORIGIN_ARGS[@]}"
+    unset ARG
+    unset ORIGIN_ARGS
+fi
+
 # Color settings
 # Source: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
-if [ -t 1 ]; then
+if [[ -t 1 || "$DFS_COLOR" == "1" ]]; then
     is_tty() {
         true
     }
@@ -98,52 +126,36 @@ setup_color() {
 # END of color settings
 
 SUDO=''
+SUDOE=''
 if [[ "$EUID" != "0" && -x $(command -v sudo) ]]; then
     SUDO='sudo'
+    SUDOE='sudo -E'
 fi
-
-parse_arg()
-{
-    local ARG=""
-    PARSE_ARG_RET=()
-    while [[ $# > 0 || -n "$ARG" ]]; do
-        if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
-        case $ARG in
-            -q*|--quite ) export DFS_QUIET=1 ;;
-            --* ) PARSE_ARG_RET+=("$ARG") ;;
-            -* ) PARSE_ARG_RET+=("${ARG:0:2}") ;;
-            *  ) PARSE_ARG_RET+=("$ARG") ;;
-        esac
-        if [[ "$ARG" == "--"* || ! "$ARG" == "-"* || ${#ARG} -le 2 ]]; then
-            ARG=""
-        else
-            ARG=-${ARG:2}
-        fi
-    done
-}
 
 ask_for_yN()
 {
-    while [[ -z "$DFS_QUIET" || "$DFS_QUIET" == "0" ]]; do
+    if [[ "$DFS_QUIET" == "1" ]]; then
+        echo 0
+    else
         read -p "${FMT_YELLOW}$1${FMT_RESET} [yN]: " yn
         case $yn in
-            [Yy]* ) return 1;;
-            * ) return 0;;
+            [Yy]* ) echo 1;;
+            * ) echo 0;;
         esac
-    done
-    return 0
+    fi
 }
 
 ask_for_Yn()
 {
-    while [[ -z "$DFS_QUIET" || "$DFS_QUIET" == "0" ]]; do
+    if [[ "$DFS_QUIET" == "1" ]]; then
+        echo 1
+    else
         read -p "${FMT_YELLOW}$1${FMT_RESET} [Yn]: " yn
         case $yn in
-            [Nn]* ) return 0;;
-            * ) return 1;;
+            [Nn]* ) echo 0;;
+            * ) echo 1;;
         esac
-    done
-    return 1
+    fi
 }
 
 post_log()

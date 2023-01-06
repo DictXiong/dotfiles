@@ -14,23 +14,25 @@ export EDITOR='vim'
 export PYTHONIOENCODING='UTF-8'
 export GPG_TTY=$(tty)
 export LESS_TERMCAP_md=$'\E[01;33m'
+# env for dfs
+if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
 
 # antigen
-if [[ -z "$DFS_NO_WALL" ]]; then
-    ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
-    ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
-    ANTIGEN_PLUGINS=(
-        "https://gitee.com/dictxiong/zsh-syntax-highlighting"
-        "https://gitee.com/dictxiong/zsh-completions"
-        "https://gitee.com/dictxiong/zsh-autosuggestions"
-    )
-else
+if [[ "$DFS_NO_WALL" == "1" ]]; then
     ANTIGEN_URL="https://raw.githubusercontent.com/zsh-users/antigen/develop/bin/antigen.zsh"
     ANTIGEN_OMZ_REPO_URL="https://github.com/ohmyzsh/ohmyzsh.git"
     ANTIGEN_PLUGINS=(
         "https://github.com/zsh-users/zsh-syntax-highlighting"
         "https://github.com/zsh-users/zsh-completions"
         "https://github.com/zsh-users/zsh-autosuggestions"
+    )
+else
+    ANTIGEN_URL="https://gitee.com/dictxiong/antigen/raw/develop/bin/antigen.zsh"
+    ANTIGEN_OMZ_REPO_URL="https://gitee.com/dictxiong/ohmyzsh.git"
+    ANTIGEN_PLUGINS=(
+        "https://gitee.com/dictxiong/zsh-syntax-highlighting"
+        "https://gitee.com/dictxiong/zsh-completions"
+        "https://gitee.com/dictxiong/zsh-autosuggestions"
     )
 fi
 ANTIGEN="$HOME/antigen.zsh"
@@ -100,7 +102,7 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
-alias "gdebug"='git add -A; git commit -m "bug fix"'
+alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
 case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
     *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
@@ -108,9 +110,6 @@ esac
 if [[ -x $(command -v trash) ]]; then
     alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
 fi
-sibd() { ssh -p 12022 root@$1${1:+.}ibd.ink }
-sob() { ssh -p 24022 root@$1${1:+.}ob.ac.cn }
-snasp() { ssh -o ProxyJump="ssh@nasp.ob.ac.cn:36022" dictxiong@$1 }
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
 piv-agent()
 {
@@ -168,7 +167,7 @@ dfs()
             $EDITOR ~/.config/dotfiles/env
             ;;
         force-update ) (
-            cd "$DOTFILES" 
+            cd "$DOTFILES"
             git fetch --all
             ref=$(git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(git rev-parse --short HEAD 2> /dev/null)  || return 0
             for i in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${i#refs/heads/} ; git pull --ff-only ; done

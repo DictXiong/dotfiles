@@ -5,7 +5,7 @@ source "$THIS_DIR/common.sh"
 
 brew_install()
 {
-    brew update
+    # brew update
     brew install git zsh curl tmux vim util-linux
 }
 
@@ -13,8 +13,8 @@ router()
 {
     case $1 in
         brew-install ) brew_install ;;
-        *            ) echo unknown command "$1". available: brew-install;;
+        *            ) echo unknown command \"$1\". available: brew-install;;
     esac
 }
 
-router $@
+router "${GOT_OPTS[@]}"

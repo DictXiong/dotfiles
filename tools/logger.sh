@@ -79,22 +79,27 @@ print_help()
     fmt_info "usage: $0 <beacon|log> <beacon_type|log_content>"
 }
 
-if [[ $# != 2 ]]; then
-    print_help >&2
-    exit 1
-fi
+router()
+{
+    if [[ $# != 2 ]]; then
+        print_help >&2
+        exit 1
+    fi
 
-case "$1" in
-    -h|--help)
-        fmt_info "usage: $0 <beacon|log> <beacon_type|log_content>"
-        ;;
-    beacon)
-        post_beacon "$2"
-        ;;
-    log)
-        post_log "$2"
-        ;;
-    *)
-        fmt_fatal "invalid argument"
-        ;;
-esac
+    case "$1" in
+        -h|--help)
+            fmt_info "usage: $0 <beacon|log> <beacon_type|log_content>"
+            ;;
+        beacon)
+            post_beacon "$2"
+            ;;
+        log)
+            post_log "$2"
+            ;;
+        *)
+            fmt_fatal "invalid argument"
+            ;;
+    esac
+}
+
+router "${GOT_OPTS[@]}"

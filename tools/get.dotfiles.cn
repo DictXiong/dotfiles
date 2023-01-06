@@ -1,0 +1,62 @@
+#!/bin/bash
+set -e
+ARG=""
+GOT_OPTS=()
+DFS_USER="$(whoami)"
+while [[ $# > 0||-n "$ARG" ]];do
+    if [[ -z "$ARG" ]];then ARG=$1;shift;fi
+    case $ARG in
+        -s*|--secure)DFS_SECURE=1;;
+        -u*|--user)if [[ "$ARG" == --*=* ]];then
+                DFS_USER="${ARG#*=}"
+            else
+                DFS_USER=$1
+                shift
+            fi
+            if [[ -z "$DFS_USER" ]];then
+                echo "install user is required"
+                exit 1
+            fi;;
+        --*=*)GOT_OPTS+=("${ARG%%=*}" "${ARG#*=}");;
+        --*)GOT_OPTS+=("$ARG");;
+        -*)GOT_OPTS+=("${ARG:0:2}");;
+        *)GOT_OPTS+=("$ARG");;
+    esac
+    if [[ "$ARG" == "--"*||! "$ARG" == "-"*||${#ARG} -le 2 ]];then
+        ARG=""
+    else
+        ARG=-${ARG:2}
+    fi
+done
+IFS=',' read -r -a DFS_USERS<<<"$DFS_USER"
+for u in "${DFS_USERS[@]}";do
+    if [[ -z "$u" ]];then
+        continue
+    fi
+    if ! id -u "$u" >/dev/null 2>&1;then
+        echo "user $u not exists"
+        exit 1
+    fi
+    if [[ "$u" == "$(whoami)" ]];then
+        SUCMD="bash"
+    else
+        SUCMD="su $u"
+    fi
+    echo "install for user $u in 3 seconds ..."
+    sleep 3
+    $SUCMD<<EOF
+cd
+if [[ ! -f ~/dotfiles/install.sh ]];then
+    git clone ${repo}
+fi
+if [[ "$DFS_SECURE" == "1" ]];then
+    echo "enter secure mode"
+    cd dotfiles
+    git fetch --all
+    git -c advice.detachedHead=false checkout $(curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id)
+    cd
+fi
+./dotfiles/install.sh ${GOT_OPTS[@]}
+zsh -c "source ~/.zshrc"
+EOF
+done

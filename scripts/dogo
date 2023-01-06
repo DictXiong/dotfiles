@@ -25,6 +25,6 @@ fi
 if [[ -z "$CONTAINER" ]]; then
     fmt_fatal "container not found"
 else
-    echo "--> ${CONTAINER_META[@]}"
+    fmt_note "--> ${CONTAINER_META[@]}"
     $SUDO docker exec -it $CONTAINER sh -c 'export DFS="bash <(curl dfs.beardic.cn) -a"; if [ -x "$(command -v zsh)" ]; then echo "--> zsh"; unset DFS; zsh; elif [ -x "$(command -v bash)" ]; then echo "--> bash"; bash; else echo "--> sh"; sh; fi'
 fi

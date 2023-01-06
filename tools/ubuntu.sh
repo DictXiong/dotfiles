@@ -16,7 +16,7 @@ apt_install()
     # lite
     apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
     # full
-    if [[ -z "$DFS_LITE" ]]; then
+    if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
         apt-get install wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron openssh-client openssh-server htop gcc g++ cmake make zip
         for i in {fzf,ripgrep,man-db}; do apt-get install -y $i; done
     fi
@@ -35,8 +35,8 @@ router()
         set-mirror  ) set_mirror $2 ;;  
         set-timezone\
         | set-tz    ) set_timezone $2 ;;
-        *           ) echo unknown command "$1". available: apt-install, set-mirror, set-timezone;;
+        *           ) echo unknown command \"$1\". available: apt-install, set-mirror, set-timezone;;
     esac
 }
 
-router $@
+router "${GOT_OPTS[@]}"

@@ -17,7 +17,7 @@ jobs:
           rev=`git rev-parse HEAD`
           pwd
           set -x
-          ./install.sh -adl
+          DFS_NO_WALL=0 ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -31,13 +31,11 @@ jobs:
         run: |
           source tools/test.zsh
           antigen reset
-          rm -rf $ANTIGEN $HOME/.antigen
+          rm -rf $ANTIGEN $HOME/.antigen $HOME/.config/dotfiles
           ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
-        env:
-          DFS_NO_WALL: 1
         run: |
           echo $SHELL
           antigen list
@@ -60,7 +58,7 @@ jobs:
           rev=`git rev-parse HEAD`
           pwd
           set -x
-          ./install.sh -adl
+          DFS_NO_WALL=0 ./install.sh -adl
           test `git rev-parse HEAD` = "$rev"
 
       - name: antigen build
@@ -74,13 +72,11 @@ jobs:
         run: |
           source tools/test.zsh
           antigen reset
-          rm -rf $ANTIGEN $HOME/.antigen
+          rm -rf $ANTIGEN $HOME/.antigen $HOME/.config/dotfiles
           ./install.sh -dl
 
       - name: antigen build with DFS_NO_WALL
         shell: /bin/zsh -ileo PIPE_FAIL {0}
-        env:
-          DFS_NO_WALL: 1
         run: |
           echo $SHELL
           antigen list
@@ -109,10 +105,27 @@ jobs:
           ./install.sh -dal
           test `git rev-parse HEAD` = "$rev"
 
-      - name: antigen build with DFS_NO_WALL
+      - name: antigen build
         shell: /bin/zsh -ileo PIPE_FAIL {0}
-        env:
-          DFS_NO_WALL: 1
         run: |
           echo $SHELL
           antigen list
+
+  test-get-dotfiles-cn:
+    name: test of get.dotfiles.cn script
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: run the script
+        run: |
+          repo=https://github.com/DictXiong/dotfiles bash tools/get.dotfiles.cn -asl
+
+      - name: run tests
+        shell: /bin/zsh -ileo PIPE_FAIL {0}
+        run: |
+          dfs cd
+          source tools/test.zsh

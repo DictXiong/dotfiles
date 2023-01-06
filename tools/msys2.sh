@@ -17,7 +17,7 @@ pacman_S()
     # lite
     pacman -S tmux git zsh bash curl vim
     # full
-    if [[ -z "$DFS_LITE" ]]; then
+    if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
         pacman -S wget base-devel mingw-w64-x86_64-toolchain make cmake gcc zip unzip python3 python3-pip man-pages-posix
     fi
 }
@@ -27,8 +27,8 @@ router()
     case $1 in
         pacman-S    ) pacman_S ;;
         set-mirror  ) set_mirror $2 ;;  
-        *           ) echo unknown command "$1". available: pacman-S, set-mirror ;;
+        *           ) echo unknown command \"$1\". available: pacman-S, set-mirror ;;
     esac
 }
 
-router $@
+router "${GOT_OPTS[@]}"

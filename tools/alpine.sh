@@ -15,7 +15,7 @@ apk_add()
     # lite
     apk add zsh bash git tmux vim curl fzf iputils coreutils util-linux
     # full
-    if [[ -z "$DFS_LITE" ]]; then
+    if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
         apk add wget python3 py3-pip htop gcc g++ cmake make perl linux-headers bind-tools man-db
     fi
 }
@@ -34,8 +34,8 @@ router()
         apk-add ) apk_add ;;
         set-timezone | set-tz ) set_timezone ;;
         set-mirror  ) set_mirror $2 ;;
-        *           ) echo unknown command "$1". available: apk-add, set-timezone;;
+        *           ) echo unknown command \"$1\". available: apk-add, set-timezone;;
     esac
 }
 
-router $@
+router "${GOT_OPTS[@]}"
