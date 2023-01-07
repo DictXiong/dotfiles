@@ -34,7 +34,7 @@ get_server_meta()
             SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
             ;;
         "" )
-            SERVER=bj1.ob.ac.cn
+            SERVER=proxy.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
             PORT=$((tmp+36000))
