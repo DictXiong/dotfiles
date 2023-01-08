@@ -23,9 +23,13 @@ test ~ -ef "$(pwd)"
 dogo
 doll
 dfs cd
-./tools/test-getopts.sh
-tools/common.sh get_os_type
-tools/common.sh get_linux_dist
+tools/test-getopts.sh
+tools/common.sh get_os_name
+test $(echo y | tools/common.sh ask_for_yN "test") = "1"
+test $(echo n | tools/common.sh ask_for_yN "test") = "0"
+test $(echo | tools/common.sh ask_for_yN "test") = "0"
+test $(echo | tools/common.sh ask_for_Yn "test") = "1"
+test $(DFS_QUIET=1 tools/common.sh ask_for_Yn "test") = "1"
 
 # check alias
 alias p114
