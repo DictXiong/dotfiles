@@ -5,6 +5,7 @@ export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
 
 # parse args and set env, when it is sourced
+# todo: make this skipable
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     ORIGIN_ARGS=("$@")
     ARG=""
