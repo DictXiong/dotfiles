@@ -292,6 +292,7 @@ uninstall()
     fmt_note "done uninstalling!"
 }
 
+echo "this is the dotfiles installer, version $(cd "$DOTFILES" && git describe --tags --always --dirty)"
 FUNC=install
 INSTALL_DEP=0
 store_config=0
