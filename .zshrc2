@@ -79,7 +79,7 @@ done
 # select theme
 TMP_THEME=ys
 if [[ -e /.dockerenv ]]; then
-    TMP_THEME=blinks
+    TMP_THEME=robbyrussell
     echo "==========================="
     echo "This is in docker container"
     echo "==========================="
