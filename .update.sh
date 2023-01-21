@@ -7,6 +7,9 @@ source "$THIS_DIR/tools/common.sh"
 DFS_UPDATED_RET=${DFS_UPDATED_RET:-0}
 DFS_UPDATE_CHANNEL=${DFS_UPDATE_CHANNEL:-"main"}
 
+# send beacon online
+apost_beacon "sys.online"
+
 # fetch origin
 cd $DOTFILES
 git fetch --all --prune
