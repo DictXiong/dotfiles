@@ -174,10 +174,10 @@ apost_log()
 
 post_beacon()
 {
-    if [[ $# != 1 || -z "$1" ]]; then
+    if [[ $# < 1 || -z "$1" ]]; then
         fmt_fatal "usage: post_beacon <beacon>"
     fi
-    "${DOTFILES}/tools/logger.sh" "beacon" "$1"
+    "${DOTFILES}/tools/logger.sh" "beacon" "$1" "$2"
 }
 
 apost_beacon()

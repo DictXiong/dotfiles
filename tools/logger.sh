@@ -40,10 +40,11 @@ init_uuid()
 post_beacon()
 {
     local beacon_type=$1
+    local meta=$2
     if [[ -z "$beacon_type" ]]; then
         fmt_fatal "beacon type is required"
     fi
-    resp=$(curl -sSL -X POST "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
+    resp=$(curl -sSL -X POST -H "Content-Type: text/plain" -d "$meta" "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
     if grep -q "200" <<< "$resp"; then
         echo $resp
     else
@@ -59,7 +60,7 @@ post_log()
         fmt_fatal "log content is required"
     fi
     init_uuid
-    resp=$(curl -sSL -X POST -H "Content-Type: text/plain" -d "$1" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
+    resp=$(curl -sSL -X POST -H "Content-Type: text/plain" -d "$log_content" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
     if grep -q "200" <<< "$resp"; then
         echo $resp
     elif grep -q "403" <<< "$resp"; then
@@ -81,7 +82,7 @@ print_help()
 
 router()
 {
-    if [[ $# != 2 ]]; then
+    if [[ $# < 2 ]]; then
         print_help >&2
         exit 1
     fi
@@ -91,7 +92,7 @@ router()
             fmt_info "usage: $0 <beacon|log> <beacon_type|log_content>"
             ;;
         beacon)
-            post_beacon "$2"
+            post_beacon "$2" "$3"
             ;;
         log)
             post_log "$2"
