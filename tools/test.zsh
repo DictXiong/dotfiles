@@ -18,6 +18,7 @@ grep -q ".zshrc2" ~/.zshrc
 dfs version
 dfs log 1
 dfs beacon gh.ci $GITHUB_SHA
+sagent
 z ~
 test ~ -ef "$(pwd)"
 dogo

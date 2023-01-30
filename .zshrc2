@@ -113,44 +113,7 @@ if [[ -x $(command -v trash) ]]; then
     alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
 fi
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
-piv-agent()
-{
-    local agent_file="/tmp/piv-agent-$(whoami)"
-    if [[ -f $agent_file ]]; then
-        source $agent_file
-    fi
-    # they are: ubuntu, macos, respectively
-    local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" )
-    local SO_FILE
-    for SO_FILE in ${SO_PATHS[*]}; do
-        if [[ -f "$SO_FILE" ]]; then
-            break
-        fi
-    done
-    if [[ ! -f "$SO_FILE" ]]; then
-        echo "error: opensc-pkcs11.so not found"
-        return 1
-    fi
-    if ! ps -p "$SSH_AGENT_PID" > /dev/null; then
-        echo "launch agent using: $SO_FILE"
-        ret=$(ssh-agent -P "$SO_FILE")
-        echo "$ret" > $agent_file
-        eval "$ret"
-        if ! ps -p $SSH_AGENT_PID > /dev/null; then
-            echo "failed to launch agent"
-            return 1
-        fi
-    else
-        echo "using existing agent: $SSH_AGENT_PID"
-    fi
-    if ! ssh-add -l > /dev/null; then
-        echo "no keys found in this agent, let's add some"
-        ssh-add -s "$SO_FILE"
-    fi
-    pgrep ssh-agent | grep -v $SSH_AGENT_PID | xargs kill -9
-    echo "now available keys:"
-    ssh-add -l
-}
+piv-agent() { eval "$($DOTFILES/tools/sagent.sh $@)" }
 
 # key bindings
 bindkey "^b" beginning-of-line  # ctrl+b

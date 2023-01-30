@@ -75,11 +75,11 @@ fmt_warning() {
 }
 
 fmt_info() {
-    printf '%sinfo: %s\n' "${FMT_RESET}" "$*" >&1
+    printf '%sinfo: %s\n' "${FMT_RESET}" "$*" >&2
 }
 
 fmt_note() {
-    printf '%s%s%s\n' "${FMT_GREEN}" "$*" "${FMT_RESET}" >&1
+    printf '%s%s%s\n' "${FMT_GREEN}" "$*" "${FMT_RESET}" >&2
 }
 
 setup_color() {
