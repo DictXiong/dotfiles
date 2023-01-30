@@ -67,7 +67,7 @@ all()
         touch $agent_file
         chmod 600 $agent_file
     fi
-    if ! ps -p "$SSH_AGENT_PID" > /dev/null; then
+    if ! ps -p "$SSH_AGENT_PID" 1>/dev/null 2>&1; then
         kill_agent
         fmt_note "launching a new agent"
         create_agent | tee $agent_file
