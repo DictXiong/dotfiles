@@ -90,10 +90,12 @@ antigen apply
 # end of antigen config
 
 # beacon
-if [[ "$EUID" == "0" ]]; then
-    "$DOTFILES/tools/common.sh" apost_beacon "sys.login.root"
-else
-    "$DOTFILES/tools/common.sh" apost_beacon "sys.login.user"
+if [[ -z "$DFS_INITED" && -z "$CI"  ]]; then
+    if [[ "$EUID" == "0" ]]; then
+        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.root"
+    else
+        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.user"
+    fi
 fi
 
 # alias
@@ -209,3 +211,4 @@ dfs()
 
 # clean
 unset i
+export DFS_INITED=1
