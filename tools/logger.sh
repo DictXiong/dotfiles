@@ -4,6 +4,10 @@ set -e
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/common.sh"
 
+if [[ "$DFS_ORPHAN" == "1" ]]; then
+    exit 0
+fi
+
 if [[ -x $(command -v hostname) ]]; then
     hostname=$(hostname)
 elif [[ -x $(command -v uname) ]]; then
