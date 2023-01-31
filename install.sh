@@ -109,6 +109,11 @@ prepare_config()
     echo
 }
 
+append_hist()
+{
+    "$DOTFILES/tools/append_zsh_hist.sh" "$@"
+}
+
 install_file_content()
 {
     fmt_note "installing file content ..."
@@ -275,6 +280,7 @@ install()
     # those that won't be uninstalled in the future
     install_tmux_tpm
     install_vim_vundle
+    if [[ -n "$DFS_HIST" ]]; then append_hist "$DFS_HIST"; fi
     fmt_note "done installing!"
 }
 
@@ -296,10 +302,16 @@ echo "this is the dotfiles installer, version $(cd "$DOTFILES" && git describe -
 FUNC=install
 INSTALL_DEP=0
 store_config=0
+store_hist=0
 for i in ${GOT_OPTS[@]}; do
     if [[ "$store_config" == "1" ]]; then
         store_config=0
         DFS_CONFIGS+=("$i")
+        continue
+    fi
+    if [[ "$store_hist" == "1" ]]; then
+        store_hist=0
+        DFS_HIST=$i
         continue
     fi
     case $i in
@@ -308,6 +320,7 @@ for i in ${GOT_OPTS[@]}; do
         -d|--dev ) export DFS_DEV=1; set -x ;;
         -a|--auto ) INSTALL_DEP=1 ;;
         -s|--secure ) export DFS_DEV=0 ;;
+        -H|--hist|--history ) store_hist=1 ;;
         -x ) store_config=1 ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
