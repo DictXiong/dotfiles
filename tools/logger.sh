@@ -45,6 +45,9 @@ post_beacon()
 {
     local beacon_type=$1
     local meta=$2
+    if [[ -n "$CI" && "$beacon_type" != "gh.ci" && "$beacon_type" != "dfs.invalid-commit" && "$beacon_type" != "dfs.dirty" ]]; then
+        return
+    fi
     if [[ -z "$beacon_type" ]]; then
         fmt_fatal "beacon type is required"
     fi
