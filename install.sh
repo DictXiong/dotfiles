@@ -265,9 +265,9 @@ uninstall_update()
 install()
 {
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
+    prepare_config
     install_update
     preinstall_check
-    prepare_config
     install_crontab
     install_file_content
     install_symlink
