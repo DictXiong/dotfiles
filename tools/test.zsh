@@ -52,7 +52,7 @@ git reset --hard $DFS_VERSION
 grep -qE "testhist 1$" ~/.zsh_history
 grep -qE "testhist 4$" ~/.zsh_history
 grep -qx "DFS_CI=1" ~/.config/dotfiles/env
-./install.sh -l -x DFS_CI=1
+./install.sh -l
 dfs version
 test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id`
 
