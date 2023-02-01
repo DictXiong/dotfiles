@@ -19,8 +19,13 @@ main()
     if [[ -z "$key" ]]; then
         fmt_fatal "missing key"
     fi
-    local url="https://pastebin.com/raw/$key"
-    curl -fsSL "$url" | do_append
+    IFS=',' read -r -a keys<<<"$key"
+    for k in "${keys[@]}";do
+        if [[ -z "$k" ]]; then
+            continue
+        fi
+        curl -fsSL "https://pastebin.com/raw/$k" | do_append
+    done
 }
 
 main "${GOT_OPTS[@]}"
