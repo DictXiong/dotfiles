@@ -1,6 +1,7 @@
 #!/bin/false "This script should be sourced in zsh, not executed directly"
 
 set -ex
+trap "dfs beacon gh.ci.fail" ERR
 
 # check files
 cd /
