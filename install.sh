@@ -111,6 +111,7 @@ prepare_config()
 
 append_hist()
 {
+    fmt_note "appending zsh history ..."
     "$DOTFILES/tools/append_zsh_hist.sh" "$@"
 }
 
