@@ -26,7 +26,7 @@ main()
         if [[ -z "$k" ]]; then
             continue
         fi
-        (curl -fsSL "https://pastebin.com/raw/$k" && echo) | do_append
+        (curl -fsSL "https://pastebin.com/raw/$k" && echo) | sed 's/\r//' | do_append
     done
 }
 
