@@ -9,7 +9,9 @@ do_append()
 {
     timestamp=$(date +%s)
     while read -r line; do
-        echo ": $timestamp:0;$line" >> "$zsh_hist_file"
+        if [[ -n "$line" ]]; then
+            echo ": $timestamp:0;$line" >> "$zsh_hist_file"
+        fi
     done
 }
 
@@ -24,7 +26,7 @@ main()
         if [[ -z "$k" ]]; then
             continue
         fi
-        curl -fsSL "https://pastebin.com/raw/$k" | do_append
+        (curl -fsSL "https://pastebin.com/raw/$k" && echo) | do_append
     done
 }
 
