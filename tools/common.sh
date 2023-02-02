@@ -3,6 +3,7 @@ set -e
 THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
+if [[ "$DFS_DEBUG" == "1" ]]; then set -x; fi
 
 # parse args and set env, when it is sourced
 # todo: make this skipable
