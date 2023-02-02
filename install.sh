@@ -300,6 +300,7 @@ uninstall()
 }
 
 echo "this is the dotfiles installer, version $(cd "$DOTFILES" && git describe --tags --always --dirty)"
+echo "install options:" "${GOT_OPTS[@]}"
 FUNC=install
 INSTALL_DEP=0
 store_config=0
