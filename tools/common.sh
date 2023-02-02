@@ -31,7 +31,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     done
     set -- "${ORIGIN_ARGS[@]}"
     unset ARG
-    unset ORIGIN_ARGS
+    # outputs: GOT_OPTS and ORIGIN_ARGS
 fi
 
 # Color settings

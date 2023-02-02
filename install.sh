@@ -255,7 +255,7 @@ install_update()
     RET=$?
     if [[ $RET == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
-        "${DOTFILES}/install.sh" "$@" && exit
+        "${DOTFILES}/install.sh" "${ORIGIN_ARGS[@]}" && exit
     elif [[ $RET != 0 ]]; then
         fmt_fatal "update.sh failed with exit code $RET"
     fi
