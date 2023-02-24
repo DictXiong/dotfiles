@@ -17,14 +17,9 @@ get_server_meta()
         domain=""
     fi
     case $domain in
-        ibd )
-            SERVER=$host.ibd.ink
+        ibd|ebd )
+            SERVER=$host.$domain.ink
             PORT=12022
-            SSH_USERNAME=root
-            ;;
-        ob )
-            SERVER=$host.ob.ac.cn
-            PORT=24022
             SSH_USERNAME=root
             ;;
         nasp )
@@ -46,9 +41,8 @@ get_server_meta()
 }
 
 # ssh
-_ssh()
+run_ssh()
 {
-    get_server_meta "$1"
     fmt_note "--> ssh to $SERVER:$PORT"
     eval ssh -p $PORT $SSH_OPTIONS $SSH_USERNAME@$SERVER
 }
@@ -56,23 +50,29 @@ _ssh()
 # main
 print_help()
 {
-    fmt_info "usage: $0 <command> <service> [options]"
-    echo "available commands: ssh"
+    fmt_info "usage: $0 <service> [command] [options]"
+    echo "available commands: ssh (default)"
 }
 
 router()
 {
-    test $# -eq 2 || (print_help && fmt_fatal "invalid arguments")
-    case $1 in
+    test -n "$1" || (print_help && fmt_fatal "invalid arguments")
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        print_help
+        exit
+    fi
+    get_server_meta "$1"
+    case $2 in
         -h|--help)
             print_help
+            exit
             ;;
-        ssh )
-            _ssh "$2"
+        ssh|"" )
+            run_ssh
             ;;
         * )
             print_help
-            fmt_fatal "unknown command: $1"
+            fmt_fatal "unknown command: $2"
             ;;
     esac
 }
