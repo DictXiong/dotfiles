@@ -8,7 +8,9 @@ if [[ "$DFS_ORPHAN" == "1" ]]; then
     exit 0
 fi
 
-if [[ -x $(command -v hostname) ]]; then
+if [[ -n "$DFS_HOSTNAME" ]]; then
+    hostname=$DFS_HOSTNAME
+elif [[ -x $(command -v hostname) ]]; then
     hostname=$(hostname)
 elif [[ -x $(command -v uname) ]]; then
     hostname=$(uname -n)
@@ -82,21 +84,76 @@ post_log()
     fi
 }
 
+update_dns()
+{
+    if [[ -z "$DFS_DDNS_IP4$DFS_DDNS_IP6" ]]; then
+        fmt_fatal "neither DFS_DDNS_IP4 nor DFS_DDNS_IP6 is configured"
+    fi
+    init_uuid
+    local ip4
+    local ip6
+    local api_url="https://api.beardic.cn"
+    if [[ -z "$DFS_DDNS_IP4" ]]; then
+        ip4=""
+    elif [[ "$DFS_DDNS_IP4" == "auto" ]]; then
+        ip4="auto"
+    elif [[ "$DFS_DDNS_IP4" == "api" ]]; then
+        ip4=$(curl -sSL "https://api.ipify.org")
+    elif [[ "$DFS_DDNS_IP4" == "http"* ]]; then
+        ip4=$(curl -sSL "$DFS_DDNS_IP4")
+        if [[ -z "$ip4" ]]; then
+            fmt_fatal "unable to get ip4 address from $DFS_DDNS_IP4"
+        fi
+    else
+        ip4=$(ip a show $DFS_DDNS_IP4 | grep inet | grep global | awk '/inet / {print $2}' |  awk -F'[/]' '{print $1}')
+        if [[ -z "$ip4" ]]; then
+            fmt_fatal "unable to get ip4 address from $DFS_DDNS_IP4"
+        fi
+    fi
+    if [[ -z "$DFS_DDNS_IP6" ]]; then
+        ip6=""
+    elif [[ "$DFS_DDNS_IP6" == "auto" ]]; then
+        ip6="auto"
+        api_url="https://api6.beardic.cn"
+    elif [[ "$DFS_DDNS_IP6" == "api" ]]; then
+        ip6=$(curl -sSL "https://api6.ipify.org")
+    elif [[ "$DFS_DDNS_IP6" == "http"* ]]; then
+        ip6=$(curl -sSL "$DFS_DDNS_IP6")
+        if [[ -z "$ip6" ]]; then
+            fmt_fatal "unable to get ip6 address from $DFS_DDNS_IP6"
+        fi
+    else
+        ip6=$(ip a show $DFS_DDNS_IP6 | grep inet6 | grep global | awk '/inet6 / {print $2}' |  awk -F'[/]' '{print $1}')
+        if [[ -z "$ip6" ]]; then
+            fmt_fatal "unable to get ip6 address from $DFS_DDNS_IP6"
+        fi
+    fi
+    fmt_note "updating dns record for $hostname with ip4=$ip4 ip6=$ip6"
+    resp=$(curl -sSL "$api_url/update-dns?hostname=$hostname&uuid=$uuid&ip4=$ip4&ip6=$ip6")
+    if grep -q "200" <<< "$resp"; then
+        echo $resp
+    elif grep -q "403" <<< "$resp"; then
+        echo $resp >&2
+        fmt_error "error updating dns record: authentification failed"
+        fmt_info "try to register you hostname and uuid"
+        fmt_info "hostname: $hostname"
+        fmt_info "uuid: $uuid"
+    else
+        echo $resp >&2
+        fmt_fatal "error updating dns record"
+    fi
+}
+
 print_help()
 {
-    fmt_info "usage: $0 <beacon|log> <beacon_type|log_content>"
+    fmt_info "usage: $0 <beacon|log|ddns> <beacon_type|log_content>"
 }
 
 router()
 {
-    if [[ $# < 2 ]]; then
-        print_help >&2
-        exit 1
-    fi
-
     case "$1" in
         -h|--help)
-            fmt_info "usage: $0 <beacon|log> <beacon_type|log_content>"
+            print_help
             ;;
         beacon)
             post_beacon "$2" "$3"
@@ -104,7 +161,11 @@ router()
         log)
             post_log "$2"
             ;;
+        ddns)
+            update_dns
+            ;;
         *)
+            print_help
             fmt_fatal "invalid argument"
             ;;
     esac
