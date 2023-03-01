@@ -13,7 +13,7 @@ apost_beacon "sys.online"
 # update dns
 if [[ "$DFS_DDNS_ENABLE" == "1" ]]; then
     fmt_info "updating dns ..."
-    "$THIS_DIR/tools/logger.sh" ddns || (fmt_error "failed to update dns" && apost_beacon "dfs.ddns.failed")
+    "$THIS_DIR/tools/logger.sh" ddns || (fmt_error "failed to update dns" && apost_beacon "dfs.ddns.fail")
 fi
 
 # fetch origin
