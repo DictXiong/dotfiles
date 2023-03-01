@@ -43,6 +43,24 @@ init_uuid()
     fi
 }
 
+handle_resp()
+{
+    local resp="$1"
+    if grep -q "200" <<< "$resp"; then
+        echo $resp
+    elif grep -q "403" <<< "$resp"; then
+        echo $resp >&2
+        fmt_error "error accessing api: authentification failed"
+        fmt_info "try to register you hostname and uuid"
+        fmt_info "hostname: $hostname"
+        fmt_info "uuid: $uuid"
+    else
+        echo $resp >&2
+        fmt_fatal "server returned an error"
+        # here return 1 because this is not expected
+    fi
+}
+
 post_beacon()
 {
     local beacon_type=$1
@@ -53,13 +71,8 @@ post_beacon()
     if [[ -z "$beacon_type" ]]; then
         fmt_fatal "beacon type is required"
     fi
-    resp=$(curl -sSL -X POST -H "Content-Type: text/plain" -d "$meta" "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
-    if grep -q "200" <<< "$resp"; then
-        echo $resp
-    else
-        echo $resp >&2
-        fmt_fatal "error posting beacon"
-    fi
+    resp=$(curl -m 10 -sSL -X POST -H "Content-Type: text/plain" -d "$meta" "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
+    handle_resp "$resp"
 }
 
 post_log()
@@ -69,19 +82,8 @@ post_log()
         fmt_fatal "log content is required"
     fi
     init_uuid
-    resp=$(curl -sSL -X POST -H "Content-Type: text/plain" -d "$log_content" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
-    if grep -q "200" <<< "$resp"; then
-        echo $resp
-    elif grep -q "403" <<< "$resp"; then
-        echo $resp >&2
-        fmt_error "error posting log: authentification failed"
-        fmt_info "try to register you hostname and uuid"
-        fmt_info "hostname: $hostname"
-        fmt_info "uuid: $uuid"
-    else
-        echo $resp >&2
-        fmt_fatal "error posting log"
-    fi
+    resp=$(curl -m 10 -sSL -X POST -H "Content-Type: text/plain" -d "$log_content" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
+    handle_resp "$resp"
 }
 
 update_dns()
@@ -89,64 +91,53 @@ update_dns()
     if [[ -z "$DFS_DDNS_IP4$DFS_DDNS_IP6" ]]; then
         fmt_fatal "neither DFS_DDNS_IP4 nor DFS_DDNS_IP6 is configured"
     fi
+    if [[ "$DFS_DDNS_IP4$DFS_DDNS_IP6" == "autoauto" ]]; then
+        fmt_fatal "DFS_DDNS_IP4 and DFS_DDNS_IP6 cannot both be auto"
+    fi
     init_uuid
     local ip4
     local ip6
     local api_url="https://api.beardic.cn"
+    # get ip4
     if [[ -z "$DFS_DDNS_IP4" ]]; then
         ip4=""
     elif [[ "$DFS_DDNS_IP4" == "auto" ]]; then
         ip4="auto"
     elif [[ "$DFS_DDNS_IP4" == "api" ]]; then
-        ip4=$(curl -sSL "https://api.ipify.org")
+        ip4=$(curl -m 10 -sSL "https://api.ipify.org")
     elif [[ "$DFS_DDNS_IP4" == "http"* ]]; then
-        ip4=$(curl -sSL "$DFS_DDNS_IP4")
-        if [[ -z "$ip4" ]]; then
-            fmt_fatal "unable to get ip4 address from $DFS_DDNS_IP4"
-        fi
+        ip4=$(curl -m 10 -sSL "$DFS_DDNS_IP4")
     else
         ip4=$(ip a show $DFS_DDNS_IP4 | grep inet | grep global | awk '/inet / {print $2}' |  awk -F'[/]' '{print $1}')
-        if [[ -z "$ip4" ]]; then
-            fmt_fatal "unable to get ip4 address from $DFS_DDNS_IP4"
-        fi
     fi
+    if [[ -n "$DFS_DDNS_IP4" && -z "$ip4" ]]; then
+        fmt_fatal "failed getting ip4 address"
+    fi
+    # get ip6
     if [[ -z "$DFS_DDNS_IP6" ]]; then
         ip6=""
     elif [[ "$DFS_DDNS_IP6" == "auto" ]]; then
         ip6="auto"
         api_url="https://api6.beardic.cn"
     elif [[ "$DFS_DDNS_IP6" == "api" ]]; then
-        ip6=$(curl -sSL "https://api6.ipify.org")
+        ip6=$(curl -m 10 -sSL "https://api6.ipify.org")
     elif [[ "$DFS_DDNS_IP6" == "http"* ]]; then
-        ip6=$(curl -sSL "$DFS_DDNS_IP6")
-        if [[ -z "$ip6" ]]; then
-            fmt_fatal "unable to get ip6 address from $DFS_DDNS_IP6"
-        fi
+        ip6=$(curl -m 10 -sSL "$DFS_DDNS_IP6")
     else
         ip6=$(ip a show $DFS_DDNS_IP6 | grep inet6 | grep global | awk '/inet6 / {print $2}' |  awk -F'[/]' '{print $1}')
-        if [[ -z "$ip6" ]]; then
-            fmt_fatal "unable to get ip6 address from $DFS_DDNS_IP6"
-        fi
     fi
+    if [[ -n "$DFS_DDNS_IP6" && -z "$ip6" ]]; then
+        fmt_fatal "failed getting ip6 address"
+    fi
+    # update dns
     fmt_note "updating dns record for $hostname with ip4=$ip4 ip6=$ip6"
-    resp=$(curl -sSL "$api_url/update-dns?hostname=$hostname&uuid=$uuid&ip4=$ip4&ip6=$ip6")
-    if grep -q "200" <<< "$resp"; then
-        echo $resp
-    elif grep -q "403" <<< "$resp"; then
-        echo $resp >&2
-        fmt_error "error updating dns record: authentification failed"
-        fmt_info "try to register you hostname and uuid"
-        fmt_info "hostname: $hostname"
-        fmt_info "uuid: $uuid"
-    else
-        echo $resp >&2
-        fmt_fatal "error updating dns record"
-    fi
+    resp=$(curl -m 20 -sSL "$api_url/update-dns?hostname=$hostname&uuid=$uuid&ip4=$ip4&ip6=$ip6")
+    handle_resp "$resp"
 }
 
 print_help()
 {
-    fmt_info "usage: $0 <beacon|log|ddns> <beacon_type|log_content>"
+    fmt_info "usage: $0 <beacon|log|ddns> [beacon_type|log_content]"
 }
 
 router()
