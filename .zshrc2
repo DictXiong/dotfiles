@@ -92,9 +92,9 @@ antigen apply
 # beacon
 if [[ -z "$DFS_INITED" && -z "$CI"  ]]; then
     if [[ "$EUID" == "0" ]]; then
-        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.root" "$(who am i | sed -E 's/ +/ /g' | awk '$1=$1')"
+        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.root" "$(who am i | sed -E 's/ +/ /g' | awk '$1=$1')" 2>/dev/null
     else
-        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.user" "$(who am i | sed -E 's/ +/ /g' | awk '$1=$1')"
+        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.user" "$(who am i | sed -E 's/ +/ /g' | awk '$1=$1')" 2>/dev/null
     fi
 fi
 
