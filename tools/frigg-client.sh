@@ -71,7 +71,7 @@ post_beacon()
     if [[ -z "$beacon_type" ]]; then
         fmt_fatal "beacon type is required"
     fi
-    resp=$(curl -m 10 -sSL -X POST -H "Content-Type: text/plain" -d "$meta" "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
+    resp=$(curl $DFS_CURL_OPTIONS -sSL -X POST -H "Content-Type: text/plain" -d "$meta" "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
     handle_resp "$resp"
 }
 
@@ -82,7 +82,7 @@ post_log()
         fmt_fatal "log content is required"
     fi
     init_uuid
-    resp=$(curl -m 10 -sSL -X POST -H "Content-Type: text/plain" -d "$log_content" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
+    resp=$(curl $DFS_CURL_OPTIONS -sSL -X POST -H "Content-Type: text/plain" -d "$log_content" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
     handle_resp "$resp"
 }
 
@@ -104,9 +104,9 @@ update_dns()
     elif [[ "$DFS_DDNS_IP4" == "auto" ]]; then
         ip4="auto"
     elif [[ "$DFS_DDNS_IP4" == "api" ]]; then
-        ip4=$(curl -m 10 -sSL "https://api.ipify.org")
+        ip4=$(curl $DFS_CURL_OPTIONS -sSL "https://api.ipify.org")
     elif [[ "$DFS_DDNS_IP4" == "http"* ]]; then
-        ip4=$(curl -m 10 -sSL "$DFS_DDNS_IP4")
+        ip4=$(curl $DFS_CURL_OPTIONS -sSL "$DFS_DDNS_IP4")
     else
         ip4=$(ip a show $DFS_DDNS_IP4 | grep inet | grep global | awk '/inet / {print $2}' |  awk -F'[/]' '{print $1}')
     fi
@@ -120,9 +120,9 @@ update_dns()
         ip6="auto"
         api_url="https://api6.beardic.cn"
     elif [[ "$DFS_DDNS_IP6" == "api" ]]; then
-        ip6=$(curl -m 10 -sSL "https://api6.ipify.org")
+        ip6=$(curl $DFS_CURL_OPTIONS -sSL "https://api6.ipify.org")
     elif [[ "$DFS_DDNS_IP6" == "http"* ]]; then
-        ip6=$(curl -m 10 -sSL "$DFS_DDNS_IP6")
+        ip6=$(curl $DFS_CURL_OPTIONS -sSL "$DFS_DDNS_IP6")
     else
         ip6=$(ip a show $DFS_DDNS_IP6 | grep inet6 | grep global | awk '/inet6 / {print $2}' |  awk -F'[/]' '{print $1}')
     fi
@@ -131,7 +131,7 @@ update_dns()
     fi
     # update dns
     fmt_note "updating dns record for $hostname with ip4=$ip4 ip6=$ip6"
-    resp=$(curl -m 20 -sSL "$api_url/update-dns?hostname=$hostname&uuid=$uuid&ip4=$ip4&ip6=$ip6")
+    resp=$(curl $DFS_CURL_OPTIONS -sSL "$api_url/update-dns?hostname=$hostname&uuid=$uuid&ip4=$ip4&ip6=$ip6")
     handle_resp "$resp"
 }
 
