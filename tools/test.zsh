@@ -26,6 +26,7 @@ doll
 dfs cd
 tools/test-getopts.sh
 tools/common.sh get_os_name
+DFS_DDNS_IP4=api DFS_DDNS_IP6=api tools/frigg-client.sh ddns
 test $(echo y | tools/common.sh ask_for_yN "test") = "1"
 test $(echo n | tools/common.sh ask_for_yN "test") = "0"
 test $(echo | tools/common.sh ask_for_yN "test") = "0"
