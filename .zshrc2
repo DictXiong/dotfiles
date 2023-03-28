@@ -104,6 +104,8 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
+alias "cbd"='curl http://www.baidu.com'
+alias "cbds"='curl https://www.baidu.com'
 alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
 case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;

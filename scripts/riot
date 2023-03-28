@@ -24,7 +24,7 @@ get_server_meta()
             ;;
         nasp )
             SERVER=$host
-            PORT=22
+            PORT=12022
             SSH_USERNAME=dictxiong
             SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
             ;;
