@@ -115,7 +115,7 @@ if [[ -x $(command -v trash) ]]; then
     alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
 fi
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
-sagent() { eval "$($DOTFILES/tools/sagent.sh $@)" }
+sagt() { eval "$($DOTFILES/tools/sagent.sh $@)" }
 
 # key bindings
 bindkey "^b" beginning-of-line  # ctrl+b
