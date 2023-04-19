@@ -35,7 +35,7 @@ test $(DFS_QUIET=1 tools/common.sh ask_for_Yn "test") = "1"
 # check alias
 alias p114
 which riot
-sagent
+sagt
 test -f "/tmp/piv-agent-$(whoami)"
 gbes || which gbes
 
