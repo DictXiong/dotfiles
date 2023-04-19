@@ -32,7 +32,7 @@ get_server_meta()
             SERVER=proxy.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
-            PORT=$((tmp+36000))
+            PORT=$((10#$tmp+36000))
             SSH_USERNAME=root
             ;;
         * )
