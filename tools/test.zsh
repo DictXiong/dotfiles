@@ -34,6 +34,7 @@ test $(DFS_QUIET=1 tools/common.sh ask_for_Yn "test") = "1"
 
 # check alias
 alias p114
+alias cbds
 which riot
 sagt
 test -f "/tmp/piv-agent-$(whoami)"
