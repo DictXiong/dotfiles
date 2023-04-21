@@ -3,8 +3,11 @@ set -e
 THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
+if [[ "$DFS_DEBUG" == "1" ]]; then set -x; fi
+DFS_CURL_OPTIONS="--retry 2 --max-time 20"
 
 # parse args and set env, when it is sourced
+# todo: make this skipable
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     ORIGIN_ARGS=("$@")
     ARG=""
@@ -29,7 +32,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     done
     set -- "${ORIGIN_ARGS[@]}"
     unset ARG
-    unset ORIGIN_ARGS
+    # outputs: GOT_OPTS and ORIGIN_ARGS
 fi
 
 # Color settings
@@ -74,11 +77,11 @@ fmt_warning() {
 }
 
 fmt_info() {
-    printf '%sinfo: %s\n' "${FMT_RESET}" "$*" >&1
+    printf '%sinfo: %s\n' "${FMT_RESET}" "$*" >&2
 }
 
 fmt_note() {
-    printf '%s%s%s\n' "${FMT_GREEN}" "$*" "${FMT_RESET}" >&1
+    printf '%s%s%s\n' "${FMT_GREEN}" "$*" "${FMT_RESET}" >&2
 }
 
 setup_color() {
@@ -163,7 +166,7 @@ post_log()
     if [[ $# != 3 || -z "$1" || -z "$2" || -z "$3" ]]; then
         fmt_fatal "usage: post_log <level> <section> <content>"
     fi
-    "${DOTFILES}/tools/logger.sh" "log" "[$1][$2] $3"
+    "${DOTFILES}/tools/frigg-client.sh" "log" "[$1][$2] $3"
 }
 
 apost_log()
@@ -173,10 +176,10 @@ apost_log()
 
 post_beacon()
 {
-    if [[ $# != 1 || -z "$1" ]]; then
+    if [[ $# < 1 || -z "$1" ]]; then
         fmt_fatal "usage: post_beacon <beacon>"
     fi
-    "${DOTFILES}/tools/logger.sh" "beacon" "$1"
+    "${DOTFILES}/tools/frigg-client.sh" "beacon" "$1" "$2"
 }
 
 apost_beacon()

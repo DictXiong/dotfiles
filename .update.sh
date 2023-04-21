@@ -7,6 +7,15 @@ source "$THIS_DIR/tools/common.sh"
 DFS_UPDATED_RET=${DFS_UPDATED_RET:-0}
 DFS_UPDATE_CHANNEL=${DFS_UPDATE_CHANNEL:-"main"}
 
+# send beacon online
+apost_beacon "sys.online"
+
+# update dns
+if [[ "$DFS_DDNS_ENABLE" == "1" ]]; then
+    fmt_info "updating dns ..."
+    "$THIS_DIR/tools/frigg-client.sh" ddns || (fmt_error "failed to update dns" && apost_beacon "dfs.ddns.fail")
+fi
+
 # fetch origin
 cd $DOTFILES
 git fetch --all --prune
@@ -18,7 +27,7 @@ fi
 
 # get the specified commit id
 case $DFS_UPDATE_CHANNEL in
-    "main" ) DFS_COMMIT=$(curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id) ;;
+    "main" ) DFS_COMMIT=$(curl $DFS_CURL_OPTIONS -fsSL https://api.beardic.cn/get-var/dfs-commit-id) ;;
     "dev" ) DFS_COMMIT=$(git rev-parse origin/dev 2> /dev/null) || DFS_COMMIT=$(git rev-parse origin/main) ;;
     "latest" ) DFS_COMMIT=$(git for-each-ref --sort=-committerdate refs/heads refs/remotes --format='%(objectname)' | head -n 1) ;;
     * ) fmt_fatal "invalid update channel: $DFS_UPDATE_CHANNEL" ;;

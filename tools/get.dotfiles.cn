@@ -45,6 +45,7 @@ for u in "${DFS_USERS[@]}";do
     echo "install for user $u in 3 seconds ..."
     sleep 3
     $SUCMD<<EOF
+set -e
 cd
 if [[ ! -f ~/dotfiles/install.sh ]];then
     git clone ${repo}

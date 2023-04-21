@@ -79,7 +79,7 @@ done
 # select theme
 TMP_THEME=ys
 if [[ -e /.dockerenv ]]; then
-    TMP_THEME=blinks
+    TMP_THEME=robbyrussell
     echo "==========================="
     echo "This is in docker container"
     echo "==========================="
@@ -90,10 +90,12 @@ antigen apply
 # end of antigen config
 
 # beacon
-if [[ "$EUID" == "0" ]]; then
-    "$DOTFILES/tools/common.sh" apost_beacon "sys.login.root"
-else
-    "$DOTFILES/tools/common.sh" apost_beacon "sys.login.user"
+if [[ -z "$DFS_INITED" && -z "$CI"  ]]; then
+    if [[ "$EUID" == "0" ]]; then
+        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.root" "$(who am i | sed -E 's/ +/ /g' | awk '$1=$1')" 2>/dev/null
+    else
+        "$DOTFILES/tools/common.sh" apost_beacon "sys.login.user" "$(who am i | sed -E 's/ +/ /g' | awk '$1=$1')" 2>/dev/null
+    fi
 fi
 
 # alias
@@ -102,6 +104,8 @@ alias "se"='sudo -sE'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
+alias "cbd"='curl http://www.baidu.com'
+alias "cbds"='curl https://www.baidu.com'
 alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
 case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
     macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
@@ -111,24 +115,7 @@ if [[ -x $(command -v trash) ]]; then
     alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
 fi
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
-piv-agent()
-{
-    eval $(ssh-agent -k)
-    # they are: ubuntu, macos, respectively
-    local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" )
-    for i in ${SO_PATHS[*]}; do
-        if [[ -f "$i" ]]; then
-            echo "using: $i"
-            eval $(ssh-agent -P "$i")
-            ssh-add -s "$i"
-            echo "now available keys:"
-            ssh-add -l
-            return 0
-        fi
-    done
-    echo "opensc-pkcs11.so not found"
-    return 1
-}
+sagt() { eval "$($DOTFILES/tools/sagent.sh $@)" }
 
 # key bindings
 bindkey "^b" beginning-of-line  # ctrl+b
@@ -182,10 +169,11 @@ dfs()
             echo 'Done. Please open a new shell to see the changes.'
             ;;
         log    ) "$DOTFILES/tools/common.sh" "post_log" "INFO" "dfs" "$2" ;;
-        beacon ) "$DOTFILES/tools/common.sh" "post_beacon" "$2" ;;
+        beacon ) "$DOTFILES/tools/common.sh" "post_beacon" "$2" "$3" ;;
         *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac
 }
 
 # clean
 unset i
+export DFS_INITED=1

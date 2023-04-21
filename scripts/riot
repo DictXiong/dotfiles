@@ -17,27 +17,22 @@ get_server_meta()
         domain=""
     fi
     case $domain in
-        ibd )
-            SERVER=$host.ibd.ink
+        ibd|ebd )
+            SERVER=$host.$domain.ink
             PORT=12022
-            SSH_USERNAME=root
-            ;;
-        ob )
-            SERVER=$host.ob.ac.cn
-            PORT=24022
             SSH_USERNAME=root
             ;;
         nasp )
             SERVER=$host
-            PORT=22
+            PORT=12022
             SSH_USERNAME=dictxiong
             SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
             ;;
         "" )
-            SERVER=bj1.ob.ac.cn
+            SERVER=proxy.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
-            PORT=$((tmp+36000))
+            PORT=$((10#$tmp+36000))
             SSH_USERNAME=root
             ;;
         * )
@@ -46,33 +41,59 @@ get_server_meta()
 }
 
 # ssh
-_ssh()
+run_ssh()
 {
-    get_server_meta "$1"
-    fmt_note "--> ssh to $SERVER:$PORT"
-    eval ssh -p $PORT $SSH_OPTIONS $SSH_USERNAME@$SERVER
+    CMD="ssh -p $PORT $SSH_OPTIONS $SSH_USERNAME@$SERVER"
+    fmt_note "-->" $CMD
+    eval $CMD
+}
+
+# sshl
+run_sshl()
+{
+    if [[ -z "$1" || "$1" != *":"* ]]; then
+        fmt_fatal "invalid remote address: $1"
+    fi
+    while
+        local port=$(shuf -n 1 -i 49152-65535)
+        netstat -atun | grep -q "$port"
+    do
+        continue
+    done
+    CMD="ssh -p $PORT $SSH_OPTIONS -NC -L $port:$1 $SSH_USERNAME@$SERVER"
+    fmt_note "-->" $CMD
+    fmt_note "  > please access localhost:$port"
+    eval $CMD
 }
 
 # main
 print_help()
 {
-    fmt_info "usage: $0 <command> <service> [options]"
-    echo "available commands: ssh"
+    fmt_info "usage: $0 <service> [command] [options]"
+    echo "available commands: ssh (default), sshl (ssh -L)"
 }
 
 router()
 {
-    test $# -eq 2 || (print_help && fmt_fatal "invalid arguments")
-    case $1 in
+    if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
+        print_help
+        exit
+    fi
+    get_server_meta "$1"
+    case $2 in
         -h|--help)
             print_help
+            exit
             ;;
-        ssh )
-            _ssh "$2"
+        ssh|"" )
+            run_ssh
+            ;;
+        sshl )
+            run_sshl "$3"
             ;;
         * )
             print_help
-            fmt_fatal "unknown command: $1"
+            fmt_fatal "unknown command: $2"
             ;;
     esac
 }

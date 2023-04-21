@@ -109,6 +109,12 @@ prepare_config()
     echo
 }
 
+append_hist()
+{
+    fmt_note "appending zsh history ..."
+    "$DOTFILES/tools/append_zsh_hist.sh" "$@"
+}
+
 install_file_content()
 {
     fmt_note "installing file content ..."
@@ -249,7 +255,7 @@ install_update()
     RET=$?
     if [[ $RET == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."
-        "${DOTFILES}/install.sh" "$@" && exit
+        "${DOTFILES}/install.sh" "${ORIGIN_ARGS[@]}" && exit
     elif [[ $RET != 0 ]]; then
         fmt_fatal "update.sh failed with exit code $RET"
     fi
@@ -265,9 +271,9 @@ uninstall_update()
 install()
 {
     if [[ "$INSTALL_DEP" == "1" ]]; then install_dependencies; fi
+    prepare_config
     install_update
     preinstall_check
-    prepare_config
     install_crontab
     install_file_content
     install_symlink
@@ -275,6 +281,7 @@ install()
     # those that won't be uninstalled in the future
     install_tmux_tpm
     install_vim_vundle
+    if [[ -n "$DFS_HIST" ]]; then append_hist "$DFS_HIST"; fi
     fmt_note "done installing!"
 }
 
@@ -292,13 +299,21 @@ uninstall()
     fmt_note "done uninstalling!"
 }
 
+echo "this is the dotfiles installer, version $(cd "$DOTFILES" && git describe --tags --always --dirty)"
+echo "install options:" "${GOT_OPTS[@]}"
 FUNC=install
 INSTALL_DEP=0
 store_config=0
+store_hist=0
 for i in ${GOT_OPTS[@]}; do
     if [[ "$store_config" == "1" ]]; then
         store_config=0
         DFS_CONFIGS+=("$i")
+        continue
+    fi
+    if [[ "$store_hist" == "1" ]]; then
+        store_hist=0
+        DFS_HIST=$i
         continue
     fi
     case $i in
@@ -307,6 +322,7 @@ for i in ${GOT_OPTS[@]}; do
         -d|--dev ) export DFS_DEV=1; set -x ;;
         -a|--auto ) INSTALL_DEP=1 ;;
         -s|--secure ) export DFS_DEV=0 ;;
+        -H|--hist|--history ) store_hist=1 ;;
         -x ) store_config=1 ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac

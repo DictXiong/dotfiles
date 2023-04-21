@@ -1,6 +1,7 @@
 #!/bin/false "This script should be sourced in zsh, not executed directly"
 
 set -ex
+trap "dfs beacon gh.ci.fail" ERR
 
 # check files
 cd /
@@ -17,20 +18,26 @@ grep -q ".zshrc2" ~/.zshrc
 # check scripts and functions
 dfs version
 dfs log 1
-dfs beacon gh.ci
+dfs beacon gh.ci $GITHUB_SHA
 z ~
 test ~ -ef "$(pwd)"
 dogo
 doll
 dfs cd
-./tools/test-getopts.sh
-tools/common.sh get_os_type
-tools/common.sh get_linux_dist
+tools/test-getopts.sh
+tools/common.sh get_os_name
+test $(echo y | tools/common.sh ask_for_yN "test") = "1"
+test $(echo n | tools/common.sh ask_for_yN "test") = "0"
+test $(echo | tools/common.sh ask_for_yN "test") = "0"
+test $(echo | tools/common.sh ask_for_Yn "test") = "1"
+test $(DFS_QUIET=1 tools/common.sh ask_for_Yn "test") = "1"
 
 # check alias
 alias p114
+alias cbds
 which riot
-piv-agent || which piv-agent
+sagt
+test -f "/tmp/piv-agent-$(whoami)"
 gbes || which gbes
 
 # check update
@@ -43,9 +50,11 @@ test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commi
 git reset --hard $DFS_VERSION
 
 # then check install.sh
-./install.sh -dx DFS_CI=1
-grep -q "DFS_CI=1" ~/.config/dotfiles/env
-./install.sh -l -x DFS_CI=1
+./install.sh -dx DFS_CI=1 -H e153a2eL,f8At3iFw
+grep -qE "testhist 1$" ~/.zsh_history
+grep -qE "testhist 4$" ~/.zsh_history
+grep -qx "DFS_CI=1" ~/.config/dotfiles/env
+./install.sh -l
 dfs version
 test `git rev-parse HEAD` = `curl -fsSL https://api.beardic.cn/get-var/dfs-commit-id`
 

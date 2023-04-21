@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+source "$THIS_DIR/../tools/common.sh"
+
+get()
+{
+    local key=$1
+    if [[ -z "$key" ]]; then
+        fmt_fatal "missing key"
+    fi
+    local output=${2:-/dev/stdout}
+    local url="https://pastebin.com/raw/$key"
+    curl -fsSL "$url" > "$output"
+}
+
+put()
+{
+    local input=${1:-/dev/stdin}
+    (echo -n api_paste_code=; cat "$input") | curl -fsSL -X POST -d 'api_dev_key=SKZLfq9y_zW2hkgQOKZz1b5rw8hGiqxZ' -d 'api_option=paste' --data-binary @- "https://pastebin.com/api/api_post.php"
+}
+
+route()
+{
+    local cmd=$1
+    if [[ -z "$cmd" ]]; then
+        put
+        exit
+    else
+        shift
+    fi
+    case $cmd in
+        get )
+            get "$@"
+            ;;
+        put )
+            put "$@"
+            ;;
+        * )
+            fmt_fatal "unknown command: $cmd"
+    esac
+}
+
+route "${GOT_OPTS[@]}"
