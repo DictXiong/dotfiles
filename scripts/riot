@@ -13,8 +13,11 @@ get_server_meta()
 {
     local domain=${1##*.}
     local host=${1%.*}
+    if [[ -z "$domain" ]]; then
+        domain="ibd"
+    fi
     if [[ "$host" == "$domain" ]]; then
-        domain=""
+        domain="proxied"
     fi
     case $domain in
         ibd|ebd )
@@ -28,7 +31,7 @@ get_server_meta()
             SSH_USERNAME=dictxiong
             SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
             ;;
-        "" )
+        proxied )
             SERVER=proxy.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
