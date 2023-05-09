@@ -6,13 +6,24 @@ source "$THIS_DIR/../tools/common.sh"
 # get target settings
 # provides:
 SERVER=""
-PORT=""
-SSH_USERNAME=""
-SSH_OPTIONS=""
+PORT=""  # optional
+USERNAME=""  # optional
+SSH_OPTIONS=""  # optional
 get_server_meta()
 {
-    local domain=${1##*.}
-    local host=${1%.*}
+    arg="$1"
+    # overwrite
+    if [[ "$arg" == *@* ]]; then
+        USERNAME=${arg%%@*}
+        arg=${arg#*@}
+    fi
+    if [[ "$arg" == *:* ]]; then
+        PORT=${arg##*:}
+        arg=${arg%:*}
+    fi
+    # presets
+    local domain=${arg##*.}
+    local host=${arg%.*}
     if [[ -z "$domain" ]]; then
         domain="ibd"
     fi
@@ -22,13 +33,13 @@ get_server_meta()
     case $domain in
         ibd|ebd )
             SERVER=$host.$domain.ink
-            PORT=12022
-            SSH_USERNAME=root
+            PORT=${PORT:-12022}
+            USERNAME=${USERNAME:-root}
             ;;
         nasp )
             SERVER=$host
-            PORT=12022
-            SSH_USERNAME=dictxiong
+            PORT=${PORT:-12022}
+            USERNAME=${USERNAME:-dictxiong}
             SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
             ;;
         proxied )
@@ -36,26 +47,36 @@ get_server_meta()
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
             PORT=$((10#$tmp+36000))
-            SSH_USERNAME=root
+            USERNAME=root
             ;;
         * )
-            fmt_fatal "unknown domain: $domain"
+            fmt_warning "unknown domain: $domain. will try as server name"
+            SERVER="$arg"
     esac
 }
 
 # ssh
 run_ssh()
 {
-    CMD="ssh -p $PORT $SSH_OPTIONS $SSH_USERNAME@$SERVER"
+    CMD="ssh ${PORT:+-p} $PORT $SSH_OPTIONS $USERNAME${USERNAME:+@}$SERVER"
     fmt_note "-->" $CMD
-    eval $CMD
+    if [[ "$DFS_DRY_RUN" == "1" ]]; then
+        echo $CMD
+    else
+        eval $CMD
+    fi
 }
 
 # sshl
 run_sshl()
 {
-    if [[ -z "$1" || "$1" != *":"* ]]; then
+    if [[ -z "$1" ]]; then
         fmt_fatal "invalid remote address: $1"
+    fi
+    arg="$1"
+    if [[ "$arg" != *":"* ]]; then
+        # treat as a port number
+        arg=localhost:$arg
     fi
     while
         local port=$(shuf -n 1 -i 49152-65535)
@@ -63,10 +84,14 @@ run_sshl()
     do
         continue
     done
-    CMD="ssh -p $PORT $SSH_OPTIONS -NC -L $port:$1 $SSH_USERNAME@$SERVER"
+    CMD="ssh ${PORT:+-p} $PORT $SSH_OPTIONS -NC -L $port:$arg $USERNAME${USERNAME:+@}$SERVER"
     fmt_note "-->" $CMD
     fmt_note "  > please access localhost:$port"
-    eval $CMD
+    if [[ "$DFS_DRY_RUN" == "1" ]]; then
+        echo $CMD
+    else
+        eval $CMD
+    fi
 }
 
 # main
