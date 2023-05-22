@@ -2,16 +2,22 @@
 # connect to iot services
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
+RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
+RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 
 # get target settings
 # provides:
 SERVER=""
 PORT=""  # optional
 USERNAME=""  # optional
-SSH_OPTIONS=""  # optional
+SSH_OPTIONS=""
+if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
+    SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
+fi
 get_server_meta()
 {
-    arg="$1"
+    local trust_server="$RIOT_TRUST_SERVER"
+    local arg="$1"
     # overwrite
     if [[ "$arg" == *@* ]]; then
         USERNAME=${arg%%@*}
@@ -35,12 +41,14 @@ get_server_meta()
             SERVER=$host.$domain.ink
             PORT=${PORT:-12022}
             USERNAME=${USERNAME:-root}
+            trust_server=1
             ;;
         nasp )
             SERVER=$host
             PORT=${PORT:-12022}
             USERNAME=${USERNAME:-dictxiong}
-            SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
+            SSH_OPTIONS=$SSH_OPTIONS' -o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
+            trust_server=1
             ;;
         proxied )
             SERVER=proxy.beardic.cn
@@ -48,17 +56,23 @@ get_server_meta()
             tmp=${tmp:0:4}
             PORT=$((10#$tmp+36000))
             USERNAME=root
+            trust_server=1
             ;;
         * )
             fmt_warning "unknown domain: $domain. will try as server name"
             SERVER="$arg"
     esac
+    if [[ "$trust_server" == "1" ]]; then
+        SSH_OPTIONS=$SSH_OPTIONS' -o ForwardX11=yes -o ForwardAgent=yes'
+    fi
 }
 
 # ssh
+SSH_BIN=ssh
+SSH_PORT_PARAM='-p'
 run_ssh()
 {
-    CMD="ssh ${PORT:+-p} $PORT $SSH_OPTIONS $USERNAME${USERNAME:+@}$SERVER"
+    CMD="$SSH_BIN ${PORT:+$SSH_PORT_PARAM} $PORT $SSH_OPTIONS $USERNAME${USERNAME:+@}$SERVER"
     fmt_note "-->" $CMD
     if [[ "$DFS_DRY_RUN" == "1" ]]; then
         echo $CMD
@@ -114,6 +128,15 @@ router()
             exit
             ;;
         ssh|"" )
+            run_ssh
+            ;;
+        zssh )
+            SSH_BIN=zssh
+            run_ssh
+            ;;
+        sftp )
+            SSH_BIN=sftp
+            SSH_PORT_PARAM='-P'
             run_ssh
             ;;
         sshl )
