@@ -47,7 +47,7 @@ get_server_meta()
             SERVER=$host
             PORT=${PORT:-12022}
             USERNAME=${USERNAME:-dictxiong}
-            SSH_OPTIONS=$SSH_OPTIONS' -o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
+            SSH_OPTIONS="$SSH_OPTIONS -o ProxyJump=ssh@nasp.ob.ac.cn:36022"
             trust_server=1
             ;;
         proxied )
@@ -63,22 +63,34 @@ get_server_meta()
             SERVER="$arg"
     esac
     if [[ "$trust_server" == "1" ]]; then
-        SSH_OPTIONS=$SSH_OPTIONS' -o ForwardX11=yes -o ForwardAgent=yes'
+        SSH_OPTIONS="$SSH_OPTIONS -o ForwardX11=yes -o ForwardAgent=yes"
+    fi
+}
+
+eval_or_echo() {
+    if [[ "$DFS_DRY_RUN" == "1" ]]; then
+        echo $@
+    else
+        eval $@
     fi
 }
 
 # ssh
-SSH_BIN=ssh
-SSH_PORT_PARAM='-p'
+prepare_ssh_cmd() {
+    local ssh_bin="${1:-ssh}"
+    if [[ "$ssh_bin" == "scp" || "$ssh_bin" == "sftp" ]]; then
+        local port_param='-P'
+    else
+        local port_param='-p'
+    fi
+    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST"
+}
+
 run_ssh()
 {
-    CMD="$SSH_BIN ${PORT:+$SSH_PORT_PARAM} $PORT $SSH_OPTIONS $USERNAME${USERNAME:+@}$SERVER"
-    fmt_note "-->" $CMD
-    if [[ "$DFS_DRY_RUN" == "1" ]]; then
-        echo $CMD
-    else
-        eval $CMD
-    fi
+    local cmd="$(prepare_ssh_cmd $1)"
+    fmt_note "-->" $cmd
+    eval_or_echo $cmd
 }
 
 # sshl
@@ -98,21 +110,42 @@ run_sshl()
     do
         continue
     done
-    CMD="ssh ${PORT:+-p} $PORT $SSH_OPTIONS -NC -L $port:$arg $USERNAME${USERNAME:+@}$SERVER"
-    fmt_note "-->" $CMD
+
+    SSH_OPTIONS="$SSH_OPTIONS -NC -L $port:$arg"
+    local cmd="$(prepare_ssh_cmd ssh)"
+    fmt_note "-->" $cmd
     fmt_note "  > please access localhost:$port"
-    if [[ "$DFS_DRY_RUN" == "1" ]]; then
-        echo $CMD
-    else
-        eval $CMD
+    eval_or_echo $cmd
+}
+
+# scp
+run_scp() {
+    local src="$1"
+    local dst="$2"
+    local dst_is_remote=1
+    # whoever is ./*, it can't be the remote; whoever not exists on local, it's possible the remote.
+    # it is suggested to use ./* for local files.
+    if [[ "$src" != "./"* && ( "$dst" == "./"* || ( ! -e "$src" && -e "$dst" ) ) ]]; then
+        dst_is_remote=0
     fi
+    if [[ "$dst_is_remote" == "1" ]]; then
+        SCP_SRC=\""$src"\"
+        SERVER="$SERVER":\""$dst"\"
+    else
+        SERVER="$SERVER":\""$src"\"
+        SCP_DST=\""$dst"\"
+    fi
+    SSH_OPTIONS="$SSH_OPTIONS -r"
+    local cmd="$(prepare_ssh_cmd scp)"
+    fmt_note "-->" $cmd
+    eval_or_echo $cmd
 }
 
 # main
 print_help()
 {
     fmt_info "usage: $0 <service> [command] [options]"
-    echo "available commands: ssh (default), sshl (ssh -L)"
+    echo "available commands: ssh (default), sshl (ssh -L), zssh, sftp"
 }
 
 router()
@@ -131,16 +164,16 @@ router()
             run_ssh
             ;;
         zssh )
-            SSH_BIN=zssh
-            run_ssh
+            run_ssh zssh
             ;;
         sftp )
-            SSH_BIN=sftp
-            SSH_PORT_PARAM='-P'
-            run_ssh
+            run_ssh sftp
             ;;
         sshl )
             run_sshl "$3"
+            ;;
+        scp )
+            run_scp "$3" "$4"
             ;;
         * )
             print_help
