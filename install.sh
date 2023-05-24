@@ -320,7 +320,6 @@ for i in ${GOT_OPTS[@]}; do
         -i ) FUNC=install ;;
         -r ) FUNC=uninstall ;;
         -a|--auto ) INSTALL_DEP=1 ;;
-        -s|--secure ) export DFS_DEV=0 ;;
         -H|--hist|--history ) store_hist=1 ;;
         -x ) store_config=1 ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;
