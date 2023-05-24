@@ -5,65 +5,105 @@ source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 
-# get target settings
-# provides:
-SERVER=""
-PORT=""  # optional
-USERNAME=""  # optional
-SSH_OPTIONS=""
-if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
-    SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
-fi
-get_server_meta()
-{
-    local trust_server="$RIOT_TRUST_SERVER"
-    local arg="$1"
-    # overwrite
-    if [[ "$arg" == *@* ]]; then
-        USERNAME=${arg%%@*}
-        arg=${arg#*@}
+# get single server setting
+# may be called more than once
+get_server_meta() {
+    # returns:
+    RET_HOSTNAME=""
+    RET_TRUST_SERVER=0
+    RET_PORT=""  # optional
+    RET_USERNAME=""  # optional
+    RET_JUMP_SERVER=""  # optional
+    # body
+    local remote="$1"
+    # if in the form user@...
+    if [[ "$remote" == *@* ]]; then
+        RET_USERNAME=${remote%%@*}
+        remote=${remote#*@}
     fi
-    if [[ "$arg" == *:* ]]; then
-        PORT=${arg##*:}
-        arg=${arg%:*}
+    # if in the form ...:22
+    if [[ "$remote" == *:* ]]; then
+        RET_PORT=${remote##*:}
+        remote=${remote%:*}
     fi
-    # presets
-    local domain=${arg##*.}
-    local host=${arg%.*}
+    # presets -- match domain
+    local domain=${remote##*.}
+    local host=${remote%.*}
+    # if ends with dot
     if [[ -z "$domain" ]]; then
         domain="ibd"
     fi
+    # if there's no dot
     if [[ "$host" == "$domain" ]]; then
-        domain="proxied"
+        domain="ibd"
     fi
     case $domain in
         ibd|ebd )
-            SERVER=$host.$domain.ink
-            PORT=${PORT:-12022}
-            USERNAME=${USERNAME:-root}
-            trust_server=1
+            RET_HOSTNAME=$host.$domain.ink
+            RET_PORT=${RET_PORT:-12022}
+            RET_USERNAME=${RET_USERNAME:-root}
+            RET_TRUST_SERVER=1
             ;;
         nasp )
-            SERVER=$host
-            PORT=${PORT:-12022}
-            USERNAME=${USERNAME:-dictxiong}
-            SSH_OPTIONS="$SSH_OPTIONS -o ProxyJump=ssh@nasp.ob.ac.cn:36022"
-            trust_server=1
+            RET_HOSTNAME=$host
+            RET_PORT=${RET_PORT:-12022}
+            RET_USERNAME=${RET_USERNAME:-dictxiong}
+            RET_JUMP_SERVER="ssh@nasp.ob.ac.cn:36022"
+            RET_TRUST_SERVER=1
             ;;
         proxied )
-            SERVER=proxy.beardic.cn
+            RET_HOSTNAME=proxy.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
-            PORT=$((10#$tmp+36000))
-            USERNAME=root
-            trust_server=1
+            RET_PORT=$((10#$tmp+36000))
+            RET_USERNAME=root
+            RET_TRUST_SERVER=1
             ;;
         * )
-            fmt_warning "unknown domain: $domain. will try as server name"
-            SERVER="$arg"
+            fmt_warning "unknown domain: $domain. will try as host name"
+            RET_HOSTNAME="$remote"
     esac
-    if [[ "$trust_server" == "1" ]]; then
+}
+
+# remote setting, including jump servers
+# will be called only once
+# provides:
+SERVER=""
+TRUST_SERVER=1
+PORT=""  # optional
+USERNAME=""  # optional
+SSH_OPTIONS=""  # optional
+if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
+    SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
+fi
+parse_remote() {
+    local remote="$1"
+    local jump_servers=""
+    # loop for jump servers
+    while [[ -n $remote ]]; do 
+        local server=${remote%%,*}
+        remote=${remote#*,}
+        get_server_meta "$server"
+        if [[ -n "$RET_JUMP_SERVER" ]]; then
+            jump_servers="$jump_servers${jump_servers:+,}$RET_JUMP_SERVER"
+        fi
+        # only if all servers are trusted
+        TRUST_SERVER=$((TRUST_SERVER*RET_TRUST_SERVER))
+        if [[ "$server" == "$remote" || -z "$remote" ]]; then
+            SERVER="$RET_HOSTNAME"
+            PORT="$RET_PORT"
+            USERNAME="$RET_USERNAME"
+            remote=""
+        else
+            jump_servers="$jump_servers${jump_servers:+,}$RET_USERNAME${RET_USERNAME:+@}$RET_HOSTNAME${RET_PORT:+:}$RET_PORT"
+        fi
+    done
+    # construct cmd
+    if [[ "$RIOT_TRUST_SERVER" == "1" || "$TRUST_SERVER" == "1" ]]; then
         SSH_OPTIONS="$SSH_OPTIONS -o ForwardX11=yes -o ForwardAgent=yes"
+    fi
+    if [[ -n "$jump_servers" ]]; then
+        SSH_OPTIONS="$SSH_OPTIONS -o ProxyJump=$jump_servers"
     fi
 }
 
@@ -96,10 +136,7 @@ run_ssh()
 # sshl
 run_sshl()
 {
-    if [[ -z "$1" ]]; then
-        fmt_fatal "invalid remote address: $1"
-    fi
-    arg="$1"
+    local arg="$1"
     if [[ "$arg" != *":"* ]]; then
         # treat as a port number
         arg=localhost:$arg
@@ -148,13 +185,12 @@ print_help()
     echo "available commands: ssh (default), sshl (ssh -L), zssh, sftp"
 }
 
-router()
-{
+router() {
     if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
         print_help
         exit
     fi
-    get_server_meta "$1"
+    parse_remote "$1"
     case $2 in
         -h|--help)
             print_help
@@ -170,9 +206,12 @@ router()
             run_ssh sftp
             ;;
         sshl )
+            test -n "$3" || fmt_fatal "no target address provided"
             run_sshl "$3"
             ;;
         scp )
+            test -n "$3" || fmt_fatal "no source path specified"
+            test -n "$4" || fmt_fatal "no destination path specified"
             run_scp "$3" "$4"
             ;;
         * )
