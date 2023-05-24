@@ -3,7 +3,7 @@ set -e
 THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
-if [[ "$DFS_DEBUG" == "1" ]]; then set -x; fi
+if [[ "$DFS_DEV" == "1" ]]; then set -x; fi
 DFS_CURL_OPTIONS="--retry 2 --max-time 20"
 
 # parse args and set env, when it is sourced
@@ -17,8 +17,9 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
         case $ARG in
             -q*|--quite ) export DFS_QUIET=1 ;;
             -l*|--lite ) export DFS_LITE=1 ;;
+            -d*|--dev ) export DFS_DEV=1; set -x ;;
+            -D*|--dry-run ) export DFS_DRY_RUN=1 ;;
             --color ) export DFS_COLOR=1 ;;
-            --dry-run ) export DFS_DRY_RUN=1 ;;  # TODO!!!
             --*=* ) GOT_OPTS+=("${ARG%%=*}" "${ARG#*=}") ;;
             --* ) GOT_OPTS+=("$ARG") ;;
             -* ) GOT_OPTS+=("${ARG:0:2}") ;;

@@ -115,7 +115,7 @@ eval_or_echo() {
     fi
 }
 
-# ssh
+# ssh series
 prepare_ssh_cmd() {
     local ssh_bin="${1:-ssh}"
     if [[ "$ssh_bin" == "scp" || "$ssh_bin" == "sftp" ]]; then
@@ -126,6 +126,7 @@ prepare_ssh_cmd() {
     echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST"
 }
 
+# ssh
 run_ssh()
 {
     local cmd="$(prepare_ssh_cmd $1)"
