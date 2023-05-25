@@ -29,10 +29,6 @@ get_server_meta() {
     # presets -- match domain
     local domain=${remote##*.}
     local host=${remote%.*}
-    # if ends with dot
-    if [[ -z "$domain" ]]; then
-        domain="ibd"
-    fi
     # if there's no dot
     if [[ "$host" == "$domain" ]]; then
         domain="ibd"
@@ -51,7 +47,7 @@ get_server_meta() {
             RET_JUMP_SERVER="ssh@nasp.ob.ac.cn:36022"
             RET_TRUST_SERVER=1
             ;;
-        proxied )
+        x|proxied )
             RET_HOSTNAME=proxy.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
@@ -60,7 +56,7 @@ get_server_meta() {
             RET_TRUST_SERVER=1
             ;;
         * )
-            fmt_warning "unknown domain: $domain. will try as host name"
+            test -z "$domain" || fmt_warning "unknown domain: \"$domain\". will try as host name"
             RET_HOSTNAME="$remote"
     esac
 }
