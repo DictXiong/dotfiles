@@ -79,6 +79,10 @@ all()
 
 route()
 {
+    os_type="$(get_os_type)"
+    if [[ "$os_type" == "msys" || "$os_type" == "cygwin" ]]; then
+        fmt_fatal "unsupported platform: $os_type. you may use WinCryptSSHAgent."
+    fi
     if [[ $# -eq 0 ]]; then
         all
         return
