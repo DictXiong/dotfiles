@@ -76,7 +76,7 @@ parse_remote() {
     local remote="$1"
     local jump_servers=""
     # loop for jump servers
-    while [[ -n $remote ]]; do 
+    while [[ -n $remote ]]; do
         local server=${remote%%,*}
         remote=${remote#*,}
         get_server_meta "$server"
