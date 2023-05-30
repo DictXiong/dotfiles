@@ -319,9 +319,7 @@ for i in ${GOT_OPTS[@]}; do
     case $i in
         -i ) FUNC=install ;;
         -r ) FUNC=uninstall ;;
-        -d|--dev ) export DFS_DEV=1; set -x ;;
         -a|--auto ) INSTALL_DEP=1 ;;
-        -s|--secure ) export DFS_DEV=0 ;;
         -H|--hist|--history ) store_hist=1 ;;
         -x ) store_config=1 ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;

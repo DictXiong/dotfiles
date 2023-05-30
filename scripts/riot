@@ -2,57 +2,141 @@
 # connect to iot services
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
+RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
+RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 
-# get target settings
-# provides:
-SERVER=""
-PORT=""
-SSH_USERNAME=""
-SSH_OPTIONS=""
-get_server_meta()
-{
-    local domain=${1##*.}
-    local host=${1%.*}
+# get single server setting
+# may be called more than once
+get_server_meta() {
+    # returns:
+    RET_HOSTNAME=""
+    RET_TRUST_SERVER=0
+    RET_PORT=""  # optional
+    RET_USERNAME=""  # optional
+    RET_JUMP_SERVER=""  # optional
+    # body
+    local remote="$1"
+    # if in the form user@...
+    if [[ "$remote" == *@* ]]; then
+        RET_USERNAME=${remote%%@*}
+        remote=${remote#*@}
+    fi
+    # if in the form ...:22
+    if [[ "$remote" == *:* ]]; then
+        RET_PORT=${remote##*:}
+        remote=${remote%:*}
+    fi
+    # presets -- match domain
+    local domain=${remote##*.}
+    local host=${remote%.*}
+    # if there's no dot
     if [[ "$host" == "$domain" ]]; then
-        domain=""
+        domain="ibd"
     fi
     case $domain in
         ibd|ebd )
-            SERVER=$host.$domain.ink
-            PORT=12022
-            SSH_USERNAME=root
+            RET_HOSTNAME=$host.$domain.ink
+            RET_PORT=${RET_PORT:-12022}
+            RET_USERNAME=${RET_USERNAME:-root}
+            RET_TRUST_SERVER=1
             ;;
         nasp )
-            SERVER=$host
-            PORT=12022
-            SSH_USERNAME=dictxiong
-            SSH_OPTIONS='-o ProxyJump="ssh@nasp.ob.ac.cn:36022"'
+            RET_HOSTNAME=$host
+            RET_PORT=${RET_PORT:-12022}
+            RET_USERNAME=${RET_USERNAME:-dictxiong}
+            RET_JUMP_SERVER="ssh@nasp.ob.ac.cn:36022"
+            RET_TRUST_SERVER=1
             ;;
-        "" )
-            SERVER=proxy.beardic.cn
+        x|proxied )
+            RET_HOSTNAME=proxy.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
-            PORT=$((10#$tmp+36000))
-            SSH_USERNAME=root
+            RET_PORT=$((10#$tmp+36000))
+            RET_USERNAME=root
+            RET_TRUST_SERVER=1
             ;;
         * )
-            fmt_fatal "unknown domain: $domain"
+            test -z "$domain" || fmt_warning "unknown domain: \"$domain\". will try as host name"
+            RET_HOSTNAME="$remote"
     esac
+}
+
+# remote setting, including jump servers
+# will be called only once
+# provides:
+SERVER=""
+TRUST_SERVER=1
+PORT=""  # optional
+USERNAME=""  # optional
+SSH_OPTIONS=""  # optional
+if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
+    SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
+fi
+parse_remote() {
+    local remote="$1"
+    local jump_servers=""
+    # loop for jump servers
+    while [[ -n $remote ]]; do 
+        local server=${remote%%,*}
+        remote=${remote#*,}
+        get_server_meta "$server"
+        if [[ -n "$RET_JUMP_SERVER" ]]; then
+            jump_servers="$jump_servers${jump_servers:+,}$RET_JUMP_SERVER"
+        fi
+        # only if all servers are trusted
+        TRUST_SERVER=$((TRUST_SERVER*RET_TRUST_SERVER))
+        if [[ "$server" == "$remote" || -z "$remote" ]]; then
+            SERVER="$RET_HOSTNAME"
+            PORT="$RET_PORT"
+            USERNAME="$RET_USERNAME"
+            remote=""
+        else
+            jump_servers="$jump_servers${jump_servers:+,}$RET_USERNAME${RET_USERNAME:+@}$RET_HOSTNAME${RET_PORT:+:}$RET_PORT"
+        fi
+    done
+    # construct cmd
+    if [[ "$RIOT_TRUST_SERVER" == "1" || "$TRUST_SERVER" == "1" ]]; then
+        SSH_OPTIONS="$SSH_OPTIONS -o ForwardX11=yes -o ForwardAgent=yes"
+    fi
+    if [[ -n "$jump_servers" ]]; then
+        SSH_OPTIONS="$SSH_OPTIONS -o ProxyJump=$jump_servers"
+    fi
+}
+
+eval_or_echo() {
+    if [[ "$DFS_DRY_RUN" == "1" ]]; then
+        echo $@
+    else
+        eval $@
+    fi
+}
+
+# ssh series
+prepare_ssh_cmd() {
+    local ssh_bin="${1:-ssh}"
+    if [[ "$ssh_bin" == "scp" || "$ssh_bin" == "sftp" ]]; then
+        local port_param='-P'
+    else
+        local port_param='-p'
+    fi
+    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST"
 }
 
 # ssh
 run_ssh()
 {
-    CMD="ssh -p $PORT $SSH_OPTIONS $SSH_USERNAME@$SERVER"
-    fmt_note "-->" $CMD
-    eval $CMD
+    local cmd="$(prepare_ssh_cmd $1)"
+    fmt_note "-->" $cmd
+    eval_or_echo $cmd
 }
 
 # sshl
 run_sshl()
 {
-    if [[ -z "$1" || "$1" != *":"* ]]; then
-        fmt_fatal "invalid remote address: $1"
+    local arg="$1"
+    if [[ "$arg" != *":"* ]]; then
+        # treat as a port number
+        arg=localhost:$arg
     fi
     while
         local port=$(shuf -n 1 -i 49152-65535)
@@ -60,26 +144,50 @@ run_sshl()
     do
         continue
     done
-    CMD="ssh -p $PORT $SSH_OPTIONS -NC -L $port:$1 $SSH_USERNAME@$SERVER"
-    fmt_note "-->" $CMD
+
+    SSH_OPTIONS="$SSH_OPTIONS -NC -L $port:$arg"
+    local cmd="$(prepare_ssh_cmd ssh)"
+    fmt_note "-->" $cmd
     fmt_note "  > please access localhost:$port"
-    eval $CMD
+    eval_or_echo $cmd
+}
+
+# scp
+run_scp() {
+    local src="$1"
+    local dst="$2"
+    local dst_is_remote=1
+    # whoever is ./*, it can't be the remote; whoever not exists on local, it's possible the remote.
+    # it is suggested to use ./* for local files.
+    if [[ "$src" != "./"* && ( "$dst" == "./"* || ( ! -e "$src" && -e "$dst" ) ) ]]; then
+        dst_is_remote=0
+    fi
+    if [[ "$dst_is_remote" == "1" ]]; then
+        SCP_SRC=\""$src"\"
+        SERVER="$SERVER":\""$dst"\"
+    else
+        SERVER="$SERVER":\""$src"\"
+        SCP_DST=\""$dst"\"
+    fi
+    SSH_OPTIONS="$SSH_OPTIONS -r"
+    local cmd="$(prepare_ssh_cmd scp)"
+    fmt_note "-->" $cmd
+    eval_or_echo $cmd
 }
 
 # main
 print_help()
 {
     fmt_info "usage: $0 <service> [command] [options]"
-    echo "available commands: ssh (default), sshl (ssh -L)"
+    echo "available commands: ssh (default), sshl (ssh -L), zssh, sftp"
 }
 
-router()
-{
+router() {
     if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
         print_help
         exit
     fi
-    get_server_meta "$1"
+    parse_remote "$1"
     case $2 in
         -h|--help)
             print_help
@@ -88,8 +196,20 @@ router()
         ssh|"" )
             run_ssh
             ;;
+        zssh )
+            run_ssh zssh
+            ;;
+        sftp )
+            run_ssh sftp
+            ;;
         sshl )
+            test -n "$3" || fmt_fatal "no target address provided"
             run_sshl "$3"
+            ;;
+        scp )
+            test -n "$3" || fmt_fatal "no source path specified"
+            test -n "$4" || fmt_fatal "no destination path specified"
+            run_scp "$3" "$4"
             ;;
         * )
             print_help

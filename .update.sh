@@ -13,6 +13,11 @@ apost_beacon "sys.online"
 # update dns
 if [[ "$DFS_DDNS_ENABLE" == "1" ]]; then
     fmt_info "updating dns ..."
+    if ! is_tty; then
+        time_to_sleep=$((RANDOM%600))
+        fmt_note "sleep for $time_to_sleep seconds"
+        sleep $time_to_sleep
+    fi
     "$THIS_DIR/tools/frigg-client.sh" ddns || (fmt_error "failed to update dns" && apost_beacon "dfs.ddns.fail")
 fi
 
