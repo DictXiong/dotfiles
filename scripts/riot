@@ -34,8 +34,8 @@ get_server_meta() {
         domain="ibd"
     fi
     case $domain in
-        ibd|ebd )
-            RET_HOSTNAME=$host.$domain.ink
+        i|ibd )
+            RET_HOSTNAME=$host.ibd.ink
             RET_PORT=${RET_PORT:-12022}
             RET_USERNAME=${RET_USERNAME:-root}
             RET_TRUST_SERVER=1
