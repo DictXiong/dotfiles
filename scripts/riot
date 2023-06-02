@@ -5,6 +5,19 @@ source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 
+# check if port number valid
+check_port() {
+    ( echo $1 | grep -qxE "[1-9][0-9]{0,4}" ) || return 1
+    test $1 -lt 65536 -a $1 -gt 0 || return 1
+    return 0
+}
+
+# check if username valid
+check_username() {
+    ( echo $1 | grep -qxE "^[a-z][-a-z0-9_]*\$" ) || return 1
+    return 0
+}
+
 # get single server setting
 # may be called more than once
 get_server_meta() {
@@ -20,11 +33,13 @@ get_server_meta() {
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
         remote=${remote#*@}
+        check_username $RET_USERNAME || fmt_fatal invalid username \"$RET_USERNAME\"
     fi
     # if in the form ...:22
     if [[ "$remote" == "["*"]":* || ( "$remote" != "["*"]" && "$remote" == *:* ) ]]; then
         RET_PORT=${remote##*:}
         remote=${remote%:*}
+        check_port $RET_PORT || fmt_fatal invalid port number \"$RET_PORT\"
     fi
     # presets -- match domain
     local domain=${remote##*.}
