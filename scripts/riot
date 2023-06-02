@@ -22,7 +22,7 @@ get_server_meta() {
         remote=${remote#*@}
     fi
     # if in the form ...:22
-    if [[ "$remote" == *:* ]]; then
+    if [[ "$remote" == "["*"]":* || ( "$remote" != "["*"]" && "$remote" == *:* ) ]]; then
         RET_PORT=${remote##*:}
         remote=${remote%:*}
     fi
@@ -30,7 +30,7 @@ get_server_meta() {
     local domain=${remote##*.}
     local host=${remote%.*}
     # if there's no dot
-    if [[ "$host" == "$domain" ]]; then
+    if [[ "$host" == "$domain" && "$host" != "["*"]" ]]; then
         domain="ibd"
     fi
     case $domain in
