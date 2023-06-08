@@ -197,6 +197,9 @@ install_crontab()
 {
     if [[ -x $(command -v crontab) ]]; then
         fmt_note "installing \"$CRON_JOB\" to crontab ..."
+        if ! crontab -l 1>/dev/null 2>&1; then
+            echo -n | crontab -
+        fi
         ( crontab -l | grep -vxF "${CRON_JOB}" | grep -v "no crontab for"; echo "$CRON_JOB" ) | crontab -
     else
         fmt_warning "crontab does not exist. skipping ..."
