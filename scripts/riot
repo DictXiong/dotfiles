@@ -14,7 +14,7 @@ check_port() {
 
 # check if username valid
 check_username() {
-    ( echo $1 | grep -qxE "^[-.a-z0-9_]*\$" ) || return 1
+    ( echo $1 | grep -qxE "^[a-z][-a-z0-9_]*\$" ) || return 1
     return 0
 }
 
