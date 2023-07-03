@@ -140,6 +140,9 @@ bindkey "\e[1;5D" backward-word  # alt+left_arrow; termius
 
 bindkey "\ed" delete-char  # alt+d
 
+# mods
+autoload zcalc
+
 # dfs
 dfs()
 {

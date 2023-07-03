@@ -33,7 +33,7 @@ get_server_meta() {
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
         remote=${remote#*@}
-        check_username $RET_USERNAME || fmt_fatal invalid username \"$RET_USERNAME\"
+        check_username $RET_USERNAME || fmt_warning \"$RET_USERNAME\" is not a valid unix username
     fi
     # if in the form ...:22
     if [[ "$remote" == "["*"]":* || ( "$remote" != "["*"]" && "$remote" == *:* ) ]]; then
