@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -ex
 OPTS='-a -bcl --color --arg1=1 --arg2 2 " 1 2" yes'
 TARGET_OPTS='-a -b -c --arg1 1 --arg2 2  1 2 yes'

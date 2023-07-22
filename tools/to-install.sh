@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 declare -A INSTALL_COMMANDS
 INSTALL_COMMANDS=(\

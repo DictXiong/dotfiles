@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # connect to iot services
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
