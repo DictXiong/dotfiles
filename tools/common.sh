@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 THIS_DIR_COMMON_SH=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DOTFILES=$( cd "$THIS_DIR_COMMON_SH/.." && pwd )

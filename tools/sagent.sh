@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 export DFS_COLOR=1
@@ -7,7 +7,7 @@ source "$THIS_DIR/common.sh"
 
 find_so_file()
 {
-    local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" )
+    local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" "/run/current-system/sw/lib/opensc-pkcs11.so" )
     local SO_FILE
     for SO_FILE in ${SO_PATHS[*]}; do
         if [[ -f "$SO_FILE" ]]; then
@@ -19,12 +19,7 @@ find_so_file()
 
 create_agent()
 {
-    local SO_FILE=$(find_so_file)
-    if [[ -n "$SO_FILE" ]]; then
-        fmt_note "opensc-pkcs11.so found"
-        SO_FILE="-P $SO_FILE"
-    fi
-    ssh-agent $SO_FILE
+    ssh-agent -P "/usr/lib64/*,/usr/local/lib/*,/nix/store/*"
 }
 
 kill_agent()
