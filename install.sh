@@ -26,6 +26,8 @@ declare -a HOME_SYMLINKS_SRC
 declare -a HOME_SYMLINKS_DST
 HOME_SYMLINKS_SRC[0]=".ssh/authorized_keys2"
 HOME_SYMLINKS_DST[0]=".ssh/authorized_keys2"
+HOME_SYMLINKS_SRC[1]=".eid/authorized_certificates"
+HOME_SYMLINKS_DST[1]=".eid/authorized_certificates"
 
 install_dependencies()
 {

@@ -13,6 +13,7 @@ l
 pwd
 test -f .zshrc2
 diff -q ./.ssh/authorized_keys2 ~/.ssh/authorized_keys2
+diff -q ./.eid/authorized_certificates ~/.eid/authorized_certificates
 grep -q ".zshrc2" ~/.zshrc
 
 # check scripts and functions
