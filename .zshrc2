@@ -101,6 +101,7 @@ fi
 # alias
 alias "pls"='sudo $(fc -ln -1)'
 alias "se"='sudo -sE'
+alias "sl"='sudo zsh -l'
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
