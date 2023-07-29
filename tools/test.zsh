@@ -3,6 +3,12 @@
 set -ex
 trap "dfs beacon gh.ci.fail" ERR
 
+# fix for macos
+dfs cd
+if [[ $(./tools/common.sh get_os_type) == "macos" ]]; then
+    export PATH="/usr/local/opt/coreutils/libexec/gnubin:/opt/homebrew/opt/coreutils/libexec/gnubin:${PATH}"
+fi
+
 # check files
 cd /
 l
