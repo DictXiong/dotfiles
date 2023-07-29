@@ -6,7 +6,7 @@ source "$THIS_DIR/common.sh"
 brew_install()
 {
     # brew update
-    brew install git zsh curl tmux vim util-linux
+    brew install git zsh curl tmux vim util-linux coreutils
 }
 
 router()
