@@ -108,10 +108,7 @@ alias "p666"='ping6 2001:da8::666'
 alias "cbd"='curl http://www.baidu.com'
 alias "cbds"='curl https://www.baidu.com'
 alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
-case $(bash "$DOTFILES/tools/common.sh" get_os_type) in
-    macos  ) alias l='ls -lAGh -D "%y-%m-%d %H:%M"' ;;
-    *      ) alias l='ls -lAGh --time-style="+%y-%m-%d %H:%M"' ;;
-esac
+alias "l"='ls -lAGh --time-style="+%y-%m-%d %H:%M"'
 if [[ -x $(command -v trash) ]]; then
     alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
 fi
