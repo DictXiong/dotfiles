@@ -29,6 +29,14 @@ get_server_meta() {
     RET_JUMP_SERVER=""  # optional
     # body
     local remote="$1"
+    # shortcuts
+    if [[ "$remote" == "i" ]]; then
+        remote="sir0.ibd"
+    elif [[ "$remote" == "x" ]]; then
+        remote="bj1.ibd"
+    elif [[ "$remote" == "j" ]]; then
+        remote="sir0.ibd:36122"
+    fi
     # if in the form user@...
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
