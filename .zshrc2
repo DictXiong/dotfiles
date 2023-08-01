@@ -176,6 +176,11 @@ dfs()
     esac
 }
 
+# motd
+if [[ "$DFS_INITED" != "1" && -n "$DFS_UPDATE_CHANNEL" && "$DFS_UPDATE_CHANNEL" != "main" ]]; then
+    echo dotfiles not in the main channel. use with caution.
+fi
+
 # clean
 unset i
 export DFS_INITED=1
