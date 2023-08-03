@@ -7,7 +7,8 @@ source "$THIS_DIR/common.sh"
 
 find_so_file()
 {
-    local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" "/run/current-system/sw/lib/opensc-pkcs11.so" )
+    # they are: ubuntu 22.04, nixos 23.05, macos 13.4
+    local SO_PATHS=( "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so" "/run/current-system/sw/lib/opensc-pkcs11.so" "/Library/OpenSC/lib/opensc-pkcs11.so" )
     local SO_FILE
     for SO_FILE in ${SO_PATHS[*]}; do
         if [[ -f "$SO_FILE" ]]; then
@@ -19,7 +20,7 @@ find_so_file()
 
 create_agent()
 {
-    ssh-agent -P "/usr/lib64/*,/usr/local/lib/*,/nix/store/*"
+    ssh-agent -P "/usr/lib/*,/nix/store/*,/Library/*"
 }
 
 kill_agent()
