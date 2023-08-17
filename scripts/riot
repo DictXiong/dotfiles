@@ -168,12 +168,7 @@ run_sshl()
         # treat as a port number
         arg=localhost:$arg
     fi
-    while
-        local port=$(shuf -n 1 -i 49152-65535)
-        netstat -atun | grep -q "$port"
-    do
-        continue
-    done
+    local port=$(get_free_port)
 
     SSH_OPTIONS="$SSH_OPTIONS -NC -L $port:$arg"
     local cmd="$(prepare_ssh_cmd ssh)"
