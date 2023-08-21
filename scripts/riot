@@ -149,13 +149,13 @@ prepare_ssh_cmd() {
     else
         local port_param='-p'
     fi
-    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST"
+    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST ${@:2}"
 }
 
 # ssh
 run_ssh()
 {
-    local cmd="$(prepare_ssh_cmd $1)"
+    local cmd="$(prepare_ssh_cmd $@)"
     fmt_note "-->" $cmd
     eval_or_echo $cmd
 }
@@ -219,7 +219,7 @@ router() {
             exit
             ;;
         ssh|"" )
-            run_ssh
+            run_ssh ssh "${@:3}"
             ;;
         zssh )
             run_ssh zssh
