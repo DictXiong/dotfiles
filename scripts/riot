@@ -91,18 +91,19 @@ get_server_meta() {
     esac
 }
 
-# remote setting, including jump servers
-# will be called only once
-# provides:
-SERVER=""
-TRUST_SERVER=1
-PORT=""  # optional
-USERNAME=""  # optional
-SSH_OPTIONS=""  # optional
-if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
-    SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
-fi
 parse_remote() {
+    # remote setting, including jump servers
+    # called for every remote
+    # provides:
+    SERVER=""
+    TRUST_SERVER=1
+    PORT=""  # optional
+    USERNAME=""  # optional
+    SSH_OPTIONS=""  # optional
+    if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
+        SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
+    fi
+    # handle input
     local remote="$1"
     local jump_servers=""
     # loop for jump servers
@@ -212,35 +213,38 @@ router() {
         print_help
         exit
     fi
-    parse_remote "$1"
-    case $2 in
-        -h|--help)
-            print_help
-            exit
-            ;;
-        ssh|"" )
-            run_ssh ssh "${@:3}"
-            ;;
-        zssh )
-            run_ssh zssh
-            ;;
-        sftp )
-            run_ssh sftp
-            ;;
-        sshl )
-            test -n "$3" || fmt_fatal "no target address provided"
-            run_sshl "$3"
-            ;;
-        scp )
-            test -n "$3" || fmt_fatal "no source path specified"
-            test -n "$4" || fmt_fatal "no destination path specified"
-            run_scp "$3" "$4"
-            ;;
-        * )
-            print_help
-            fmt_fatal "unknown command: $2"
-            ;;
-    esac
+
+    IFS=',' read -ra remotes <<< "$1"
+    for remote in "${remotes[@]}"; do
+        if [[ -z "$remote" ]]; then
+            continue
+        fi
+        parse_remote "$remote"
+        case $2 in
+            ssh|"" )
+                run_ssh ssh "${@:3}"
+                ;;
+            zssh )
+                run_ssh zssh
+                ;;
+            sftp )
+                run_ssh sftp
+                ;;
+            sshl )
+                test -n "$3" || fmt_fatal "no target address provided"
+                run_sshl "$3"
+                ;;
+            scp )
+                test -n "$3" || fmt_fatal "no source path specified"
+                test -n "$4" || fmt_fatal "no destination path specified"
+                run_scp "$3" "$4"
+                ;;
+            * )
+                print_help
+                fmt_fatal "unknown command: $2"
+                ;;
+        esac
+    done
 }
 
 router "${GOT_OPTS[@]}"
