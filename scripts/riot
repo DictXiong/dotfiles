@@ -107,8 +107,8 @@ parse_remote() {
     local jump_servers=""
     # loop for jump servers
     while [[ -n $remote ]]; do
-        local server=${remote%%,*}
-        remote=${remote#*,}
+        local server=${remote%%/*}
+        remote=${remote#*/}
         get_server_meta "$server"
         if [[ -n "$RET_JUMP_SERVER" ]]; then
             jump_servers="$jump_servers${jump_servers:+,}$RET_JUMP_SERVER"
