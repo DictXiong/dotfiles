@@ -86,7 +86,6 @@ get_server_meta() {
             RET_TRUST_SERVER=1
             ;;
         * )
-            test -z "$domain" || fmt_warning "unknown domain: \"$domain\". will try as host name"
             RET_HOSTNAME="$remote"
     esac
 }
