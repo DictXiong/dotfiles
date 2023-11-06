@@ -11,6 +11,7 @@ INSTALL_COMMANDS=(\
     [zerotier-one]='curl -s https://install.zerotier.com | sudo bash' \
     [docker-ce]='curl -fsSL https://get.docker.com | sudo bash -s - --mirror Aliyun #--dry-run' \
     [lemonbench]='curl -fsSL https://ilemonra.in/LemonBenchIntl | bash -s fast # or full' \
+    [nix]='sh <(curl -L https://nixos.org/nix/install) #--daemon' \
 )
 
 install()

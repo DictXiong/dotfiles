@@ -29,6 +29,14 @@ get_server_meta() {
     RET_JUMP_SERVER=""  # optional
     # body
     local remote="$1"
+    # shortcuts
+    if [[ "$remote" == "i" ]]; then
+        remote="sir0.ibd"
+    elif [[ "$remote" == "x" ]]; then
+        remote="bj1.ibd"
+    elif [[ "$remote" == "j" ]]; then
+        remote="sir0.ibd:36122"
+    fi
     # if in the form user@...
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
@@ -70,30 +78,38 @@ get_server_meta() {
             RET_USERNAME=root
             RET_TRUST_SERVER=1
             ;;
+        box[0-9] )
+            RET_HOSTNAME=$host
+            RET_PORT=${RET_PORT:-12022}
+            RET_USERNAME=${RET_USERNAME:-root}
+            RET_JUMP_SERVER="root@$domain.ibd.ink:12022"
+            RET_TRUST_SERVER=1
+            ;;
         * )
             test -z "$domain" || fmt_warning "unknown domain: \"$domain\". will try as host name"
             RET_HOSTNAME="$remote"
     esac
 }
 
-# remote setting, including jump servers
-# will be called only once
-# provides:
-SERVER=""
-TRUST_SERVER=1
-PORT=""  # optional
-USERNAME=""  # optional
-SSH_OPTIONS=""  # optional
-if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
-    SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
-fi
 parse_remote() {
+    # remote setting, including jump servers
+    # called for every remote
+    # provides:
+    SERVER=""
+    TRUST_SERVER=1
+    PORT=""  # optional
+    USERNAME=""  # optional
+    SSH_OPTIONS=""  # optional
+    if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
+        SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
+    fi
+    # handle input
     local remote="$1"
     local jump_servers=""
     # loop for jump servers
     while [[ -n $remote ]]; do
-        local server=${remote%%,*}
-        remote=${remote#*,}
+        local server=${remote%%/*}
+        remote=${remote#*/}
         get_server_meta "$server"
         if [[ -n "$RET_JUMP_SERVER" ]]; then
             jump_servers="$jump_servers${jump_servers:+,}$RET_JUMP_SERVER"
@@ -134,13 +150,13 @@ prepare_ssh_cmd() {
     else
         local port_param='-p'
     fi
-    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST"
+    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST ${@:2}"
 }
 
 # ssh
 run_ssh()
 {
-    local cmd="$(prepare_ssh_cmd $1)"
+    local cmd="$(prepare_ssh_cmd $@)"
     fmt_note "-->" $cmd
     eval_or_echo $cmd
 }
@@ -153,12 +169,7 @@ run_sshl()
         # treat as a port number
         arg=localhost:$arg
     fi
-    while
-        local port=$(shuf -n 1 -i 49152-65535)
-        netstat -atun | grep -q "$port"
-    do
-        continue
-    done
+    local port=$(get_free_port)
 
     SSH_OPTIONS="$SSH_OPTIONS -NC -L $port:$arg"
     local cmd="$(prepare_ssh_cmd ssh)"
@@ -202,35 +213,38 @@ router() {
         print_help
         exit
     fi
-    parse_remote "$1"
-    case $2 in
-        -h|--help)
-            print_help
-            exit
-            ;;
-        ssh|"" )
-            run_ssh
-            ;;
-        zssh )
-            run_ssh zssh
-            ;;
-        sftp )
-            run_ssh sftp
-            ;;
-        sshl )
-            test -n "$3" || fmt_fatal "no target address provided"
-            run_sshl "$3"
-            ;;
-        scp )
-            test -n "$3" || fmt_fatal "no source path specified"
-            test -n "$4" || fmt_fatal "no destination path specified"
-            run_scp "$3" "$4"
-            ;;
-        * )
-            print_help
-            fmt_fatal "unknown command: $2"
-            ;;
-    esac
+
+    IFS=',' read -ra remotes <<< "$1"
+    for remote in "${remotes[@]}"; do
+        if [[ -z "$remote" ]]; then
+            continue
+        fi
+        parse_remote "$remote"
+        case $2 in
+            ssh|"" )
+                run_ssh ssh "${@:3}"
+                ;;
+            zssh )
+                run_ssh zssh
+                ;;
+            sftp )
+                run_ssh sftp
+                ;;
+            sshl )
+                test -n "$3" || fmt_fatal "no target address provided"
+                run_sshl "$3"
+                ;;
+            scp )
+                test -n "$3" || fmt_fatal "no source path specified"
+                test -n "$4" || fmt_fatal "no destination path specified"
+                run_scp "$3" "$4"
+                ;;
+            * )
+                print_help
+                fmt_fatal "unknown command: $2"
+                ;;
+        esac
+    done
 }
 
 router "${GOT_OPTS[@]}"

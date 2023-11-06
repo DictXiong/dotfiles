@@ -5,9 +5,14 @@ export DFS_COLOR=1
 source "$THIS_DIR/common.sh"
 
 
+SO_PATHS=(
+    "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"  # ubuntu 22.04
+    "/run/current-system/sw/lib/opensc-pkcs11.so"  # nixos 23.05
+    "/Library/OpenSC/lib/opensc-pkcs11.so"  # macos 13.4
+)
+
 find_so_file()
 {
-    local SO_PATHS=( "/usr/lib64/opensc-pkcs11.so" "/usr/local/lib/opensc-pkcs11.so" "/run/current-system/sw/lib/opensc-pkcs11.so" )
     local SO_FILE
     for SO_FILE in ${SO_PATHS[*]}; do
         if [[ -f "$SO_FILE" ]]; then
@@ -19,7 +24,8 @@ find_so_file()
 
 create_agent()
 {
-    ssh-agent -P "/usr/lib64/*,/usr/local/lib/*,/nix/store/*"
+    local IFS=","
+    ssh-agent -P "${SO_PATHS[*]}"
 }
 
 kill_agent()

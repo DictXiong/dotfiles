@@ -233,6 +233,31 @@ get_os_name()
     echo $ans
 }
 
+is_port_free() {
+    ( echo $1 | grep -qxE "[1-9][0-9]{0,4}" ) || false
+    local cmd
+    case $(get_os_type) in
+        macos ) cmd="netstat -van | grep -q \".$1\"" ;;
+        cygwin|msys ) cmd="netstat -ano | grep -q \":$1\"" ;;
+        *) cmd="netstat -tuanp | grep -q \":$1\"" ;;
+    esac
+    if eval $cmd; then
+        return 2
+    else
+        return 0
+    fi
+}
+
+get_free_port() {
+    while
+        local port=$(shuf -n 1 -i 49152-65535)
+        ! is_port_free $port
+    do
+        continue
+    done
+    echo $port
+}
+
 # if bash-ed, else source-d
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     $1 "${@:2}"
