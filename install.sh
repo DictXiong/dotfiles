@@ -149,6 +149,9 @@ install_symlink()
 {
     fmt_note "installing symlinks ..."
     for ((i=0; i<${#HOME_SYMLINKS_SRC[@]}; i++)); do
+        if [[ -z "${HOME_SYMLINKS_SRC[$i]}" ]]; then
+            continue
+        fi
         local src="$DOTFILES/${HOME_SYMLINKS_SRC[$i]}"
         local dst="$HOME/${HOME_SYMLINKS_DST[$i]}"
         fmt_info "creating symlink \"$dst\" --> \"$src\" ..."
@@ -327,6 +330,7 @@ for i in ${GOT_OPTS[@]}; do
         -a|--auto ) INSTALL_DEP=1 ;;
         -H|--hist|--history ) store_hist=1 ;;
         -x ) store_config=1 ;;
+        --no-ssh ) unset HOME_SYMLINKS_SRC[0]; unset HOME_SYMLINKS_DST[0] ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
 done
