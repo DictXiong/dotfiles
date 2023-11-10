@@ -330,7 +330,7 @@ for i in ${GOT_OPTS[@]}; do
         -a|--auto ) INSTALL_DEP=1 ;;
         -H|--hist|--history ) store_hist=1 ;;
         -x ) store_config=1 ;;
-        --no-ssh ) unset HOME_SYMLINKS_SRC[0]; unset HOME_SYMLINKS_DST[0] ;;
+        --no-auth-info ) HOME_SYMLINKS_SRC=(); HOME_SYMLINKS_DST=() ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
 done
