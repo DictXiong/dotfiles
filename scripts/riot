@@ -70,8 +70,8 @@ get_server_meta() {
             RET_JUMP_SERVER="ssh@nasp.ob.ac.cn:36022"
             RET_TRUST_SERVER=1
             ;;
-        x|proxied )
-            RET_HOSTNAME=proxy.beardic.cn
+        x|ssh )
+            RET_HOSTNAME=ssh.beardic.cn
             local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
             tmp=${tmp:0:4}
             RET_PORT=$((10#$tmp+36000))
