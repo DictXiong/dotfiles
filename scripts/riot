@@ -5,6 +5,7 @@ source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 RIOT_CONFIG_DIR="$THIS_DIR/riot.d"
+RIOT_EXTRA_OPTIONS=""
 
 # check if port number valid
 check_port() {
@@ -124,7 +125,7 @@ prepare_ssh_cmd() {
     else
         local port_param='-p'
     fi
-    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST ${@:2}"
+    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $RIOT_EXTRA_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST ${@:2}"
 }
 
 # ssh
@@ -187,6 +188,15 @@ router() {
         print_help
         exit
     fi
+
+    while [[ "$1" == -* ]]; do
+        RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $1"
+        if [[ "$1" == "-o" ]]; then
+            RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $2"
+            shift
+        fi
+        shift
+    done
 
     IFS=',' read -ra remotes <<< "$1"
     for remote in "${remotes[@]}"; do
