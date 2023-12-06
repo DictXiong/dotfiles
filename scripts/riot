@@ -4,6 +4,7 @@ THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
+RIOT_CONFIG_DIR="$THIS_DIR/riot.d"
 
 # check if port number valid
 check_port() {
@@ -29,14 +30,6 @@ get_server_meta() {
     RET_JUMP_SERVER=""  # optional
     # body
     local remote="$1"
-    # shortcuts
-    if [[ "$remote" == "i" ]]; then
-        remote="sir0.ibd"
-    elif [[ "$remote" == "x" ]]; then
-        remote="bj1.ibd"
-    elif [[ "$remote" == "j" ]]; then
-        remote="sir0.ibd:36122"
-    fi
     # if in the form user@...
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
@@ -49,45 +42,27 @@ get_server_meta() {
         remote=${remote%:*}
         check_port $RET_PORT || fmt_fatal invalid port number \"$RET_PORT\"
     fi
+    # presets -- match remote
+    local remote_config="$RIOT_CONFIG_DIR/$remote.remote"
+    if [[ -f "$remote_config" ]]; then
+        source "$remote_config"
+    fi
     # presets -- match domain
+    RET_HOSTNAME=${remote}
     local domain=${remote##*.}
     local host=${remote%.*}
     # if there's no dot
     if [[ "$host" == "$domain" && "$host" != "["*"]" ]]; then
-        domain="ibd"
+        domain="default"
     fi
-    case $domain in
-        i|ibd )
-            RET_HOSTNAME=$host.ibd.ink
-            RET_PORT=${RET_PORT:-12022}
-            RET_USERNAME=${RET_USERNAME:-root}
-            RET_TRUST_SERVER=1
-            ;;
-        nasp )
-            RET_HOSTNAME=$host
-            RET_PORT=${RET_PORT:-12022}
-            RET_USERNAME=${RET_USERNAME:-dictxiong}
-            RET_JUMP_SERVER="ssh@nasp.ob.ac.cn:36022"
-            RET_TRUST_SERVER=1
-            ;;
-        x|ssh )
-            RET_HOSTNAME=ssh.beardic.cn
-            local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
-            tmp=${tmp:0:4}
-            RET_PORT=$((10#$tmp+36000))
-            RET_USERNAME=root
-            RET_TRUST_SERVER=1
-            ;;
-        box[0-9] )
-            RET_HOSTNAME=$host
-            RET_PORT=${RET_PORT:-12022}
-            RET_USERNAME=${RET_USERNAME:-root}
-            RET_JUMP_SERVER="root@$domain.ibd.ink:12022"
-            RET_TRUST_SERVER=1
-            ;;
-        * )
-            RET_HOSTNAME="$remote"
-    esac
+    local root_domain_config="$RIOT_CONFIG_DIR/.domain"
+    if [[ -f "$root_domain_config" ]]; then
+        source "$root_domain_config"
+    fi
+    local domain_config="$RIOT_CONFIG_DIR/$domain.domain"
+    if [[ -n "$$domain" && -f "$domain_config" ]]; then
+        source "$domain_config"
+    fi
 }
 
 parse_remote() {

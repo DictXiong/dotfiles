@@ -1,0 +1,4 @@
+remote=sir0.ibd.ink
+RET_PORT=${RET_PORT:-36122}
+RET_USERNAME=${RET_USERNAME:-root}
+RET_TRUST_SERVER=1
