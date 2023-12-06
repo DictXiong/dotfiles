@@ -4,8 +4,19 @@ THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
-RIOT_CONFIG_DIR="$THIS_DIR/riot.d"
 RIOT_EXTRA_OPTIONS=""
+
+# config
+RIOT_CONFIG_FILES=(
+    "$DOTFILES/riot-config.sh"
+    "$HOME/.config/riot-config.sh"
+    "riot-config.sh"
+)
+for file in "${RIOT_CONFIG_FILES[@]}"; do
+    if [[ -f "$file" ]]; then
+        source "$file"
+    fi
+done
 
 # check if port number valid
 check_port() {
@@ -44,9 +55,9 @@ get_server_meta() {
         check_port $RET_PORT || fmt_fatal invalid port number \"$RET_PORT\"
     fi
     # presets -- match remote
-    local remote_config="$RIOT_CONFIG_DIR/$remote.remote"
-    if [[ -f "$remote_config" ]]; then
-        source "$remote_config"
+    local remote_func="$remote.remote"
+    if is_function "$remote_func"; then
+        "$remote_func"
     fi
     # presets -- match domain
     RET_HOSTNAME=${remote}
@@ -56,13 +67,12 @@ get_server_meta() {
     if [[ "$host" == "$domain" && "$host" != "["*"]" ]]; then
         domain="default"
     fi
-    local root_domain_config="$RIOT_CONFIG_DIR/.domain"
-    if [[ -f "$root_domain_config" ]]; then
-        source "$root_domain_config"
+    if is_function ".domain"; then
+        ".domain"
     fi
-    local domain_config="$RIOT_CONFIG_DIR/$domain.domain"
-    if [[ -n "$$domain" && -f "$domain_config" ]]; then
-        source "$domain_config"
+    local domain_func="$domain.domain"
+    if [[ -n "$domain" ]] && is_function "$domain_func"; then
+        "$domain_func"
     fi
 }
 

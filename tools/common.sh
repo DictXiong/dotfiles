@@ -258,6 +258,10 @@ get_free_port() {
     echo $port
 }
 
+is_function() {
+    test "$(type -t "$1")" = "function"
+}
+
 # if bash-ed, else source-d
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     $1 "${@:2}"

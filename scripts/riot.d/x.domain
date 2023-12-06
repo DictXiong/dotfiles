@@ -1,6 +1,0 @@
-RET_HOSTNAME=ssh.beardic.cn
-local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
-tmp=${tmp:0:4}
-RET_PORT=$((10#$tmp+36000))
-RET_USERNAME=root
-RET_TRUST_SERVER=1
