@@ -9,6 +9,8 @@
     quotepath = false  # chinese chars
 [push]
     autoSetupRemote = true
+[pull]
+    ff = only
 [branch]
     # Show most recently changed branches first.
     sort = -committerdate
