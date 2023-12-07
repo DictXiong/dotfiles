@@ -8,7 +8,18 @@ j.remote() {
     RET_TRUST_SERVER=1
 }
 
+nasp.remote() {
+    remote=nasp.ob.ac.cn
+    RET_PORT=${RET_PORT:-36022}
+    RET_USERNAME=${RET_USERNAME:-ssh}
+    RET_TRUST_SERVER=1
+}
+
 # domains
+.domain() {
+    RET_USERNAME=${RET_USERNAME:-root}
+}
+
 i.domain() {
     RET_HOSTNAME=$host.ibd.ink
     RET_PORT=${RET_PORT:-12022}
