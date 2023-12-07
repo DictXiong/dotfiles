@@ -163,6 +163,18 @@ run_sshl()
     eval_or_echo $cmd
 }
 
+# sshd
+run_sshd()
+{
+    local port=$(get_free_port)
+
+    SSH_OPTIONS="$SSH_OPTIONS -NC -D $port"
+    local cmd="$(prepare_ssh_cmd ssh)"
+    fmt_note "-->" $cmd
+    fmt_note "  > please access localhost:$port"
+    eval_or_echo $cmd
+}
+
 # scp
 run_scp() {
     local src="$1"
@@ -227,6 +239,9 @@ router() {
             sshl )
                 test -n "$3" || fmt_fatal "no target address provided"
                 run_sshl "$3"
+                ;;
+            sshd )
+                run_sshd
                 ;;
             scp )
                 test -n "$3" || fmt_fatal "no source path specified"
