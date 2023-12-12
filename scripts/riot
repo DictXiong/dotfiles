@@ -67,12 +67,11 @@ get_server_meta() {
     if [[ "$host" == "$domain" && "$host" != "["*"]" ]]; then
         domain="default"
     fi
-    if is_function ".domain"; then
-        ".domain"
-    fi
     local domain_func="$domain.domain"
-    if [[ -n "$domain" ]] && is_function "$domain_func"; then
+    if is_function "$domain_func"; then
         "$domain_func"
+    elif is_function ".domain"; then
+        ".domain"
     fi
 }
 
