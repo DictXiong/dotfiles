@@ -229,6 +229,9 @@ router() {
             ssh|"" )
                 run_ssh ssh "${@:3}"
                 ;;
+            ping|ping6 )
+                run_ssh ssh "${@:2}"
+                ;;
             zssh )
                 run_ssh zssh
                 ;;
