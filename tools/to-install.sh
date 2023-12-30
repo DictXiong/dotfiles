@@ -12,6 +12,7 @@ INSTALL_COMMANDS=(\
     [docker-ce]='curl -fsSL https://get.docker.com | sudo bash -s - --mirror Aliyun #--dry-run' \
     [lemonbench]='curl -fsSL https://raw.githubusercontent.com/LemonBench/LemonBench/main/LemonBench.sh | bash -s fast # or full' \
     [nix]='sh <(curl -L https://nixos.org/nix/install) #--daemon' \
+    [alist]='curl -fsSL "https://alist.nn.ci/v3.sh" | bash -s install' \
 )
 
 install()
