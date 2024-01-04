@@ -27,6 +27,13 @@ i.domain() {
     RET_TRUST_SERVER=1
 }
 
+42.domain() {
+    RET_HOSTNAME=$host.i.bd.dn42
+    RET_PORT=${RET_PORT:-12022}
+    RET_USERNAME=${RET_USERNAME:-root}
+    RET_TRUST_SERVER=1
+}
+
 x.domain() {
     RET_HOSTNAME=ssh.beardic.cn
     local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
