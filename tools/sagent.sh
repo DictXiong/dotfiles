@@ -25,7 +25,7 @@ find_so_file()
 create_agent()
 {
     local IFS=","
-    ssh-agent -P "${SO_PATHS[*]}"
+    ssh-agent -P "${SO_PATHS[*]},/nix/store/*"
 }
 
 kill_agent()
