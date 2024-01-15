@@ -2,8 +2,8 @@
 
 # remotes
 j.remote() {
-    remote=sir0.ibd.ink
-    RET_PORT=${RET_PORT:-36122}
+    remote=ssh.beardic.cn
+    RET_PORT=${RET_PORT:-24022}
     RET_USERNAME=${RET_USERNAME:-root}
     RET_TRUST_SERVER=1
 }
