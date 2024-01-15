@@ -103,6 +103,7 @@ update_dns()
         ip4=""
     elif [[ "$DFS_DDNS_IP4" == "auto" ]]; then
         ip4="auto"
+        api_url="https://api4.beardic.cn"
     elif [[ "$DFS_DDNS_IP4" == "api" ]]; then
         ip4=$(curl $DFS_CURL_OPTIONS -sSL "https://api.ipify.org")
     elif [[ "$DFS_DDNS_IP4" == "http"* ]]; then
