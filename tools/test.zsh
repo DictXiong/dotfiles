@@ -21,6 +21,9 @@ test -f .zshrc2
 diff -q ./.ssh/authorized_keys2 ~/.ssh/authorized_keys2
 diff -q ./.eid/authorized_certificates ~/.eid/authorized_certificates
 grep -q ".zshrc2" ~/.zshrc
+if [[ -x $(command -v crontab) ]]; then
+    crontab -l | grep -qxF "0 * * * * ${DOTFILES}/update.sh"
+fi
 
 # check scripts and functions
 dfs version
