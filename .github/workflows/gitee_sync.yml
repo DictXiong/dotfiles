@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: DictXiong/dotfiles
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/DictXiong
         dst: gitee/dictxiong
