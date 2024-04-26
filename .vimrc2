@@ -15,6 +15,7 @@ set syntax=on
 set autoindent
 set smartindent
 set tabstop=4
+set shiftwidth=4
 set expandtab "spaces instead of tabs
 set backspace=indent,eol,start
 set number "line numbers
