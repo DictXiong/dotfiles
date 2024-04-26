@@ -16,6 +16,7 @@ export GPG_TTY=$(tty)
 export LESS_TERMCAP_md=$'\E[01;33m'
 # env for dfs
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
+export DFS_OS_TYPE="$("$DOTFILES/tools/common.sh" get_os_type)"
 
 # antigen
 if [[ "$DFS_NO_WALL" == "1" ]]; then
@@ -104,7 +105,8 @@ alias "se"='sudo -sE'
 alias "sl"='sudo zsh -l'
 alias "cps"='rsync -avh --info=progress2'
 alias "mvs"='rsync -avh --info=progress2 --remove-source-files'
-if [[ $("$DOTFILES/tools/common.sh" get_os_type) == "linux" ]]; then alias "ping"='ping -n'; alias "ping6"='ping6 -n'; fi
+if [[ "$DFS_OS_TYPE" == "linux" ]]; then alias "ping"='ping -n'; alias "ping6"='ping6 -n'; fi
+if [[ "$DFS_OS_TYPE" == "msys" ]]; then alias "tmux"='script -qO /dev/null -c "tmux -u"'; fi
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'

@@ -190,6 +190,7 @@ apost_beacon()
 
 get_os_type()
 {
+    test -z "$DFS_OS_TYPE" || ( echo "$DFS_OS_TYPE"; return )
     local ans="unknown"
     case "$(uname -s)" in
         Darwin*)    ans="MacOS";;
@@ -198,11 +199,13 @@ get_os_type()
         Linux* )    ans="Linux";;
         *)          ans="unknown";;
     esac
+    export DFS_OS_TYPE="$ans"
     echo $ans | tr '[:upper:]' '[:lower:]'
 }
 
 get_linux_dist()
 {
+    test -z "$DFS_LINUX_DIST" || ( echo "$DFS_LINUX_DIST"; return )
     local ans="unknown"
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -221,6 +224,7 @@ get_linux_dist()
     else
         ans="unknown"
     fi
+    export DFS_LINUX_DIST="$ans"
     echo $ans | tr '[:upper:]' '[:lower:]'
 }
 
