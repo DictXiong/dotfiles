@@ -87,7 +87,7 @@ jobs:
         clone_style: "https"
         debug: true
         force_update: true
-        static_list: "tpm,tmux-resurrect"
+        static_list: "tpm,tmux-resurrect,tmux-yank"
         timeout: '600s'
   vundle-vim:
     runs-on: ubuntu-20.04
