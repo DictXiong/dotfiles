@@ -104,7 +104,7 @@ alias "se"='sudo -sE'
 alias "sl"='sudo zsh -l'
 alias "cps"='rsync -avh --info=progress2'
 alias "mvs"='rsync -avh --info=progress2 --remove-source-files'
-if [[ $("$DOTFILES/tools/common.sh" get_os_type) == "linux" ]]; then alias "ping"='ping -n'; fi
+if [[ $("$DOTFILES/tools/common.sh" get_os_type) == "linux" ]]; then alias "ping"='ping -n'; alias "ping6"='ping6 -n'; fi
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
