@@ -16,6 +16,7 @@ set autoindent
 set smartindent
 set expandtab "spaces instead of tabs
 set tabstop=4 softtabstop=4 shiftwidth=4
+autocmd FileType c,cpp,nix,yaml setlocal tabstop=2 softtabstop=2 shiftwidth=2
 set backspace=indent,eol,start
 set number "line numbers
 set history=1000
