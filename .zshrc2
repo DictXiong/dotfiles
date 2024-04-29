@@ -123,6 +123,11 @@ alias "cbds"='curl https://www.baidu.com'
 alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
 alias "ls"='ls --color=tty'
 alias "l"='ls -lAGh --time-style="+%y-%m-%d %H:%M"'
+alias "jc"='journalctl'
+alias "jce"='jc -e'
+alias "jceu"='jc -eu'
+alias "jcf"='jc -f'
+alias "jcfu"='jc -fu'
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
 sagt() { eval "$($DOTFILES/tools/sagent.sh $@)" }
 
