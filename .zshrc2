@@ -16,6 +16,7 @@ export GPG_TTY=$(tty)
 export LESS_TERMCAP_md=$'\E[01;33m'
 # env for dfs
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
+export DFS_OS_TYPE="$("$DOTFILES/tools/common.sh" get_os_type)"
 
 # antigen
 if [[ "$DFS_NO_WALL" == "1" ]]; then
@@ -66,7 +67,15 @@ ANTIGEN_PLUGINS+=(
     "extract"
     "fzf"
     "git"
+    "magic-enter"
+    "per-directory-history"
+    "pip"
+    "podman"
+    "python"
     "ripgrep"
+    "rsync"
+    "systemd"
+    "timer"
     "tmux"
     "ufw"
     "z"
@@ -102,6 +111,10 @@ fi
 alias "pls"='sudo $(fc -ln -1)'
 alias "se"='sudo -sE'
 alias "sl"='sudo zsh -l'
+alias "cps"='rsync -avh --info=progress2'
+alias "mvs"='rsync -avh --info=progress2 --remove-source-files'
+if [[ "$DFS_OS_TYPE" == "linux" ]]; then alias "ping"='ping -n'; alias "ping6"='ping6 -n'; fi
+if [[ "$DFS_OS_TYPE" == "msys" ]]; then alias "tmux"='script -qO /dev/null -c "tmux -u"'; fi
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
 alias "p666"='ping6 2001:da8::666'
@@ -110,9 +123,11 @@ alias "cbds"='curl https://www.baidu.com'
 alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
 alias "ls"='ls --color=tty'
 alias "l"='ls -lAGh --time-style="+%y-%m-%d %H:%M"'
-if [[ -x $(command -v trash) ]]; then
-    alias "rm"="echo use the full path i.e. '/bin/rm'\; consider using trash"
-fi
+alias "jc"='journalctl'
+alias "jce"='jc -e'
+alias "jceu"='jc -eu'
+alias "jcf"='jc -f'
+alias "jcfu"='jc -fu'
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
 sagt() { eval "$($DOTFILES/tools/sagent.sh $@)" }
 

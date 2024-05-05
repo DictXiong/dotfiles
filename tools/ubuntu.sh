@@ -14,11 +14,11 @@ apt_install()
 {
     apt-get update -y
     # lite
-    apt-get install -y git zsh bash tmux vim curl inetutils-ping less bsdmainutils
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git zsh bash tmux vim curl iputils-ping less bsdmainutils
     # full
     if [[ -z "$DFS_LITE" || "$DFS_LITE" == "0" ]]; then
-        apt-get install -y wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron openssh-client openssh-server htop gcc g++ cmake make zip
-        for i in {fzf,ripgrep,man-db}; do apt-get install -y $i; done
+        DEBIAN_FRONTEND=noninteractive apt-get install -y wget dialog net-tools dnsutils netcat traceroute sudo python3 python3-pip cron openssh-client openssh-server htop gcc g++ cmake make zip
+        for i in {fzf,ripgrep,man-db}; do DEBIAN_FRONTEND=noninteractive apt-get install -y $i; done
     fi
 }
 

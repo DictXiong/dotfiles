@@ -10,8 +10,9 @@ INSTALL_COMMANDS=(\
     [v2fly]="bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) #--remove" \
     [zerotier-one]='curl -s https://install.zerotier.com | sudo bash' \
     [docker-ce]='curl -fsSL https://get.docker.com | sudo bash -s - --mirror Aliyun #--dry-run' \
-    [lemonbench]='curl -fsSL https://ilemonra.in/LemonBenchIntl | bash -s fast # or full' \
+    [lemonbench]='curl -fsSL https://raw.githubusercontent.com/LemonBench/LemonBench/main/LemonBench.sh | bash -s fast # or full' \
     [nix]='sh <(curl -L https://nixos.org/nix/install) #--daemon' \
+    [alist]='curl -fsSL "https://alist.nn.ci/v3.sh" | bash -s install' \
 )
 
 install()

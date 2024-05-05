@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: ohmyzsh repo
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/ohmyzsh
         dst: gitee/dictxiong
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: zsh-users repos
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/zsh-users
         dst: gitee/dictxiong
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: zdharma-continuum repos
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/zdharma-continuum
         dst: gitee/dictxiong
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: thewtex/tmux-mem-cpu-load
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/thewtex
         dst: gitee/dictxiong
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: tmux-plugins
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/tmux-plugins
         dst: gitee/dictxiong
@@ -87,13 +87,13 @@ jobs:
         clone_style: "https"
         debug: true
         force_update: true
-        static_list: "tpm,tmux-resurrect"
+        static_list: "tpm,tmux-resurrect,tmux-yank"
         timeout: '600s'
   vundle-vim:
     runs-on: ubuntu-20.04
     steps:
     - name: VundleVim/Vundle-vim
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/VundleVim
         dst: gitee/dictxiong
@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: joshdick/onedark-vim
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/joshdick
         dst: gitee/dictxiong
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: junegunn/fzf
-      uses: Yikun/hub-mirror-action@v1.3
+      uses: Yikun/hub-mirror-action@v1.4
       with:
         src: github/junegunn
         dst: gitee/dictxiong

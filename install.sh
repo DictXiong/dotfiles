@@ -202,10 +202,11 @@ install_crontab()
 {
     if [[ -x $(command -v crontab) ]]; then
         fmt_note "installing \"$CRON_JOB\" to crontab ..."
-        if ! crontab -l 1>/dev/null 2>&1; then
-            echo -n | crontab -
+        if [[ -z "$(crontab -l 2>/dev/null || true)" ]]; then
+            echo "$CRON_JOB" | crontab -
+        elif !( crontab -l | grep -qxF "${CRON_JOB}"); then
+            ( crontab -l; echo "$CRON_JOB" ) | crontab -
         fi
-        ( crontab -l | grep -vxF "${CRON_JOB}" | grep -v "no crontab for"; echo "$CRON_JOB" ) | crontab -
     else
         fmt_warning "crontab does not exist. skipping ..."
     fi
@@ -330,7 +331,7 @@ for i in ${GOT_OPTS[@]}; do
         -a|--auto ) INSTALL_DEP=1 ;;
         -H|--hist|--history ) store_hist=1 ;;
         -x ) store_config=1 ;;
-        --no-ssh ) unset HOME_SYMLINKS_SRC[0]; unset HOME_SYMLINKS_DST[0] ;;
+        --no-auth-info ) HOME_SYMLINKS_SRC=(); HOME_SYMLINKS_DST=() ;;
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
 done

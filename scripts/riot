@@ -4,6 +4,19 @@ THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
+RIOT_EXTRA_OPTIONS=""
+
+# config
+RIOT_CONFIG_FILES=(
+    "$DOTFILES/riot-config.sh"
+    "$HOME/.config/riot-config.sh"
+    "riot-config.sh"
+)
+for file in "${RIOT_CONFIG_FILES[@]}"; do
+    if [[ -f "$file" ]]; then
+        source "$file"
+    fi
+done
 
 # check if port number valid
 check_port() {
@@ -29,14 +42,6 @@ get_server_meta() {
     RET_JUMP_SERVER=""  # optional
     # body
     local remote="$1"
-    # shortcuts
-    if [[ "$remote" == "i" ]]; then
-        remote="sir0.ibd"
-    elif [[ "$remote" == "x" ]]; then
-        remote="bj1.ibd"
-    elif [[ "$remote" == "j" ]]; then
-        remote="sir0.ibd:36122"
-    fi
     # if in the form user@...
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
@@ -49,46 +54,25 @@ get_server_meta() {
         remote=${remote%:*}
         check_port $RET_PORT || fmt_fatal invalid port number \"$RET_PORT\"
     fi
+    # presets -- match remote
+    local remote_func="$remote.remote"
+    if is_function "$remote_func"; then
+        "$remote_func"
+    fi
     # presets -- match domain
+    RET_HOSTNAME=${remote}
     local domain=${remote##*.}
     local host=${remote%.*}
     # if there's no dot
     if [[ "$host" == "$domain" && "$host" != "["*"]" ]]; then
-        domain="ibd"
+        domain="default"
     fi
-    case $domain in
-        i|ibd )
-            RET_HOSTNAME=$host.ibd.ink
-            RET_PORT=${RET_PORT:-12022}
-            RET_USERNAME=${RET_USERNAME:-root}
-            RET_TRUST_SERVER=1
-            ;;
-        nasp )
-            RET_HOSTNAME=$host
-            RET_PORT=${RET_PORT:-12022}
-            RET_USERNAME=${RET_USERNAME:-dictxiong}
-            RET_JUMP_SERVER="ssh@nasp.ob.ac.cn:36022"
-            RET_TRUST_SERVER=1
-            ;;
-        x|proxied )
-            RET_HOSTNAME=proxy.beardic.cn
-            local tmp=$(sha256sum <<< "$host" | tr -cd "[:digit:]")
-            tmp=${tmp:0:4}
-            RET_PORT=$((10#$tmp+36000))
-            RET_USERNAME=root
-            RET_TRUST_SERVER=1
-            ;;
-        box[0-9] )
-            RET_HOSTNAME=$host
-            RET_PORT=${RET_PORT:-12022}
-            RET_USERNAME=${RET_USERNAME:-root}
-            RET_JUMP_SERVER="root@$domain.ibd.ink:12022"
-            RET_TRUST_SERVER=1
-            ;;
-        * )
-            test -z "$domain" || fmt_warning "unknown domain: \"$domain\". will try as host name"
-            RET_HOSTNAME="$remote"
-    esac
+    local domain_func="$domain.domain"
+    if is_function "$domain_func"; then
+        "$domain_func"
+    elif is_function ".domain"; then
+        ".domain"
+    fi
 }
 
 parse_remote() {
@@ -101,7 +85,11 @@ parse_remote() {
     USERNAME=""  # optional
     SSH_OPTIONS=""  # optional
     if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
-        SSH_OPTIONS='-o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes'
+        SSH_OPTIONS='-o PermitLocalCommand=yes'
+        if [[ "$(get_os_type)" != "msys" ]]; then
+            test "$DFS_DRY_RUN" = "1" || mkdir -p ~/.ssh/master-socket
+            SSH_OPTIONS="$SSH_OPTIONS -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C"
+        fi
     fi
     # handle input
     local remote="$1"
@@ -150,7 +138,7 @@ prepare_ssh_cmd() {
     else
         local port_param='-p'
     fi
-    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST ${@:2}"
+    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $RIOT_EXTRA_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST ${@:2}"
 }
 
 # ssh
@@ -172,6 +160,18 @@ run_sshl()
     local port=$(get_free_port)
 
     SSH_OPTIONS="$SSH_OPTIONS -NC -L $port:$arg"
+    local cmd="$(prepare_ssh_cmd ssh)"
+    fmt_note "-->" $cmd
+    fmt_note "  > please access localhost:$port"
+    eval_or_echo $cmd
+}
+
+# sshd
+run_sshd()
+{
+    local port=$(get_free_port)
+
+    SSH_OPTIONS="$SSH_OPTIONS -NC -D $port"
     local cmd="$(prepare_ssh_cmd ssh)"
     fmt_note "-->" $cmd
     fmt_note "  > please access localhost:$port"
@@ -214,6 +214,15 @@ router() {
         exit
     fi
 
+    while [[ "$1" == -* ]]; do
+        RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $1"
+        if [[ "$1" == "-o" ]]; then
+            RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $2"
+            shift
+        fi
+        shift
+    done
+
     IFS=',' read -ra remotes <<< "$1"
     for remote in "${remotes[@]}"; do
         if [[ -z "$remote" ]]; then
@@ -224,6 +233,9 @@ router() {
             ssh|"" )
                 run_ssh ssh "${@:3}"
                 ;;
+            ping|ping6 )
+                run_ssh ssh "${@:2}"
+                ;;
             zssh )
                 run_ssh zssh
                 ;;
@@ -233,6 +245,9 @@ router() {
             sshl )
                 test -n "$3" || fmt_fatal "no target address provided"
                 run_sshl "$3"
+                ;;
+            sshd )
+                run_sshd
                 ;;
             scp )
                 test -n "$3" || fmt_fatal "no source path specified"

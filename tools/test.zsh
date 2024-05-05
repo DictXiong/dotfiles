@@ -21,6 +21,9 @@ test -f .zshrc2
 diff -q ./.ssh/authorized_keys2 ~/.ssh/authorized_keys2
 diff -q ./.eid/authorized_certificates ~/.eid/authorized_certificates
 grep -q ".zshrc2" ~/.zshrc
+if [[ -x $(command -v crontab) ]]; then
+    crontab -l | grep -qxF "0 * * * * ${DOTFILES}/update.sh"
+fi
 
 # check scripts and functions
 dfs version
@@ -38,8 +41,8 @@ test $(echo n | tools/common.sh ask_for_yN "test") = "0"
 test $(echo | tools/common.sh ask_for_yN "test") = "0"
 test $(echo | tools/common.sh ask_for_Yn "test") = "1"
 test $(DFS_QUIET=1 tools/common.sh ask_for_Yn "test") = "1"
-test "$(DFS_TRUST=1 riot time@is.impt:2222/yes@you-r.right/you@are.really.recht./ibd./try@it,another@host scp /tmp/ ./tmp -D 2>/dev/null)" = 'scp -P 12022 -o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes -o ProxyJump=time@is.impt:2222,yes@you-r.right,you@are.really.recht.,ibd. -r try@it.ibd.ink:"/tmp/" "./tmp"
-scp -P 12022 -o ControlMaster=auto -o ControlPath=/tmp/sshcm-%C -o PermitLocalCommand=yes -o ForwardX11=yes -o ForwardAgent=yes -r another@host.ibd.ink:"/tmp/" "./tmp"'
+test "$(DFS_TRUST=1 riot time@is.impt:2222/yes@you-r.right/you@are.really.recht./ibd./try@it,another@host scp /tmp/ ./tmp -D 2>/dev/null)" = 'scp -P 12022 -o PermitLocalCommand=yes -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C -o ProxyJump=time@is.impt:2222,yes@you-r.right,you@are.really.recht.,root@ibd. -r try@it.ibd.ink:"/tmp/" "./tmp"
+scp -P 12022 -o PermitLocalCommand=yes -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C -o ForwardX11=yes -o ForwardAgent=yes -r another@host.ibd.ink:"/tmp/" "./tmp"'
 
 # check alias
 alias p114
