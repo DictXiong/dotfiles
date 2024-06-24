@@ -32,6 +32,7 @@ hi User3 ctermfg=15 ctermbg=2
 au InsertEnter * hi User3 ctermfg=15 ctermbg=5 
 au InsertLeave * hi User3 ctermfg=15 ctermbg=2
 set statusline=%3*\ %{mode()}\ %*[%n][%F](%{\"\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\"+\":\"\").\"\"},%{&ff},%Y)%2*%r%1*%m%*%<%=\'0x%B\'\ [Line:%l/%L,Col:%c][%p%%]
+nnoremap <silent> <C-n> :let [&nu, &rnu] = [!&rnu, &nu+&rnu==1]<cr>
 
 " When editing a file, always jump to the last known cursor position.
 " Don't do it when the position is invalid, when inside an event handler
