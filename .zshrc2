@@ -14,6 +14,7 @@ export EDITOR='vim'
 export PYTHONIOENCODING='UTF-8'
 export GPG_TTY=$(tty)
 export LESS_TERMCAP_md=$'\E[01;33m'
+export VIRTUAL_ENV_DISABLE_PROMPT=1
 # env for dfs
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
 export DFS_OS_TYPE="$("$DOTFILES/tools/common.sh" get_os_type)"
