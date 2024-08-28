@@ -1,8 +1,6 @@
 name: sync repos to gitee
 on:
   push: ~
-  schedule:
-    - cron: 10 4 * * *
   workflow_dispatch: ~
 jobs:
   dotfiles:
