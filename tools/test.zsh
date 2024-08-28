@@ -49,7 +49,7 @@ alias p114
 alias cbds
 which riot
 sagt
-test -f "/tmp/piv-agent-$(whoami)"
+test -f ~/.ssh/agent-$(whoami)
 gbes || which gbes
 
 # check update
