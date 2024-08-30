@@ -10,8 +10,8 @@ filetype plugin indent on
 " end vundle
 colorscheme onedark
 
+syntax on
 set cursorline
-set syntax=on
 set autoindent
 set smartindent
 set expandtab "spaces instead of tabs
