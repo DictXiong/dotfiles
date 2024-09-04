@@ -11,7 +11,7 @@ j.remote() {
 nasp.remote() {
     remote=nasp.fit
     RET_PORT=${RET_PORT:-36022}
-    RET_USERNAME=${RET_USERNAME:-ssh}
+    RET_USERNAME=${RET_USERNAME:-root}
     RET_TRUST_SERVER=1
 }
 
@@ -21,7 +21,7 @@ nasp.remote() {
 }
 
 i.domain() {
-    RET_HOSTNAME=$host.ibd.ink
+    RET_HOSTNAME=$host.dxng.net
     RET_PORT=${RET_PORT:-12022}
     RET_USERNAME=${RET_USERNAME:-root}
     RET_TRUST_SERVER=1
