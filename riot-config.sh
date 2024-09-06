@@ -20,8 +20,15 @@ nasp.remote() {
     RET_USERNAME=${RET_USERNAME:-root}
 }
 
-i.domain() {
+dxng.domain() {
     RET_HOSTNAME=$host.dxng.net
+    RET_PORT=${RET_PORT:-12022}
+    RET_USERNAME=${RET_USERNAME:-root}
+    RET_TRUST_SERVER=1
+}
+
+i.domain() {
+    RET_HOSTNAME=$host.ibd.ink
     RET_PORT=${RET_PORT:-12022}
     RET_USERNAME=${RET_USERNAME:-root}
     RET_TRUST_SERVER=1
@@ -52,5 +59,5 @@ nasp.domain() {
 }
 
 default.domain() {
-    i.domain
+    dxng.domain
 }
