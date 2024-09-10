@@ -14,6 +14,7 @@ export EDITOR='vim'
 export PYTHONIOENCODING='UTF-8'
 export GPG_TTY=$(tty)
 export LESS_TERMCAP_md=$'\E[01;33m'
+export VIRTUAL_ENV_DISABLE_PROMPT=1
 # env for dfs
 if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; set +a; fi
 export DFS_OS_TYPE="$("$DOTFILES/tools/common.sh" get_os_type)"
@@ -121,8 +122,8 @@ alias "p666"='ping6 2001:da8::666'
 alias "cbd"='curl http://www.baidu.com'
 alias "cbds"='curl https://www.baidu.com'
 alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
-alias "ls"='ls --color=tty'
-alias "l"='ls -lAGh --time-style="+%y-%m-%d %H:%M"'
+alias "ls"='ls --color=tty --time-style="+%y-%m-%d %H:%M"'
+alias "l"='ls -lAGh'
 alias "jc"='journalctl'
 alias "jce"='jc -e'
 alias "jceu"='jc -eu'

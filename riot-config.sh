@@ -11,13 +11,20 @@ j.remote() {
 nasp.remote() {
     remote=nasp.fit
     RET_PORT=${RET_PORT:-36022}
-    RET_USERNAME=${RET_USERNAME:-ssh}
+    RET_USERNAME=${RET_USERNAME:-root}
     RET_TRUST_SERVER=1
 }
 
 # domains
 .domain() {
     RET_USERNAME=${RET_USERNAME:-root}
+}
+
+dxng.domain() {
+    RET_HOSTNAME=$host.dxng.net
+    RET_PORT=${RET_PORT:-12022}
+    RET_USERNAME=${RET_USERNAME:-root}
+    RET_TRUST_SERVER=1
 }
 
 i.domain() {
@@ -46,11 +53,11 @@ x.domain() {
 nasp.domain() {
     RET_HOSTNAME=$host
     RET_PORT=${RET_PORT:-12022}
-    RET_USERNAME=${RET_USERNAME:-dictxiong}
+    RET_USERNAME=${RET_USERNAME:-root}
     RET_JUMP_SERVER="ssh@nasp.fit:36022"
     RET_TRUST_SERVER=1
 }
 
 default.domain() {
-    i.domain
+    dxng.domain
 }

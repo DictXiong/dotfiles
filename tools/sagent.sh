@@ -61,7 +61,8 @@ reset()
 
 all()
 {
-    local agent_file="/tmp/piv-agent-$(whoami)"
+    test -d ~/.ssh || mkdir ~/.ssh
+    local agent_file=~/.ssh/agent-$(whoami)
     if [[ -f $agent_file ]]; then
         source $agent_file > /dev/null
     else

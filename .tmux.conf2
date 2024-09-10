@@ -26,6 +26,7 @@ bind | split-window -h -c "#{pane_current_path}"
 # other key bindings
 bind r source-file ~/.tmux.conf \; display-message "tmux.conf reloaded"
 bind m run 'old=$(tmux show -gv mouse); new="off"; if [ "$old" = "off" ]; then new="on"; fi; tmux set -g mouse $new && tmux display-message toggle\ mouse\ mode\ $new'
+bind C-x set-window-option synchronize-panes\; display-message "synchronize-panes is now #{?pane_synchronized,on,off}"
 
 # styles
 # status bar
