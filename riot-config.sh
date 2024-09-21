@@ -18,6 +18,7 @@ nasp.remote() {
 # domains
 .domain() {
     RET_USERNAME=${RET_USERNAME:-root}
+    RET_PORT=${RET_PORT:-12022}
 }
 
 dxng.domain() {
