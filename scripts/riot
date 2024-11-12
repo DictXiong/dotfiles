@@ -132,10 +132,10 @@ eval_or_echo() {
         if [[ -z "$RIOT_TMUX_SESS" ]]; then
             RIOT_TMUX_SESS=riot-$(date +%s)
             RIOT_TMUX_WIN=0
-            $DO tmux new-session -d -s $RIOT_TMUX_SESS
+            $DO tmux new-session -d -s $RIOT_TMUX_SESS bash -l
         else
             RIOT_TMUX_WIN=$((RIOT_TMUX_WIN+1))
-            $DO tmux new-window -t $RIOT_TMUX_SESS:$RIOT_TMUX_WIN -d
+            $DO tmux new-window -t $RIOT_TMUX_SESS:$RIOT_TMUX_WIN -d bash -l
         fi
         $DO tmux send-keys -t $RIOT_TMUX_SESS:$RIOT_TMUX_WIN "$cmd" Enter
     else
