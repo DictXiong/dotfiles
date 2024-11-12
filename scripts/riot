@@ -123,10 +123,23 @@ parse_remote() {
 }
 
 eval_or_echo() {
+    local cmd="$@"
+    local DO=""
     if [[ "$DFS_DRY_RUN" == "1" ]]; then
-        echo $@
+        DO=echo
+    fi
+    if [[ "$RIOT_USE_TMUX" == "1" ]]; then
+        if [[ -z "$RIOT_TMUX_SESS" ]]; then
+            RIOT_TMUX_SESS=riot-$(date +%s)
+            RIOT_TMUX_WIN=0
+            $DO tmux new-session -d -s $RIOT_TMUX_SESS
+        else
+            RIOT_TMUX_WIN=$((RIOT_TMUX_WIN+1))
+            $DO tmux new-window -t $RIOT_TMUX_SESS:$RIOT_TMUX_WIN -d
+        fi
+        $DO tmux send-keys -t $RIOT_TMUX_SESS:$RIOT_TMUX_WIN "$cmd" Enter
     else
-        eval $@
+        $DO $cmd
     fi
 }
 
@@ -215,6 +228,11 @@ router() {
     fi
 
     while [[ "$1" == -* ]]; do
+        if [[ "$1" == "--tmux" ]]; then
+            RIOT_USE_TMUX=1
+            shift
+            continue
+        fi
         RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $1"
         if [[ "$1" == "-o" ]]; then
             RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $2"
@@ -236,7 +254,8 @@ router() {
         fi
         parse_remote "$remote"
         case $2 in
-            ssh|"" )
+            ssh|tmux|"" )
+                [[ "$2" == tmux ]] && RIOT_USE_TMUX=1
                 run_ssh ssh "${@:3}"
                 ;;
             ping|ping6 )
@@ -266,6 +285,10 @@ router() {
                 ;;
         esac
     done
+
+    if [[ -n "$RIOT_TMUX_SESS" ]]; then
+        tmux attach-session -t $RIOT_TMUX_SESS
+    fi
 }
 
 router "${GOT_OPTS[@]}"
