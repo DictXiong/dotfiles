@@ -224,8 +224,14 @@ router() {
     done
 
     IFS=',' read -ra remotes <<< "$1"
-    for remote in "${remotes[@]}"; do
+    for ((i=0; i<${#remotes[@]}; i++)); do
+        remote="${remotes[i]}"
         if [[ -z "$remote" ]]; then
+            continue
+        fi
+        local batch_func="${remote}.batch"
+        if is_function "$batch_func"; then
+            "$batch_func"
             continue
         fi
         parse_remote "$remote"
