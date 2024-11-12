@@ -83,7 +83,7 @@ parse_remote() {
     TRUST_SERVER=1
     PORT=""  # optional
     USERNAME=""  # optional
-    SSH_OPTIONS=""  # optional
+    SSH_OPTIONS="-o RequestTTY=yes"  # optional
     if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
         SSH_OPTIONS='-o PermitLocalCommand=yes'
         if [[ "$(get_os_type)" != "msys" ]]; then
