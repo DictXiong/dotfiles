@@ -85,7 +85,7 @@ parse_remote() {
     USERNAME=""  # optional
     SSH_OPTIONS="-o RequestTTY=yes"  # optional
     if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
-        SSH_OPTIONS='-o PermitLocalCommand=yes'
+        SSH_OPTIONS="$SSH_OPTIONS -o PermitLocalCommand=yes"
         if [[ "$(get_os_type)" != "msys" ]]; then
             test "$DFS_DRY_RUN" = "1" || mkdir -p ~/.ssh/master-socket
             SSH_OPTIONS="$SSH_OPTIONS -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C"
