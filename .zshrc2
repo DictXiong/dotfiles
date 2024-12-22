@@ -131,6 +131,7 @@ alias "jcf"='jc -f'
 alias "jcfu"='jc -fu'
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
 sagt() { eval "$($DOTFILES/tools/sagent.sh $@)" }
+use() { nix --experimental-features nix-command --extra-experimental-features flakes shell "${(*)@/#%(#b)([^#]#)/nixpkgs#$match}" }
 
 # key bindings
 bindkey "^b" beginning-of-line  # ctrl+b
