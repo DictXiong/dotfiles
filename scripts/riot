@@ -202,11 +202,11 @@ run_scp() {
         dst_is_remote=0
     fi
     if [[ "$dst_is_remote" == "1" ]]; then
-        SCP_SRC=\""$src"\"
-        SERVER="$SERVER":\""$dst"\"
+        SCP_SRC="$src"
+        SERVER="$SERVER":"$dst"
     else
-        SERVER="$SERVER":\""$src"\"
-        SCP_DST=\""$dst"\"
+        SERVER="$SERVER":"$src"
+        SCP_DST="$dst"
     fi
     SSH_OPTIONS="$SSH_OPTIONS -r"
     local cmd="$(prepare_ssh_cmd scp)"
