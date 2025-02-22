@@ -47,6 +47,12 @@ add_piv()
     list
 }
 
+add_id25519_with_op()
+{
+    SSH_ASKPASS_REQUIRE=force SSH_ASKPASS="$THIS_DIR/sagent-op.sh" timeout 30s ssh-add ~/.ssh/id_ed25519 || fmt_fatal "timed out when adding the key. probably the passphrase is wrong"
+    list
+}
+
 list()
 {
     echo echo "available keys:"
@@ -95,6 +101,9 @@ route()
             ;;
         piv)
             add_piv
+            ;;
+        op)
+            add_id25519_with_op
             ;;
         reset)
             reset
