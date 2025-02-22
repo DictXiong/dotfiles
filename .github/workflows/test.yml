@@ -91,7 +91,7 @@ jobs:
     steps:
       - name: remove dependencies
         run: |
-          sudo apt-get -y remove curl vim python3
+          sudo apt-get -y remove curl vim
 
       - name: checkout repo
         uses: actions/checkout@v4
