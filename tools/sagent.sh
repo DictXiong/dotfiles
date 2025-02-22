@@ -49,7 +49,7 @@ add_piv()
 
 add_id25519_with_op()
 {
-    SSH_ASKPASS_REQUIRE=force SSH_ASKPASS="$THIS_DIR/sagent-op.sh" timeout 30s ssh-add ~/.ssh/id_ed25519 || fmt_fatal "timed out when adding the key. probably the passphrase is wrong"
+    SSH_ASKPASS_REQUIRE=force SSH_ASKPASS="$THIS_DIR/sagent-op.sh" timeout 60s ssh-add ~/.ssh/id_ed25519 || fmt_fatal "timed out when adding the key. probably the passphrase is wrong or 1password-cli is not working"
     list
 }
 
