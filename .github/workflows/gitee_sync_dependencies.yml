@@ -5,10 +5,10 @@ on:
   workflow_dispatch: ~
 jobs:
   ohmyzsh:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: ohmyzsh repo
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/ohmyzsh
         dst: gitee/dictxiong
@@ -22,10 +22,10 @@ jobs:
         static_list: "ohmyzsh"
         timeout: '600s'
   zsh-users:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: zsh-users repos
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/zsh-users
         dst: gitee/dictxiong
@@ -39,10 +39,10 @@ jobs:
         static_list: "antigen,zsh-syntax-highlighting,zsh-autosuggestions,zsh-completions"
         timeout: '600s'
   zdharma-continuum:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: zdharma-continuum repos
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/zdharma-continuum
         dst: gitee/dictxiong
@@ -56,10 +56,10 @@ jobs:
         static_list: "fast-syntax-highlighting"
         timeout: '600s'
   tmux-mem-cpu-load:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: thewtex/tmux-mem-cpu-load
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/thewtex
         dst: gitee/dictxiong
@@ -73,10 +73,10 @@ jobs:
         static_list: "tmux-mem-cpu-load"
         timeout: '600s'
   tmux-plugins:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: tmux-plugins
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/tmux-plugins
         dst: gitee/dictxiong
@@ -90,10 +90,10 @@ jobs:
         static_list: "tpm,tmux-resurrect,tmux-yank"
         timeout: '600s'
   vundle-vim:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: VundleVim/Vundle-vim
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/VundleVim
         dst: gitee/dictxiong
@@ -107,10 +107,10 @@ jobs:
         static_list: "Vundle.vim"
         timeout: '600s'
   onedark-vim:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: joshdick/onedark-vim
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/joshdick
         dst: gitee/dictxiong
@@ -124,10 +124,10 @@ jobs:
         static_list: "onedark.vim"
         timeout: '600s'
   fzf:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: junegunn/fzf
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/junegunn
         dst: gitee/dictxiong

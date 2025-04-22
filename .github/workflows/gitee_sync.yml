@@ -4,10 +4,10 @@ on:
   workflow_dispatch: ~
 jobs:
   dotfiles:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: DictXiong/dotfiles
-      uses: Yikun/hub-mirror-action@v1.4
+      uses: Yikun/hub-mirror-action@v1.5
       with:
         src: github/DictXiong
         dst: gitee/dictxiong
