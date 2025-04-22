@@ -214,11 +214,33 @@ run_scp() {
     eval_or_echo $cmd
 }
 
+# remove host keys
+remove_hostkey()
+{
+    local key
+    if [[ -z "$PORT" || "$PORT" == "22" ]]; then
+        key=$SERVER
+    else
+        key="[$SERVER]:$PORT"
+    fi
+    ssh-keygen -R "$key"
+}
+
 # main
 print_help()
 {
     fmt_info "usage: $0 <service> [command] [options]"
-    echo "available commands: ssh (default), sshl (ssh -L), zssh, sftp"
+    cat <<EOF
+  available commands:
+  - ssh (default)
+  - tmux (run ssh in multiple tmux windows)
+  - sshl (ssh -L)
+  - sshd (ssh -D)
+  - zssh
+  - sftp
+  - rm (remove host keys)
+  - ping/ping6 (let the remote to ping the given target)
+EOF
 }
 
 router() {
@@ -278,6 +300,9 @@ router() {
                 test -n "$3" || fmt_fatal "no source path specified"
                 test -n "$4" || fmt_fatal "no destination path specified"
                 run_scp "$3" "$4"
+                ;;
+            rm )
+                remove_hostkey
                 ;;
             * )
                 print_help
