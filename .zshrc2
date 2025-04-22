@@ -187,7 +187,6 @@ dfs()
             "$DOTFILES/install.sh" -i
             echo 'Done. Please open a new shell to see the changes.'
             ;;
-        log    ) "$DOTFILES/tools/common.sh" "post_log" "INFO" "dfs" "$2" ;;
         beacon ) "$DOTFILES/tools/common.sh" "post_beacon" "$2" "$3" ;;
         *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac

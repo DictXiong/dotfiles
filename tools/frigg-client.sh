@@ -63,8 +63,8 @@ handle_resp()
 
 post_beacon()
 {
-    local beacon_type=$1
-    local meta=$2
+    local beacon_type="$1"
+    local meta="$2"
     if [[ -n "$CI" && "$beacon_type" != "gh.ci" && "$beacon_type" != "dfs.invalid-commit" && "$beacon_type" != "dfs.dirty" ]]; then
         return
     fi
@@ -72,17 +72,6 @@ post_beacon()
         fmt_fatal "beacon type is required"
     fi
     resp=$(curl $DFS_CURL_OPTIONS -sSL -X POST -H "Content-Type: text/plain" -d "$meta" "https://api.beardic.cn/post-beacon?hostname=$hostname&beacon=$beacon_type")
-    handle_resp "$resp"
-}
-
-post_log()
-{
-    local log_content=$1
-    if [[ -z "$log_content" ]]; then
-        fmt_fatal "log content is required"
-    fi
-    init_uuid
-    resp=$(curl $DFS_CURL_OPTIONS -sSL -X POST -H "Content-Type: text/plain" -d "$log_content" "https://api.beardic.cn/post-log?hostname=$hostname&uuid=$uuid")
     handle_resp "$resp"
 }
 
@@ -138,7 +127,7 @@ update_dns()
 
 print_help()
 {
-    fmt_info "usage: $0 <beacon|log|ddns> [beacon_type|log_content]"
+    fmt_info "usage: $0 <beacon|ddns> [beacon_type] [beacon_meta]"
 }
 
 router()
@@ -149,9 +138,6 @@ router()
             ;;
         beacon)
             post_beacon "$2" "$3"
-            ;;
-        log)
-            post_log "$2"
             ;;
         ddns)
             update_dns

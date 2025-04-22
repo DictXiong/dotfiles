@@ -162,19 +162,6 @@ ask_for_Yn()
     fi
 }
 
-post_log()
-{
-    if [[ $# != 3 || -z "$1" || -z "$2" || -z "$3" ]]; then
-        fmt_fatal "usage: post_log <level> <section> <content>"
-    fi
-    "${DOTFILES}/tools/frigg-client.sh" "log" "[$1][$2] $3"
-}
-
-apost_log()
-{
-    post_log "$@" 1>/dev/null &
-}
-
 post_beacon()
 {
     if [[ $# < 1 || -z "$1" ]]; then
