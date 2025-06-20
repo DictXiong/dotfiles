@@ -42,6 +42,7 @@ test $(echo | tools/common.sh ask_for_Yn "test") = "1"
 test $(DFS_QUIET=1 tools/common.sh ask_for_Yn "test") = "1"
 test "$(DFS_TRUST=1 riot time@is.impt:2222/yes@you-r.right/you@are.really.recht./ibd./try@it,another@host scp /tmp/ ./tmp -D 2>/dev/null)" = 'scp -P 12022 -o RequestTTY=yes -o PermitLocalCommand=yes -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C -o ProxyJump=time@is.impt:2222,yes@you-r.right:12022,you@are.really.recht:12022,root@ibd:12022 -r try@it.dxng.net:/tmp/ ./tmp
 scp -P 12022 -o RequestTTY=yes -o PermitLocalCommand=yes -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C -o ForwardX11=yes -o ForwardAgent=yes -r another@host.dxng.net:/tmp/ ./tmp'
+test "$(riot you@example.com:55 -tD ssh --password -- ping -c 1 2>/dev/null)" = 'ssh -p 55 -o RequestTTY=yes -o PermitLocalCommand=yes -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C -o ForwardX11=yes -o ForwardAgent=yes -o PasswordAuthentication=yes -o PubkeyAuthentication=no you@example.com ping -c 1'
 
 # check alias
 alias p114
