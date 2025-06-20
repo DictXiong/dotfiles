@@ -190,12 +190,12 @@ run_sshl()
 # sshd
 run_sshd()
 {
-    local port=$(get_free_port)
+    local port=${1:-$(get_free_port)}
     SSH_OPTIONS+=("-NC" "-D" "$port")
     prepare_ssh_cmd ssh
     fmt_note "-->" "${CMD[@]}"
     fmt_note "  > please access localhost:$port"
-    eval_or_echo $cmd
+    eval_or_echo
 }
 
 # scp
@@ -251,12 +251,13 @@ print_help()
     fmt_info "usage: $0 [-Ddhlqt] [--dry-run] [--dev] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [ssh-command-args]"
     cat <<EOF
   available commands:
-  - ssh (default)
-  - tmux (run ssh in multiple tmux windows)
-  - sshl (ssh -L)
-  - sshd (ssh -D)
-  - zssh
+  - ssh [ssh-command-args] (default)
+  - tmux [ssh-command-args] (run ssh in multiple tmux windows)
+  - sshl [local-port:remote-host:]remote-port (ssh -L)
+  - sshd [local-port] (ssh -D)
+  - zssh [ssh-command-args]
   - sftp
+  - scp source destination
   - rm (remove host keys)
   - ping/ping4/ping6 (ping the remote servers)
 EOF
@@ -336,8 +337,13 @@ router() {
                 run_sshl "${positional[2]}"
                 ;;
             sshd )
-                test "${#positional[@]}" -eq 2 || fmt_fatal "sshd requires no arguments"
-                run_sshd  # TODO: support port number
+                test "${#positional[@]}" -le 3 || fmt_fatal "sshd requires one or no arguments"
+                if [[ "${#positional[@]}" -eq 3 ]]; then
+                    check_port "${positional[2]}" || fmt_fatal "invalid port number: ${positional[2]}"
+                    run_sshd "${positional[2]}"
+                else
+                    run_sshd
+                fi
                 ;;
             scp )
                 test "${#positional[@]}" -eq 4 || fmt_fatal "scp requires exactly two arguments: source and destination"
