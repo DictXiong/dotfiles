@@ -264,11 +264,6 @@ EOF
 }
 
 router() {
-    if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
-        print_help
-        exit
-    fi
-
     local positional=()
     while [[ $# > 0 ]]; do
         case "$1" in
@@ -303,13 +298,14 @@ router() {
         esac
         shift
     done
-
     IFS=',' read -ra remotes <<< "${positional[0]}"
+    for i in ${!remotes[@]}; do if [[ -z "${remotes[i]}" ]]; then unset remotes[i]; fi; done
+    if [[ "${#positional[@]}" == "0" || "${#remotes[@]}" == "0" ]]; then
+        print_help
+        exit 1
+    fi
     for i in ${!remotes[@]}; do
         remote="${remotes[i]}"
-        if [[ -z "$remote" ]]; then
-            continue
-        fi
         local batch_func="${remote}.batch"
         if is_function "$batch_func"; then
             "$batch_func"
