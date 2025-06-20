@@ -254,6 +254,10 @@ router() {
             RIOT_USE_TMUX=1
             shift
             continue
+        elif [[ "$1" == "-t" || "$1" == "--trust" ]]; then
+            RIOT_TRUST_SERVER=1
+            shift
+            continue
         fi
         RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $1"
         if [[ "$1" == "-o" ]]; then
