@@ -122,6 +122,17 @@ parse_remote() {
     fi
 }
 
+print_cmd() {
+    local output=""
+    for s in "${CMD[@]}"; do
+        if [[ "$s" =~ [\ \\\'\"] ]]; then
+            s="${s@Q}"
+        fi
+        output+="$s "
+    done
+    fmt_note "--> ${output% }"
+}
+
 eval_or_echo() {
     local DO=""
     local tmux_win=0
@@ -167,7 +178,7 @@ prepare_ssh_cmd() {
 run_ssh()
 {
     prepare_ssh_cmd "$@"
-    fmt_note "-->" "${CMD[@]}"
+    print_cmd
     eval_or_echo
 }
 
@@ -182,7 +193,7 @@ run_sshl()
     local port=$(get_free_port)
     SSH_OPTIONS+=("-NC" "-L" "$port:$arg")
     prepare_ssh_cmd ssh
-    fmt_note "-->" "${CMD[@]}"
+    print_cmd
     fmt_note "  > please access localhost:$port"
     eval_or_echo
 }
@@ -193,7 +204,7 @@ run_sshd()
     local port=${1:-$(get_free_port)}
     SSH_OPTIONS+=("-NC" "-D" "$port")
     prepare_ssh_cmd ssh
-    fmt_note "-->" "${CMD[@]}"
+    print_cmd
     fmt_note "  > please access localhost:$port"
     eval_or_echo
 }
@@ -217,7 +228,7 @@ run_scp() {
     fi
     SSH_OPTIONS+=("-r")
     prepare_ssh_cmd scp
-    fmt_note "-->" "${CMD[@]}"
+    print_cmd
     eval_or_echo
 }
 
@@ -230,7 +241,7 @@ run_ping() {
         CMD+=(-6)
     fi
     CMD+=(-c 4 "$SERVER")
-    fmt_note "-->" "${CMD[@]}"
+    print_cmd
     eval_or_echo
 }
 
