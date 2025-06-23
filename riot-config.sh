@@ -39,14 +39,11 @@ nasp.remote() {
 }
 
 dxng.domain() {
-    RET_HOSTNAME=$host.dxng.net
-    RET_PORT=${RET_PORT:-12022}
-    RET_USERNAME=${RET_USERNAME:-root}
-    RET_TRUST_SERVER=1
-}
-
-i.domain() {
-    RET_HOSTNAME=$host.ibd.ink
+    if [[ "$host" =~ ^sed([0-9]{1,2})$ ]]; then
+        RET_HOSTNAME=192.168.98.$((100+BASH_REMATCH[1]))
+    else
+        RET_HOSTNAME=$host.dxng.net
+    fi
     RET_PORT=${RET_PORT:-12022}
     RET_USERNAME=${RET_USERNAME:-root}
     RET_TRUST_SERVER=1
