@@ -25,6 +25,7 @@ elif [[ -f /etc/hostname ]]; then
 else
     fmt_fatal "unable to get hostname"
 fi
+hostname=$(echo $hostname | tr '[:upper:]' '[:lower:]')
 
 init_uuid()
 {
