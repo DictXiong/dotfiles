@@ -4,7 +4,7 @@ THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
-RIOT_EXTRA_OPTIONS=""
+EXTRA_SSH_OPTIONS=()
 
 # config
 RIOT_CONFIG_FILES=(
@@ -83,12 +83,12 @@ parse_remote() {
     TRUST_SERVER=1
     PORT=""  # optional
     USERNAME=""  # optional
-    SSH_OPTIONS=""  # optional
+    SSH_OPTIONS=("-o" "RequestTTY=yes")
     if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
-        SSH_OPTIONS='-o PermitLocalCommand=yes'
+        SSH_OPTIONS+=("-o" "PermitLocalCommand=yes")
         if [[ "$(get_os_type)" != "msys" ]]; then
             test "$DFS_DRY_RUN" = "1" || mkdir -p ~/.ssh/master-socket
-            SSH_OPTIONS="$SSH_OPTIONS -o ControlMaster=auto -o ControlPath=~/.ssh/master-socket/%C"
+            SSH_OPTIONS+=("-o" "ControlMaster=auto" "-o" "ControlPath=~/.ssh/master-socket/%C")
         fi
     fi
     # handle input
@@ -115,18 +115,41 @@ parse_remote() {
     done
     # construct cmd
     if [[ "$RIOT_TRUST_SERVER" == "1" || "$TRUST_SERVER" == "1" ]]; then
-        SSH_OPTIONS="$SSH_OPTIONS -o ForwardX11=yes -o ForwardAgent=yes"
+        SSH_OPTIONS+=("-o" "ForwardX11=yes" "-o" "ForwardAgent=yes")
     fi
     if [[ -n "$jump_servers" ]]; then
-        SSH_OPTIONS="$SSH_OPTIONS -o ProxyJump=$jump_servers"
+        SSH_OPTIONS+=("-o" "ProxyJump=$jump_servers")
     fi
 }
 
+print_cmd() {
+    local output=""
+    for s in "${CMD[@]}"; do
+        if [[ "$s" =~ [\ \\\'\"] ]]; then
+            s="${s@Q}"
+        fi
+        output+="$s "
+    done
+    fmt_note "--> ${output% }"
+}
+
 eval_or_echo() {
+    local DO=""
+    local tmux_win=0
     if [[ "$DFS_DRY_RUN" == "1" ]]; then
-        echo $@
+        DO=echo
+    fi
+    if [[ "$USE_TMUX" == "1" ]]; then
+        if [[ -z "$TMUX_SESS" ]]; then
+            TMUX_SESS=riot-$(date +%s)
+            $DO tmux new-session -d -s $TMUX_SESS bash -l
+        else
+            tmux_win=$((tmux_win+1))
+            $DO tmux new-window -t $TMUX_SESS:$tmux_win -d bash -l
+        fi
+        $DO tmux send-keys -t $TMUX_SESS:$tmux_win "${CMD[@]}" Enter
     else
-        eval $@
+        $DO "${CMD[@]}"
     fi
 }
 
@@ -138,15 +161,25 @@ prepare_ssh_cmd() {
     else
         local port_param='-p'
     fi
-    echo "$ssh_bin ${PORT:+$port_param} $PORT $SSH_OPTIONS $RIOT_EXTRA_OPTIONS $SCP_SRC $USERNAME${USERNAME:+@}$SERVER $SCP_DST ${@:2}"
+    CMD=(
+        "$ssh_bin"
+        "${PORT:+$port_param}" "$PORT"
+        "${SSH_OPTIONS[@]}"
+        "${EXTRA_SSH_OPTIONS[@]}"
+        "$SCP_SRC"
+        "$USERNAME${USERNAME:+@}$SERVER"
+        "$SCP_DST"
+        "${@:2}"
+    )
+    for i in ${!CMD[@]}; do if [[ -z "${CMD[i]}" ]]; then unset CMD[i]; fi; done
 }
 
 # ssh
 run_ssh()
 {
-    local cmd="$(prepare_ssh_cmd $@)"
-    fmt_note "-->" $cmd
-    eval_or_echo $cmd
+    prepare_ssh_cmd "$@"
+    print_cmd
+    eval_or_echo
 }
 
 # sshl
@@ -158,24 +191,22 @@ run_sshl()
         arg=localhost:$arg
     fi
     local port=$(get_free_port)
-
-    SSH_OPTIONS="$SSH_OPTIONS -NC -L $port:$arg"
-    local cmd="$(prepare_ssh_cmd ssh)"
-    fmt_note "-->" $cmd
+    SSH_OPTIONS+=("-NC" "-L" "$port:$arg")
+    prepare_ssh_cmd ssh
+    print_cmd
     fmt_note "  > please access localhost:$port"
-    eval_or_echo $cmd
+    eval_or_echo
 }
 
 # sshd
 run_sshd()
 {
-    local port=$(get_free_port)
-
-    SSH_OPTIONS="$SSH_OPTIONS -NC -D $port"
-    local cmd="$(prepare_ssh_cmd ssh)"
-    fmt_note "-->" $cmd
+    local port=${1:-$(get_free_port)}
+    SSH_OPTIONS+=("-NC" "-D" "$port")
+    prepare_ssh_cmd ssh
+    print_cmd
     fmt_note "  > please access localhost:$port"
-    eval_or_echo $cmd
+    eval_or_echo
 }
 
 # scp
@@ -189,77 +220,158 @@ run_scp() {
         dst_is_remote=0
     fi
     if [[ "$dst_is_remote" == "1" ]]; then
-        SCP_SRC=\""$src"\"
-        SERVER="$SERVER":\""$dst"\"
+        SCP_SRC="$src"
+        SERVER="$SERVER":"$dst"
     else
-        SERVER="$SERVER":\""$src"\"
-        SCP_DST=\""$dst"\"
+        SERVER="$SERVER":"$src"
+        SCP_DST="$dst"
     fi
-    SSH_OPTIONS="$SSH_OPTIONS -r"
-    local cmd="$(prepare_ssh_cmd scp)"
-    fmt_note "-->" $cmd
-    eval_or_echo $cmd
+    SSH_OPTIONS+=("-r")
+    prepare_ssh_cmd scp
+    print_cmd
+    eval_or_echo
+}
+
+# ping
+run_ping() {
+    CMD=(ping)
+    if [[ "$1" == "ping4" ]]; then
+        CMD+=(-4)
+    elif [[ "$1" == "ping6" ]]; then
+        CMD+=(-6)
+    fi
+    CMD+=(-c 4 "$SERVER")
+    print_cmd
+    eval_or_echo
+}
+
+# remove host keys
+remove_hostkey() {
+    local key
+    if [[ -z "$PORT" || "$PORT" == "22" ]]; then
+        key=$SERVER
+    else
+        key="[$SERVER]:$PORT"
+    fi
+    ssh-keygen -R "$key"
 }
 
 # main
 print_help()
 {
-    fmt_info "usage: $0 <service> [command] [options]"
-    echo "available commands: ssh (default), sshl (ssh -L), zssh, sftp"
+    fmt_info "usage: $0 [-Ddhlqt] [--dry-run] [--dev] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [ssh-command-args]"
+    cat <<EOF
+  available commands:
+  - ssh [ssh-command-args] (default)
+  - tmux [ssh-command-args] (run ssh in multiple tmux windows)
+  - sshl [local-port:remote-host:]remote-port (ssh -L)
+  - sshd [local-port] (ssh -D)
+  - zssh [ssh-command-args]
+  - sftp
+  - scp source destination
+  - rm (remove host keys)
+  - ping/ping4/ping6 (ping the remote servers)
+EOF
 }
 
 router() {
-    if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
-        print_help
-        exit
-    fi
-
-    while [[ "$1" == -* ]]; do
-        RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $1"
-        if [[ "$1" == "-o" ]]; then
-            RIOT_EXTRA_OPTIONS="$RIOT_EXTRA_OPTIONS $2"
-            shift
-        fi
+    local positional=()
+    while [[ $# > 0 ]]; do
+        case "$1" in
+            -h|--help )
+                print_help
+                exit 0
+                ;;
+            -t|--trust )
+                RIOT_TRUST_SERVER=1
+                ;;
+            --tmux )
+                USE_TMUX=1
+                ;;
+            --password )
+                EXTRA_SSH_OPTIONS+=("-o" "PasswordAuthentication=yes" "-o" "PubkeyAuthentication=no")
+                ;;
+            -o )
+                EXTRA_SSH_OPTIONS+=("-o" "$2")
+                shift
+                ;;
+            -- )
+                shift
+                positional+=("$@")
+                break
+                ;;
+            -* )
+                fmt_fatal "unknown option: $1"
+                ;;
+            * )
+                positional+=("$1")
+                ;;
+        esac
         shift
     done
-
-    IFS=',' read -ra remotes <<< "$1"
-    for remote in "${remotes[@]}"; do
-        if [[ -z "$remote" ]]; then
+    IFS=',' read -ra remotes <<< "${positional[0]}"
+    for i in ${!remotes[@]}; do if [[ -z "${remotes[i]}" ]]; then unset remotes[i]; fi; done
+    if [[ "${#positional[@]}" == "0" || "${#remotes[@]}" == "0" ]]; then
+        print_help
+        exit 1
+    fi
+    for i in ${!remotes[@]}; do
+        remote="${remotes[i]}"
+        local batch_func="${remote}.batch"
+        if is_function "$batch_func"; then
+            "$batch_func"
             continue
         fi
         parse_remote "$remote"
-        case $2 in
-            ssh|"" )
-                run_ssh ssh "${@:3}"
+        case "${positional[1]}" in
+            ssh|tmux|"" )
+                [[ "${positional[1]}" == tmux ]] && USE_TMUX=1
+                run_ssh ssh "${positional[@]:2}"
                 ;;
-            ping|ping6 )
-                run_ssh ssh "${@:2}"
+            ping|ping4|ping6 )
+                test "${#positional[@]}" -eq 2 || fmt_fatal "ping requires no arguments"
+                run_ping "${positional[1]}"
                 ;;
             zssh )
-                run_ssh zssh
+                run_ssh zssh "${positional[@]:2}"
                 ;;
             sftp )
-                run_ssh sftp
+                run_ssh sftp "${positional[@]:2}"
                 ;;
             sshl )
-                test -n "$3" || fmt_fatal "no target address provided"
-                run_sshl "$3"
+                test -n "${positional[2]}" || fmt_fatal "no target address provided"
+                test "${#positional[@]}" -eq 3 || fmt_fatal "sshl requires exactly one argument"
+                run_sshl "${positional[2]}"
                 ;;
             sshd )
-                run_sshd
+                test "${#positional[@]}" -le 3 || fmt_fatal "sshd requires one or no arguments"
+                if [[ "${#positional[@]}" -eq 3 ]]; then
+                    check_port "${positional[2]}" || fmt_fatal "invalid port number: ${positional[2]}"
+                    run_sshd "${positional[2]}"
+                else
+                    run_sshd
+                fi
                 ;;
             scp )
-                test -n "$3" || fmt_fatal "no source path specified"
-                test -n "$4" || fmt_fatal "no destination path specified"
-                run_scp "$3" "$4"
+                test "${#positional[@]}" -eq 4 || fmt_fatal "scp requires exactly two arguments: source and destination"
+                test -n "${positional[2]}" || fmt_fatal "no source path specified"
+                test -n "${positional[3]}" || fmt_fatal "no destination path specified"
+                run_scp "${positional[2]}" "${positional[3]}"
+                ;;
+            rm )
+                test "${#positional[@]}" -eq 2 || fmt_fatal "rm requires no arguments"
+                remove_hostkey
                 ;;
             * )
                 print_help
-                fmt_fatal "unknown command: $2"
+                fmt_fatal "unknown command: ${positional[1]}"
                 ;;
         esac
     done
+
+    if [[ -n "$TMUX_SESS" && "$DFS_DRY_RUN" != "1" ]]; then
+        tmux attach-session -t $TMUX_SESS
+    fi
 }
 
 router "${GOT_OPTS[@]}"

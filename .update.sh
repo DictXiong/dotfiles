@@ -39,8 +39,7 @@ case $DFS_UPDATE_CHANNEL in
 esac
 if [[ ${#DFS_COMMIT} != 40 ]]; then
     fmt_error "invalid commit id"
-    apost_beacon "dfs.invalid-commit"
-    apost_log "ERROR" "$THIS_FILE" "invalid commit id: ${DFS_COMMIT}"
+    apost_beacon "dfs.invalid-commit" "invalid commit id: ${DFS_COMMIT}"
     exit
 fi
 

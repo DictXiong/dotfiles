@@ -13,7 +13,10 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     ARG=""
     GOT_OPTS=()
     while [[ $# > 0 || -n "$ARG" ]]; do
-        if [[ -z "$ARG" ]]; then ARG=$1; shift; fi
+        if [[ -z "$ARG" ]]; then
+            if [[ "$1" == "--" ]]; then GOT_OPTS+=("$@"); break; fi
+            ARG="$1"; shift;
+        fi
         case $ARG in
             -q*|--quite ) export DFS_QUIET=1 ;;
             -l*|--lite ) export DFS_LITE=1 ;;
@@ -160,19 +163,6 @@ ask_for_Yn()
             * ) echo 1;;
         esac
     fi
-}
-
-post_log()
-{
-    if [[ $# != 3 || -z "$1" || -z "$2" || -z "$3" ]]; then
-        fmt_fatal "usage: post_log <level> <section> <content>"
-    fi
-    "${DOTFILES}/tools/frigg-client.sh" "log" "[$1][$2] $3"
-}
-
-apost_log()
-{
-    post_log "$@" 1>/dev/null &
 }
 
 post_beacon()

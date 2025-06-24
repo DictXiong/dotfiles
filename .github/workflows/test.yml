@@ -46,7 +46,7 @@ jobs:
   
   test-macos:
     name: test on macos
-    runs-on: macos-12
+    runs-on: macos-latest
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
     steps:
       - name: remove dependencies
         run: |
-          sudo apt-get -y remove curl vim python3
+          sudo apt-get -y remove curl vim
 
       - name: checkout repo
         uses: actions/checkout@v4

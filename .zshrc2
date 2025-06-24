@@ -69,6 +69,7 @@ ANTIGEN_PLUGINS+=(
     "fzf"
     "git"
     "magic-enter"
+    "man"
     "per-directory-history"
     "pip"
     "podman"
@@ -78,7 +79,7 @@ ANTIGEN_PLUGINS+=(
     "systemd"
     "timer"
     "tmux"
-    "ufw"
+    "web-search"
     "z"
 )
 for i in ${ANTIGEN_PLUGINS[*]}; do
@@ -112,13 +113,11 @@ fi
 alias "pls"='sudo $(fc -ln -1)'
 alias "se"='sudo -sE'
 alias "sl"='sudo zsh -l'
-alias "cps"='rsync -avh --info=progress2'
-alias "mvs"='rsync -avh --info=progress2 --remove-source-files'
 if [[ "$DFS_OS_TYPE" == "linux" ]]; then alias "ping"='ping -n'; alias "ping6"='ping6 -n'; fi
 if [[ "$DFS_OS_TYPE" == "msys" ]]; then alias "tmux"='script -qO /dev/null -c "tmux -u"'; fi
 alias "pbd"='ping baidu.com'
 alias "p114"='ping 114.114.114.114'
-alias "p666"='ping6 2001:da8::666'
+alias "p666"='ping6 240c::6666'
 alias "cbd"='curl http://www.baidu.com'
 alias "cbds"='curl https://www.baidu.com'
 alias "gdebug"='git add -A; git commit --allow-empty -m "bug fix ($(date))"'
@@ -129,8 +128,11 @@ alias "jce"='jc -e'
 alias "jceu"='jc -eu'
 alias "jcf"='jc -f'
 alias "jcfu"='jc -fu'
+alias "sc"='systemctl'
+alias "t"='tmux'
 gbes() { git for-each-ref --sort=-committerdate refs/heads refs/remotes --format="%(authordate:format:%y-%m-%d.%a %H:%M %z)|%(color:red)%(objectname:short)|%(color:yellow)%(refname:short)%(color:reset)|%(color:reset)%(authorname): %(color:green)%(subject)" --color=always | column -ts"|" | less -FX }
 sagt() { eval "$($DOTFILES/tools/sagent.sh $@)" }
+use() { nix --experimental-features nix-command --extra-experimental-features flakes shell "${(*)@/#%(#b)([^#]#)/nixpkgs#$match}" }
 
 # key bindings
 bindkey "^b" beginning-of-line  # ctrl+b
@@ -186,7 +188,6 @@ dfs()
             "$DOTFILES/install.sh" -i
             echo 'Done. Please open a new shell to see the changes.'
             ;;
-        log    ) "$DOTFILES/tools/common.sh" "post_log" "INFO" "dfs" "$2" ;;
         beacon ) "$DOTFILES/tools/common.sh" "post_beacon" "$2" "$3" ;;
         *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
     esac
