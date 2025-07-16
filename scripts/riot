@@ -20,14 +20,14 @@ done
 
 # check if port number valid
 check_port() {
-    ( echo $1 | grep -qxE "[1-9][0-9]{0,4}" ) || return 1
-    test $1 -lt 65536 -a $1 -gt 0 || return 1
+    [[ "$1" =~ ^[1-9][0-9]{0,4}$ ]] || return 1
+    [[ $1 < 65536 && $1 > 0 ]] || return 1
     return 0
 }
 
 # check if username valid
 check_username() {
-    ( echo $1 | grep -qxE "^[a-z][-a-z0-9_]*\$" ) || return 1
+    [[ "$1" =~ ^[a-z][-a-z0-9_]*$ ]] || return 1
     return 0
 }
 
@@ -42,17 +42,27 @@ get_server_meta() {
     RET_JUMP_SERVER=""  # optional
     # body
     local remote="$1"
-    # if in the form user@...
+    # extract username from user@...
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
         remote=${remote#*@}
         check_username $RET_USERNAME || fmt_warning \"$RET_USERNAME\" is not a valid unix username
     fi
-    # if in the form ...:22
-    if [[ "$remote" == "["*"]":* || ( "$remote" != "["*"]" && "$remote" == *:* ) ]]; then
+    # extract port from ...:port
+    if [[
+        "$remote" =~ ^[^:]+:[1-9][0-9]*$  # contains only one colon
+        || "$remote" =~ ^\[.+\]:[1-9][0-9]*$  # in the form of [host]:port
+        || "$remote" =~ :::[1-9][0-9]*$  # in the form of :::port
+        || "$remote" =~ ^([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}:[1-9][0-9]*$  # full ipv6 address with port
+        || "$remote" =~ ^[0-9a-f:]+%.+:[1-9][0-9]*$  # ipv6 address with scope and port
+    ]]; then
         RET_PORT=${remote##*:}
         remote=${remote%:*}
         check_port $RET_PORT || fmt_fatal invalid port number \"$RET_PORT\"
+    fi
+    # remove square brackets
+    if [[ "$remote" =~ ^\[.*\]$ ]]; then
+        remote=${remote:1:-1}
     fi
     # presets -- match remote
     local remote_func="$remote.remote"
@@ -63,8 +73,8 @@ get_server_meta() {
     RET_HOSTNAME=${remote}
     local domain=${remote##*.}
     local host=${remote%.*}
-    # if there's no dot
-    if [[ "$host" == "$domain" && "$host" != "["*"]" ]]; then
+    # if it contains no dot and is not ipv6
+    if [[ "$remote" != *.* && "$remote" != *:* ]]; then
         domain="default"
     fi
     local domain_func="$domain.domain"
@@ -125,7 +135,7 @@ parse_remote() {
 print_cmd() {
     local output=""
     for s in "${CMD[@]}"; do
-        if [[ "$s" =~ [\ \\\'\"] ]]; then
+        if [[ "$s" =~ [\ \\\'\"] ]]; then  # needs to be escaped
             s="${s@Q}"
         fi
         output+="$s "
@@ -294,6 +304,15 @@ router() {
             -o )
                 EXTRA_SSH_OPTIONS+=("-o" "$2")
                 shift
+                ;;
+            -4 )
+                EXTRA_SSH_OPTIONS+=("-4")
+                ;;
+            -6 )
+                EXTRA_SSH_OPTIONS+=("-6")
+                ;;
+            -v )
+                EXTRA_SSH_OPTIONS+=("-v")
                 ;;
             -- )
                 shift
