@@ -269,11 +269,12 @@ remove_hostkey() {
 # main
 print_help()
 {
-    fmt_info "usage: $0 [-Ddhlqt] [--dry-run] [--dev] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [ssh-command-args]"
+    fmt_info "usage: $0 [-Ddhlqt] [--dry-run] [--dev] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [command-args]"
     cat <<EOF
   available commands:
   - ssh [ssh-command-args] (default)
   - tmux [ssh-command-args] (run ssh in multiple tmux windows)
+  - git [git-command-args] (run git on remote machine)
   - sshl [local-port:remote-host:]remote-port (ssh -L)
   - sshd [local-port] (ssh -D)
   - zssh [ssh-command-args]
@@ -320,7 +321,7 @@ router() {
                 break
                 ;;
             -* )
-                fmt_fatal "unknown option: $1"
+                fmt_fatal "unknown option: '$1'. if this option is for the remote command, add '--' before."
                 ;;
             * )
                 positional+=("$1")
@@ -346,6 +347,13 @@ router() {
             ssh|tmux|"" )
                 [[ "${positional[1]}" == tmux ]] && USE_TMUX=1
                 run_ssh ssh "${positional[@]:2}"
+                ;;
+            git )
+                if printf '%s\0' "${positional[@]:2}" | grep -Fxqz -- '-C'; then
+                    run_ssh ssh git "${positional[@]:2}"
+                else
+                    run_ssh ssh git -C "$(pwd)" "${positional[@]:2}"
+                fi
                 ;;
             ping|ping4|ping6 )
                 test "${#positional[@]}" -eq 2 || fmt_fatal "ping requires no arguments"
