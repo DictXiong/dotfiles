@@ -1,0 +1,3 @@
+#compdef sagt
+
+compadd -- kill ls op piv reset
