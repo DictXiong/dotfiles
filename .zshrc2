@@ -137,7 +137,7 @@ sagt() { eval "$($DOTFILES/tools/sagent.sh $@)" ; }
 use() { nix --experimental-features nix-command --extra-experimental-features flakes shell "${(*)@/#%(#b)([^#]#)/nixpkgs#$match}" ; }
 bnd() {
     if [[ -n "$1" && -d "./hosts/$1" ]]; then
-        nixos-rebuild --flake .#$1 build
+        nixos-rebuild --flake .#$1 build || return $?
         nix-diff /opt/NixOS-Config/results/hosts/$1 ./result --color=always | less
     else
         echo host $1 does not exist
