@@ -1,0 +1,35 @@
+#compdef beaml
+
+_beaml() {
+    local context state line
+    typeset -A opt_args
+
+    _arguments -C \
+        '1: :->cmds' \
+        '2: :->args'
+
+    case $state in
+        cmds)
+            local commands; commands=(
+                'add:Add a new item'
+                'del:Delete an item'
+                'list:List all items'
+            )
+            _describe -t commands 'beaml commands' commands
+            ;;
+        args)
+            case $line[1] in
+                add)
+                    _files
+                    ;;
+                del)
+                    local -a items
+                    items=( /pss/lite/*(N:t) )
+                    _describe -t items 'item to delete' items
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_beaml "$@"

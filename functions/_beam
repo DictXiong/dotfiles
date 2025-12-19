@@ -1,0 +1,99 @@
+#compdef beam
+
+# =============================================================================
+# Beam-Go Zsh Completion Script
+# =============================================================================
+
+_beam() {
+    local context state state_descr line
+    typeset -A opt_args
+
+    _arguments -C \
+        '1: :_beam_commands' \
+        '*:: :->args'
+
+    case $state in
+        (args)
+            case $line[1] in
+                (serve) _beam_serve ;;
+                (add)   _beam_add ;;
+                (list)  _beam_list ;;
+                (del)   _beam_del ;;
+            esac
+            ;;
+    esac
+}
+
+# --- Subcommand Definitions ---
+
+(( $+functions[_beam_commands] )) ||
+_beam_commands() {
+    local -a commands
+    commands=(
+        'serve:Start the beam server daemon'
+        'add:Share a file or directory'
+        'list:List active shares'
+        'del:Delete a share by path or code'
+    )
+    _describe -t commands 'beam command' commands
+}
+
+_beam_serve() {
+    _arguments \
+        '(-d --database)'{-d,--database}'=[Database directory (Required)]:directory:_path_files -/' \
+        '(-p --port)'{-p,--port}'=[Port to listen on (default :8280)]:port:' \
+        '(-s --socket)'{-s,--socket}'=[Socket path]:socket path:_files' \
+        '--subpath=[Enable subpath sharing]'
+}
+
+_beam_add() {
+    _arguments \
+        '(-d --days)'{-d,--days}'=[Expiration days (default 7)]:days:' \
+        '(-s --socket)'{-s,--socket}'=[Socket path]:socket path:_files' \
+        '1:file to share:_files'
+}
+
+_beam_list() {
+    _arguments \
+        '(-s --socket)'{-s,--socket}'=[Socket path]:socket path:_files'
+}
+
+_beam_del() {
+    _arguments \
+        '(-s --socket)'{-s,--socket}'=[Socket path]:socket path:_files' \
+        '(-c --code)'{-c,--code}'=[Share code]:share code:_beam_active_codes' \
+        '1:shared path:_files'
+}
+
+# --- Helpers ---
+
+# 动态获取当前的 Share Code
+# 它会尝试读取用户当前输入的 -s 参数，去连接正确的 socket
+_beam_active_codes() {
+    local socket_path=""
+
+    # 从 Zsh 解析的参数中提取 socket 路径
+    if [[ -n ${opt_args[-s]} ]]; then
+        socket_path=${opt_args[-s]}
+    elif [[ -n ${opt_args[--socket]} ]]; then
+        socket_path=${opt_args[--socket]}
+    fi
+
+    # 构造查询命令
+    local cmd_args=()
+    cmd_args+=("list")
+    [[ -n $socket_path ]] && cmd_args+=("-s" "$socket_path")
+
+    # 调用 beam list，跳过前两行表头，提取 Code($1) 和 Path($3)
+    # 2>/dev/null 防止服务未启动时报错打印到终端
+    local -a shares
+    shares=("${(@f)$(beam "${cmd_args[@]}" 2>/dev/null | awk 'NR>2 {print $1":"$2" "$3" "$4}')}")
+
+    if [[ ${#shares} -gt 0 ]]; then
+        _describe -t shares 'active share' shares
+    else
+        _message 'no active shares or server not running'
+    fi
+}
+
+_beam "$@"
