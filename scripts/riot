@@ -93,7 +93,10 @@ parse_remote() {
     TRUST_SERVER=1
     PORT=""  # optional
     USERNAME=""  # optional
-    SSH_OPTIONS=("-o" "RequestTTY=yes" "-o" "ServerAliveInterval=60")
+    SSH_OPTIONS=("-o" "ServerAliveInterval=60")
+    if [[ -t 1 ]]; then
+        SSH_OPTIONS+=("-o" "RequestTTY=yes")
+    fi
     if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
         SSH_OPTIONS+=("-o" "PermitLocalCommand=yes")
         if [[ "$(get_os_type)" != "msys" ]]; then
