@@ -195,20 +195,26 @@ run_ssh()
 # sshl
 run_sshl()
 {
-    is_port() {
-        if [[ "$1" =~ ^[1-9][0-9]*$ && $1 -gt 1 && $1 -lt 65535 ]]; then return 0; else return 1; fi
-    }
-    res="${1//[^:]}"
+    local arg left right localsock access
+    local res="${1//[^:]}"
+    local lorr="-L"
+    if [[ "${FUNCNAME[1]}" == "run_sshr" ]]; then
+        lorr="-R"
+    fi
     if [[ ${#res} -eq 2 ]]; then
         arg="$1"
     elif [[ ${#res} -eq 0 ]]; then
-        arg="$(get_free_port):localhost:$1"
+        if [[ "$lorr" == "-R" ]]; then
+            arg="$1"
+        else
+            arg="$(get_free_port):localhost:$1"
+        fi
     else
         left=${1%%:*}
         right=${1##*:}
-        if is_port "$left"; then
+        if check_port "$left"; then
             arg="$1"
-        elif is_port "$right"; then
+        elif check_port "$right"; then
             arg="$(get_free_port):$1"
         else
             arg="$1"
@@ -220,11 +226,17 @@ run_sshl()
     else
         access="localhost:${arg%%:*}"
     fi
-    SSH_OPTIONS+=("-NC" "-L" "$arg")
+    SSH_OPTIONS+=("-NC" "$lorr" "$arg")
     prepare_ssh_cmd ssh
     print_cmd
     fmt_note "  > please access $access"
     eval_or_echo
+}
+
+# sshr
+run_sshr()
+{
+    run_sshl "$1"
 }
 
 # sshd
@@ -388,6 +400,11 @@ router() {
                 test -n "${positional[2]}" || fmt_fatal "no target address provided"
                 test "${#positional[@]}" -eq 3 || fmt_fatal "sshl requires exactly one argument"
                 run_sshl "${positional[2]}"
+                ;;
+            sshr )
+                test -n "${positional[2]}" || fmt_fatal "no target address provided"
+                test "${#positional[@]}" -eq 3 || fmt_fatal "sshr requires exactly one argument"
+                run_sshr "${positional[2]}"
                 ;;
             sshd )
                 test "${#positional[@]}" -le 3 || fmt_fatal "sshd requires one or no arguments"
