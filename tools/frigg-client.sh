@@ -99,7 +99,7 @@ update_dns()
     elif [[ "$DFS_DDNS_IP4" == "http"* ]]; then
         ip4=$(curl $DFS_CURL_OPTIONS -sSL "$DFS_DDNS_IP4")
     else
-        ip4=$(ip a show $DFS_DDNS_IP4 | grep inet | grep global | awk '/inet / {print $2}' |  awk -F'[/]' '{print $1}')
+        ip4=$(ip -4 --brief addr show $DFS_DDNS_IP4 scope global primary | awk '{split($3,a,"/");print a[1]}' | head -n 1)
     fi
     if [[ -n "$DFS_DDNS_IP4" && -z "$ip4" ]]; then
         fmt_fatal "failed getting ip4 address"
@@ -115,7 +115,7 @@ update_dns()
     elif [[ "$DFS_DDNS_IP6" == "http"* ]]; then
         ip6=$(curl $DFS_CURL_OPTIONS -sSL "$DFS_DDNS_IP6")
     else
-        ip6=$(ip a show $DFS_DDNS_IP6 | grep inet6 | grep global | awk '/inet6 / {print $2}' |  awk -F'[/]' '{print $1}')
+        ip6=$(ip -6 --brief addr show $DFS_DDNS_IP6 scope global primary | awk '{split($3,a,"/");print a[1]}' | head -n 1)
     fi
     if [[ -n "$DFS_DDNS_IP6" && -z "$ip6" ]]; then
         fmt_fatal "failed getting ip6 address"
