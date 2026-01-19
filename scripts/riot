@@ -148,7 +148,7 @@ print_cmd() {
 
 eval_or_echo() {
     local DO=""
-    local tmux_win=0
+    tmux_win=${tmux_win:-0}
     if [[ "$DFS_DRY_RUN" == "1" ]]; then
         DO=echo
     fi
@@ -160,7 +160,7 @@ eval_or_echo() {
             tmux_win=$((tmux_win+1))
             $DO tmux new-window -t $TMUX_SESS:$tmux_win -d bash -l
         fi
-        $DO tmux send-keys -t $TMUX_SESS:$tmux_win "${CMD[@]}" Enter
+        $DO tmux send-keys -t $TMUX_SESS:$tmux_win $(printf '%s Space ' "${CMD[@]}") Enter
     else
         $DO "${CMD[@]}"
     fi
