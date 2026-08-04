@@ -36,6 +36,8 @@ bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-selection -x
 ## F12: passthru
 bind -T root F12 set prefix None \; set key-table off \; set status-bg red \; refresh-client -S
 bind -T off F12 set -u prefix \; set -u key-table \; set -u status-bg \; refresh-client -S
+## ESC: exit copy mode
+bind -T copy-mode-vi Escape send-keys -X cancel
 
 # styles
 # status bar
