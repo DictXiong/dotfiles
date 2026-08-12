@@ -83,10 +83,83 @@ list()
     echo ssh-add -l
 }
 
+configured_pinentry()
+{
+    local agent_conf
+    local agent_confs=()
+    for agent_conf in "$@"; do
+        [[ -f "$agent_conf" ]] && agent_confs+=("$agent_conf")
+    done
+    [[ ${#agent_confs[@]} -gt 0 ]] || return 1
+
+    awk '
+        /^[[:space:]]*#/ { next }
+        {
+            line = $0
+            sub(/^[[:space:]]*/, "", line)
+            if (line ~ /^pinentry-program([[:space:]]|=)/) {
+                sub(/^pinentry-program[[:space:]=]*/, "", line)
+                sub(/[[:space:]]*$/, "", line)
+                pinentry = line
+            }
+        }
+        END {
+            if (pinentry == "") exit 1
+            print pinentry
+        }
+    ' "${agent_confs[@]}"
+}
+
+check_pinentry()
+{
+    local gnupg_home
+    local gpg_sysconfdir
+    local agent_conf
+    local system_agent_conf
+    local pinentry
+    local gpg_bindir
+    local candidate
+
+    gnupg_home=$(gpgconf --list-dirs homedir)
+    gpg_sysconfdir=$(gpgconf --list-dirs sysconfdir)
+    agent_conf="$gnupg_home/gpg-agent.conf"
+    system_agent_conf="$gpg_sysconfdir/gpg-agent.conf"
+    if pinentry=$(configured_pinentry "$system_agent_conf" "$agent_conf"); then
+        if [[ "$pinentry" == "~/"* ]]; then
+            pinentry="$HOME/${pinentry#\~/}"
+        fi
+        if [[ -x "$pinentry" ]]; then
+            return
+        fi
+        fmt_warning "configured pinentry is not executable: $pinentry"
+    else
+        gpg_bindir=$(gpgconf --list-dirs bindir)
+        if [[ -x "$gpg_bindir/pinentry" || -x "$gpg_bindir/pinentry-basic" ]]; then
+            return
+        fi
+    fi
+
+    for candidate in \
+        "$(command -v pinentry-curses 2>/dev/null || true)" \
+        "$(command -v pinentry 2>/dev/null || true)" \
+        "$(command -v pinentry-tty 2>/dev/null || true)"; do
+        [[ -n "$candidate" && -x "$candidate" ]] && break
+        candidate=""
+    done
+
+    if [[ -n "$candidate" ]]; then
+        fmt_warning "gpg-agent has no usable pinentry; add 'pinentry-program $candidate' to $agent_conf"
+    else
+        fmt_warning "gpg-agent has no usable pinentry; install one and configure pinentry-program in $agent_conf"
+    fi
+}
+
 use_gpg_agent()
 {
     command -v gpgconf > /dev/null 2>&1 || fmt_fatal "gpgconf not found"
     command -v gpg-connect-agent > /dev/null 2>&1 || fmt_fatal "gpg-connect-agent not found"
+
+    check_pinentry
 
     local current_tty
     current_tty=$(tty) || fmt_fatal "unable to determine the current TTY"
