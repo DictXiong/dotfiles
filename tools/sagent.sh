@@ -20,6 +20,7 @@ find_so_file()
             return
         fi
     done
+    return 1
 }
 
 create_agent()
@@ -30,27 +31,50 @@ create_agent()
 
 kill_agent()
 {
-    if pgrep -x ssh-agent > /dev/null; then
-        fmt_note "killing existing agent"
-        pkill -9 -x ssh-agent
+    local status
+    if pgrep -u "$EUID" -x ssh-agent > /dev/null; then
+        fmt_note "stopping existing ssh-agent"
+        if pkill -TERM -u "$EUID" -x ssh-agent; then
+            :
+        else
+            status=$?
+            [[ $status -eq 1 ]] || return "$status"
+        fi
     fi
+    if command -v gpgconf > /dev/null 2>&1; then
+        fmt_note "stopping gpg-agent if running"
+        gpgconf --kill gpg-agent
+    fi
+    unset SSH_AUTH_SOCK SSH_AGENT_PID
+    echo unset SSH_AUTH_SOCK SSH_AGENT_PID
 }
 
 add_piv()
 {
-    local SO_FILE=$(find_so_file)
-    if [[ -n "$SO_FILE" ]]; then
-        echo ssh-add -s \"$SO_FILE\"
-    else
+    local SO_FILE
+    if ! SO_FILE=$(find_so_file); then
         fmt_error "opensc-pkcs11.so not found"
+        return 1
     fi
+    printf 'ssh-add -s %q\n' "$SO_FILE"
     list
 }
 
 add_id25519_with_op()
 {
-    SSH_ASKPASS_REQUIRE=force SSH_ASKPASS="$THIS_DIR/sagent-op.sh" timeout 60s ssh-add ~/.ssh/id_ed25519 || fmt_fatal "timed out when adding the key. probably the passphrase is wrong or 1password-cli is not working"
-    list
+    local status
+    if SSH_ASKPASS_REQUIRE=force SSH_ASKPASS="$THIS_DIR/sagent-op.sh" timeout 60s ssh-add "$HOME/.ssh/id_ed25519"; then
+        list
+        return
+    else
+        status=$?
+    fi
+
+    if [[ $status -eq 124 ]]; then
+        fmt_fatal "timed out when adding the key"
+    else
+        fmt_fatal "failed to add the key (ssh-add exit $status); check the key, agent, and 1Password CLI"
+    fi
 }
 
 list()
@@ -59,30 +83,115 @@ list()
     echo ssh-add -l
 }
 
+use_gpg_agent()
+{
+    command -v gpgconf > /dev/null 2>&1 || fmt_fatal "gpgconf not found"
+    command -v gpg-connect-agent > /dev/null 2>&1 || fmt_fatal "gpg-connect-agent not found"
+
+    local current_tty
+    current_tty=$(tty) || fmt_fatal "unable to determine the current TTY"
+    export GPG_TTY="$current_tty"
+
+    gpgconf --launch gpg-agent
+    gpg-connect-agent updatestartuptty /bye > /dev/null
+
+    local agent_socket
+    agent_socket=$(gpgconf --list-dirs agent-ssh-socket)
+    if [[ -z "$agent_socket" || ! -S "$agent_socket" ]]; then
+        fmt_fatal "gpg-agent SSH socket not found; add 'enable-ssh-support' to ~/.gnupg/gpg-agent.conf and restart gpg-agent"
+    fi
+
+    fmt_note "using gpg-agent: $agent_socket"
+    echo unset SSH_AGENT_PID
+    printf 'export GPG_TTY=%q\n' "$current_tty"
+    printf 'export SSH_AUTH_SOCK=%q\n' "$agent_socket"
+}
+
+read_agent_file()
+{
+    local agent_file="$1"
+    local line
+    local agent_socket=""
+    local agent_pid=""
+
+    while IFS= read -r line; do
+        case "$line" in
+            SSH_AUTH_SOCK=*)
+                agent_socket=${line#SSH_AUTH_SOCK=}
+                agent_socket=${agent_socket%%;*}
+                ;;
+            SSH_AGENT_PID=*)
+                agent_pid=${line#SSH_AGENT_PID=}
+                agent_pid=${agent_pid%%;*}
+                ;;
+        esac
+    done < "$agent_file"
+
+    [[ -n "$agent_socket" && "$agent_pid" =~ ^[1-9][0-9]*$ ]] || return 1
+    export SSH_AUTH_SOCK="$agent_socket"
+    export SSH_AGENT_PID="$agent_pid"
+}
+
+agent_is_usable()
+{
+    [[ -S "$SSH_AUTH_SOCK" ]] || return 1
+    ps -p "$SSH_AGENT_PID" -o uid= -o comm= 2>/dev/null |
+        awk -v uid="$EUID" '$1 == uid && $2 ~ /(^|\/)ssh-agent$/ { found=1 } END { exit !found }' || return 1
+
+    local status
+    if ssh-add -l > /dev/null 2>&1; then
+        status=0
+    else
+        status=$?
+    fi
+    [[ $status -eq 0 || $status -eq 1 ]]
+}
+
+print_agent_env()
+{
+    printf 'export SSH_AUTH_SOCK=%q\n' "$SSH_AUTH_SOCK"
+    printf 'export SSH_AGENT_PID=%q\n' "$SSH_AGENT_PID"
+}
+
 reset()
 {
     kill_agent
-    all
+    all already-killed
 }
 
 all()
 {
-    test -d ~/.ssh || mkdir ~/.ssh
-    local agent_file=~/.ssh/agent-$(whoami)
-    if [[ -f $agent_file ]]; then
-        source $agent_file > /dev/null
+    local mode="${1:-}"
+    mkdir -p "$HOME/.ssh"
+    local agent_file="$HOME/.ssh/agent-$(whoami)"
+    [[ ! -L "$agent_file" ]] || fmt_fatal "refusing to use symlink as agent file: $agent_file"
+    unset SSH_AUTH_SOCK SSH_AGENT_PID
+
+    if [[ "$mode" != "already-killed" && -f "$agent_file" ]]; then
+        chmod 600 "$agent_file"
+        read_agent_file "$agent_file" || true
     else
-        touch $agent_file
-        chmod 600 $agent_file
+        touch "$agent_file"
+        chmod 600 "$agent_file"
     fi
-    if ! ps -p "$SSH_AGENT_PID" 1>/dev/null 2>&1; then
-        kill_agent
+
+    if ! agent_is_usable; then
+        if [[ "$mode" != "already-killed" ]]; then
+            kill_agent
+        fi
         fmt_note "launching a new agent"
-        create_agent | tee $agent_file
+        local agent_output
+        if ! agent_output=$(create_agent); then
+            fmt_fatal "failed to launch ssh-agent"
+        fi
+        printf '%s\n' "$agent_output" > "$agent_file"
+        chmod 600 "$agent_file"
+        read_agent_file "$agent_file" || fmt_fatal "ssh-agent returned invalid environment data"
+        agent_is_usable || fmt_fatal "new ssh-agent is not usable"
     else
         fmt_note "using existing agent: $SSH_AGENT_PID"
-        cat $agent_file
     fi
+    print_agent_env
 }
 
 route()
@@ -105,6 +214,9 @@ route()
         op)
             add_id25519_with_op
             ;;
+        gpg)
+            use_gpg_agent
+            ;;
         reset)
             reset
             ;;
@@ -113,6 +225,7 @@ route()
             ;;
         *)
             fmt_error "unknown command: $1"
+            return 1
             ;;
     esac
 }

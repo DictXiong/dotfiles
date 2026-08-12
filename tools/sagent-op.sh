@@ -2,8 +2,8 @@
 set -e
 
 op=$(command -v op || command -v op.exe || true)
-if [[ ! -x $op ]]; then
-    echo "1password cli not found" > /dev/stderr
-    exit -1
+if [[ -z "$op" || ! -x "$op" ]]; then
+    echo "1Password CLI not found" >&2
+    exit 1
 fi
-"$op" read "op://Personal/id25519-passphrase/$(hostname)"
+exec "$op" read "op://Personal/id25519-passphrase/$(hostname)"
