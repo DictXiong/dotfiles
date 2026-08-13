@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # connect to iot services
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+DFS_SKIP_ARG_PARSE=1
 source "$THIS_DIR/../tools/common.sh"
+unset DFS_SKIP_ARG_PARSE
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 EXTRA_SSH_OPTIONS=()
+GPG_FORWARD=0
 
 # config
 RIOT_CONFIG_FILES=(
@@ -12,22 +15,25 @@ RIOT_CONFIG_FILES=(
     "$HOME/.config/riot-config.sh"
     "riot-config.sh"
 )
-for file in "${RIOT_CONFIG_FILES[@]}"; do
-    if [[ -f "$file" ]]; then
-        source "$file"
-    fi
-done
+load_riot_config() {
+    local file
+    for file in "${RIOT_CONFIG_FILES[@]}"; do
+        if [[ -f "$file" ]]; then
+            source "$file"
+        fi
+    done
+}
 
 # check if port number valid
 check_port() {
-    ( echo $1 | grep -qxE "[1-9][0-9]{0,4}" ) || return 1
-    test $1 -lt 65536 -a $1 -gt 0 || return 1
+    [[ "$1" =~ ^[1-9][0-9]{0,4}$ ]] || return 1
+    [[ $1 -lt 65536 && $1 -gt 0 ]] || return 1
     return 0
 }
 
 # check if username valid
 check_username() {
-    ( echo $1 | grep -qxE "^[a-z][-a-z0-9_]*\$" ) || return 1
+    [[ "$1" =~ ^[a-z][-a-z0-9_]*$ ]] || return 1
     return 0
 }
 
@@ -42,17 +48,27 @@ get_server_meta() {
     RET_JUMP_SERVER=""  # optional
     # body
     local remote="$1"
-    # if in the form user@...
+    # extract username from user@...
     if [[ "$remote" == *@* ]]; then
         RET_USERNAME=${remote%%@*}
         remote=${remote#*@}
         check_username $RET_USERNAME || fmt_warning \"$RET_USERNAME\" is not a valid unix username
     fi
-    # if in the form ...:22
-    if [[ "$remote" == "["*"]":* || ( "$remote" != "["*"]" && "$remote" == *:* ) ]]; then
+    # extract port from ...:port
+    if [[
+        "$remote" =~ ^[^:]+:[1-9][0-9]*$  # contains only one colon
+        || "$remote" =~ ^\[.+\]:[1-9][0-9]*$  # in the form of [host]:port
+        || "$remote" =~ :::[1-9][0-9]*$  # in the form of :::port
+        || "$remote" =~ ^([0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}:[1-9][0-9]*$  # full ipv6 address with port
+        || "$remote" =~ ^[0-9A-Fa-f:]+%.+:[1-9][0-9]*$  # ipv6 address with scope and port
+    ]]; then
         RET_PORT=${remote##*:}
         remote=${remote%:*}
         check_port $RET_PORT || fmt_fatal invalid port number \"$RET_PORT\"
+    fi
+    # remove square brackets
+    if [[ "$remote" =~ ^\[.*\]$ ]]; then
+        remote=${remote:1:-1}
     fi
     # presets -- match remote
     local remote_func="$remote.remote"
@@ -63,8 +79,8 @@ get_server_meta() {
     RET_HOSTNAME=${remote}
     local domain=${remote##*.}
     local host=${remote%.*}
-    # if there's no dot
-    if [[ "$host" == "$domain" && "$host" != "["*"]" ]]; then
+    # if it contains no dot and is not ipv6
+    if [[ "$remote" != *.* && "$remote" != *:* ]]; then
         domain="default"
     fi
     local domain_func="$domain.domain"
@@ -83,12 +99,15 @@ parse_remote() {
     TRUST_SERVER=1
     PORT=""  # optional
     USERNAME=""  # optional
-    SSH_OPTIONS=("-o" "RequestTTY=yes")
+    SSH_OPTIONS=("-o" "ServerAliveInterval=60")
+    if [[ -t 1 ]]; then
+        SSH_OPTIONS+=("-o" "RequestTTY=yes")
+    fi
     if [[ "$RIOT_TRUST_CLIENT" == "1" ]]; then
         SSH_OPTIONS+=("-o" "PermitLocalCommand=yes")
         if [[ "$(get_os_type)" != "msys" ]]; then
             test "$DFS_DRY_RUN" = "1" || mkdir -p ~/.ssh/master-socket
-            SSH_OPTIONS+=("-o" "ControlMaster=auto" "-o" "ControlPath=~/.ssh/master-socket/%C")
+            SSH_OPTIONS+=("-o" "ControlMaster=auto" "-o" "ControlPersist=5s" "-o" "ControlPath=~/.ssh/master-socket/%C")
         fi
     fi
     # handle input
@@ -122,10 +141,133 @@ parse_remote() {
     fi
 }
 
+check_local_gpg_agent() {
+    LOCAL_GPG_EXTRA_SOCKET=""
+    GPG_FORWARD_ERROR=""
+
+    if ! command -v gpgconf > /dev/null 2>&1 || ! command -v gpg-connect-agent > /dev/null 2>&1; then
+        GPG_FORWARD_ERROR="gpgconf or gpg-connect-agent is not available"
+        return 1
+    fi
+
+    local agent_info
+    agent_info=$(gpg-connect-agent --no-autostart 'GETINFO pid' /bye 2>/dev/null || true)
+    if ! grep -qE '^D [1-9][0-9]*$' <<< "$agent_info"; then
+        GPG_FORWARD_ERROR="local gpg-agent is not running"
+        return 1
+    fi
+
+    LOCAL_GPG_EXTRA_SOCKET=$(gpgconf --list-dirs agent-extra-socket 2>/dev/null || true)
+    if [[ -z "$LOCAL_GPG_EXTRA_SOCKET" || "$LOCAL_GPG_EXTRA_SOCKET" != /* \
+        || "$LOCAL_GPG_EXTRA_SOCKET" == *:* || "$LOCAL_GPG_EXTRA_SOCKET" == *$'\r'* \
+        || "$LOCAL_GPG_EXTRA_SOCKET" == *$'\n'* || ! -S "$LOCAL_GPG_EXTRA_SOCKET" ]]; then
+        GPG_FORWARD_ERROR="local gpg-agent extra socket is unavailable"
+        return 1
+    fi
+
+    local extra_info
+    extra_info=$(gpg-connect-agent --raw-socket "$LOCAL_GPG_EXTRA_SOCKET" 'GETINFO version' /bye 2>/dev/null || true)
+    if ! grep -qE '^D [^[:space:]]+' <<< "$extra_info"; then
+        GPG_FORWARD_ERROR="local gpg-agent extra socket exists but is not accepting connections"
+        return 1
+    fi
+}
+
+probe_remote_gpg_socket() {
+    REMOTE_GPG_SOCKET=""
+
+    # The probe must be an independent connection: reusing or creating a
+    # multiplex master here races with the immediately following login.
+    local query_cmd=(ssh "-S" "none" "-o" "ClearAllForwardings=yes")
+    if [[ -n "$PORT" ]]; then
+        query_cmd+=("-p" "$PORT")
+    fi
+    query_cmd+=(
+        "${SSH_OPTIONS[@]}"
+        "${EXTRA_SSH_OPTIONS[@]}"
+        "-T"
+        "$USERNAME${USERNAME:+@}$SERVER"
+        'socket=$(gpgconf --list-dirs agent-socket 2>/dev/null) || exit 10
+case "$socket" in /*/S.gpg-agent) ;; *) exit 11;; esac
+case "$socket" in *:*) exit 11;; esac
+case "$socket" in *"
+"*) exit 11;; esac
+carriage_return=$(printf "\r")
+case "$socket" in *"$carriage_return"*) exit 11;; esac
+if [ -e "$socket" ] && [ ! -S "$socket" ]; then exit 12; fi
+if [ -S "$socket" ] && command -v gpg-connect-agent >/dev/null 2>&1; then
+    agent_mode=$(gpg-connect-agent --raw-socket "$socket" "GETINFO restricted" /bye 2>/dev/null || true)
+    case "$agent_mode" in *"D 1"*) exit 13;; esac
+fi
+systemd_socket=0
+if command -v systemctl >/dev/null 2>&1 && systemctl --user is-active --quiet gpg-agent.socket >/dev/null 2>&1; then
+    systemd_socket=1
+fi
+gpgconf --kill gpg-agent >/dev/null 2>&1 || exit 14
+rm -f "$socket" || exit 15
+printf "%s\n%s\n" "$socket" "$systemd_socket"'
+    )
+
+    local output status
+    if output=$("${query_cmd[@]}"); then
+        status=0
+    else
+        status=$?
+    fi
+    case "$status" in
+    0) ;;
+    10) GPG_FORWARD_ERROR="gpgconf is unavailable on the remote host" ;;
+    11) GPG_FORWARD_ERROR="remote gpgconf returned an invalid agent socket" ;;
+    12) GPG_FORWARD_ERROR="refusing to remove the non-socket remote gpg-agent path" ;;
+    13) GPG_FORWARD_ERROR="another forwarded gpg-agent is already using the remote socket; close that session first" ;;
+    14) GPG_FORWARD_ERROR="failed to stop the remote gpg-agent (the socket may belong to another forwarding session)" ;;
+    15) GPG_FORWARD_ERROR="failed to remove the stale remote gpg-agent socket" ;;
+    *) GPG_FORWARD_ERROR="failed to query or clean the remote gpg-agent socket (ssh status $status)" ;;
+    esac
+    if [[ "$status" != "0" ]]; then
+        return 1
+    fi
+
+    local remote_systemd_socket
+    REMOTE_GPG_SOCKET=${output%%$'\n'*}
+    remote_systemd_socket=${output#*$'\n'}
+    if [[ -z "$REMOTE_GPG_SOCKET" || "$REMOTE_GPG_SOCKET" == *$'\r'* || "$REMOTE_GPG_SOCKET" == *$'\n'* \
+        || "$REMOTE_GPG_SOCKET" != /*/S.gpg-agent || "$REMOTE_GPG_SOCKET" == *:* \
+        || "$remote_systemd_socket" != "0" && "$remote_systemd_socket" != "1" ]]; then
+        GPG_FORWARD_ERROR="remote gpgconf returned an invalid agent socket: $output"
+        return 1
+    fi
+    if [[ "$remote_systemd_socket" == "1" ]]; then
+        fmt_warning "remote gpg-agent.socket is active and may race with GPG forwarding; consider disabling its socket activation"
+    fi
+}
+
+prepare_gpg_forwarding() {
+    if [[ "$DFS_DRY_RUN" == "1" ]]; then
+        REMOTE_GPG_SOCKET="<remote-gpg-agent-socket>"
+        LOCAL_GPG_EXTRA_SOCKET="<local-gpg-agent-extra-socket>"
+    else
+        if ! check_local_gpg_agent; then
+            fmt_fatal "cannot forward gpg-agent: $GPG_FORWARD_ERROR"
+        fi
+        if ! probe_remote_gpg_socket; then
+            fmt_fatal "cannot forward gpg-agent: $GPG_FORWARD_ERROR"
+        fi
+    fi
+
+    SSH_OPTIONS+=(
+        # The probe already removed the old socket. Do not let the main SSH
+        # connection unlink a path recreated during the gap between them.
+        "-o" "StreamLocalBindUnlink=no"
+        "-o" "ExitOnForwardFailure=yes"
+        "-R" "$REMOTE_GPG_SOCKET:$LOCAL_GPG_EXTRA_SOCKET"
+    )
+}
+
 print_cmd() {
     local output=""
     for s in "${CMD[@]}"; do
-        if [[ "$s" =~ [\ \\\'\"] ]]; then
+        if [[ "$s" =~ [\ \\\'\"] ]]; then  # needs to be escaped
             s="${s@Q}"
         fi
         output+="$s "
@@ -135,7 +277,7 @@ print_cmd() {
 
 eval_or_echo() {
     local DO=""
-    local tmux_win=0
+    tmux_win=${tmux_win:-0}
     if [[ "$DFS_DRY_RUN" == "1" ]]; then
         DO=echo
     fi
@@ -147,7 +289,10 @@ eval_or_echo() {
             tmux_win=$((tmux_win+1))
             $DO tmux new-window -t $TMUX_SESS:$tmux_win -d bash -l
         fi
-        $DO tmux send-keys -t $TMUX_SESS:$tmux_win "${CMD[@]}" Enter
+        local command
+        printf -v command '%q ' "${CMD[@]}"
+        $DO tmux send-keys -l -t "$TMUX_SESS:$tmux_win" "${command% }"
+        $DO tmux send-keys -t "$TMUX_SESS:$tmux_win" Enter
     else
         $DO "${CMD[@]}"
     fi
@@ -185,17 +330,48 @@ run_ssh()
 # sshl
 run_sshl()
 {
-    local arg="$1"
-    if [[ "$arg" != *":"* ]]; then
-        # treat as a port number
-        arg=localhost:$arg
+    local arg left right localsock access
+    local res="${1//[^:]}"
+    local lorr="-L"
+    if [[ "${FUNCNAME[1]}" == "run_sshr" ]]; then
+        lorr="-R"
     fi
-    local port=$(get_free_port)
-    SSH_OPTIONS+=("-NC" "-L" "$port:$arg")
+    if [[ ${#res} -eq 2 ]]; then
+        arg="$1"
+    elif [[ ${#res} -eq 0 ]]; then
+        if [[ "$lorr" == "-R" ]]; then
+            arg="$1"
+        else
+            arg="$(get_free_port):localhost:$1"
+        fi
+    else
+        left=${1%%:*}
+        right=${1##*:}
+        if check_port "$left"; then
+            arg="$1"
+        elif check_port "$right"; then
+            arg="$(get_free_port):$1"
+        else
+            arg="$1"
+            localsock=1
+        fi
+    fi
+    if [[ "$localsock" == "1" ]]; then
+        access="unix://${arg%%:*}"
+    else
+        access="localhost:${arg%%:*}"
+    fi
+    SSH_OPTIONS+=("-NC" "$lorr" "$arg")
     prepare_ssh_cmd ssh
     print_cmd
-    fmt_note "  > please access localhost:$port"
+    fmt_note "  > please access $access"
     eval_or_echo
+}
+
+# sshr
+run_sshr()
+{
+    run_sshl "$1"
 }
 
 # sshd
@@ -259,25 +435,147 @@ remove_hostkey() {
 # main
 print_help()
 {
-    fmt_info "usage: $0 [-Ddhlqt] [--dry-run] [--dev] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [ssh-command-args]"
-    cat <<EOF
-  available commands:
-  - ssh [ssh-command-args] (default)
-  - tmux [ssh-command-args] (run ssh in multiple tmux windows)
-  - sshl [local-port:remote-host:]remote-port (ssh -L)
-  - sshd [local-port] (ssh -D)
-  - zssh [ssh-command-args]
-  - sftp
-  - scp source destination
-  - rm (remove host keys)
-  - ping/ping4/ping6 (ping the remote servers)
+    local pager=(cat)
+    if [[ -t 1 ]] && command -v less > /dev/null 2>&1; then
+        pager=(less -R)
+    fi
+
+    cat <<EOF | "${pager[@]}"
+NAME
+    riot - connect to remote hosts using SSH presets
+
+SYNOPSIS
+    ${0##*/} [OPTION]... REMOTE [OPTION]... [COMMAND [COMMAND-ARG]...]
+
+DESCRIPTION
+    Connect to REMOTE using the matching configuration from riot-config.sh.
+    COMMAND defaults to ssh. Separate multiple remotes with commas and jump
+    hosts with slashes. OPTIONs may appear before COMMAND. Once COMMAND is
+    found, all remaining arguments are passed to it without further parsing.
+
+OPTIONS
+    -4
+        Force ssh to use IPv4 addresses only.
+
+    -6
+        Force ssh to use IPv6 addresses only.
+
+    -D, --dry-run
+        Print commands without executing them.
+
+    -d, --dev
+        Enable shell execution tracing.
+
+    -g, --gpg
+        Forward the local GPG agent during an interactive SSH login. Use only
+        with trusted remote hosts.
+
+    -h, --help
+        Display this help and exit.
+
+    -l, --lite
+        Enable dotfiles lite mode for loaded configuration.
+
+    -o SSH-OPTION
+        Pass an option to ssh. This option may be specified multiple times.
+
+    -p, --password
+        Use password authentication instead of public-key authentication.
+
+    -q, --quiet
+        Enable dotfiles quiet mode for loaded configuration.
+
+    -t, --trust
+        Trust the remote and enable X11 and SSH agent forwarding.
+
+    -v
+        Enable verbose ssh output.
+
+    --color
+        Force colored output.
+
+    --tmux
+        Open SSH sessions in tmux windows.
+
+    --
+        End option parsing.
+
+COMMANDS
+    ssh [SSH-ARG]...
+        Open an SSH session. This is the default command.
+
+    tmux [SSH-ARG]...
+        Open SSH sessions in multiple tmux windows.
+
+    git [GIT-ARG]...
+        Run git on the remote host.
+
+    sshl [LOCAL-PORT:REMOTE-HOST:]REMOTE-PORT
+        Create local port forwarding with ssh -L.
+
+    sshr [REMOTE-HOST:]REMOTE-PORT
+        Create remote port forwarding with ssh -R.
+
+    sshd [LOCAL-PORT]
+        Create dynamic port forwarding with ssh -D.
+
+    zssh [SSH-ARG]...
+        Open a zssh session.
+
+    sftp [SFTP-ARG]...
+        Open an SFTP session.
+
+    scp SOURCE DESTINATION
+        Copy files to or from the remote host.
+
+    rm
+        Remove the remote host key from known_hosts.
+
+    ping, ping4, ping6
+        Ping the remote host.
 EOF
 }
 
 router() {
     local positional=()
-    while [[ $# > 0 ]]; do
-        case "$1" in
+    local arg=""
+    local option=""
+    local remaining=""
+    local option_value=""
+    while [[ $# -gt 0 || -n "$arg" ]]; do
+        if [[ -z "$arg" ]]; then
+            arg=$1
+            shift
+        fi
+
+        # Normalize a long option or one item from a short-option group.
+        remaining=""
+        case "$arg" in
+            -- )
+                positional+=("$@")
+                break
+                ;;
+            --* )
+                option=$arg
+                arg=""
+                ;;
+            -?* )
+                option=${arg:0:2}
+                remaining=${arg:2}
+                arg=${remaining:+-$remaining}
+                ;;
+            * )
+                positional+=("$arg")
+                arg=""
+                if [[ "${#positional[@]}" -ge 2 ]]; then
+                    positional+=("$@")
+                    break
+                fi
+                continue
+                ;;
+        esac
+
+        case "$option" in
             -h|--help )
                 print_help
                 exit 0
@@ -285,35 +583,67 @@ router() {
             -t|--trust )
                 RIOT_TRUST_SERVER=1
                 ;;
+            -g|--gpg )
+                GPG_FORWARD=1
+                ;;
             --tmux )
                 USE_TMUX=1
                 ;;
-            --password )
+            -p|--password )
                 EXTRA_SSH_OPTIONS+=("-o" "PasswordAuthentication=yes" "-o" "PubkeyAuthentication=no")
                 ;;
+            -D|--dry-run )
+                export DFS_DRY_RUN=1
+                ;;
+            -d|--dev )
+                export DFS_DEV=1
+                set -x
+                ;;
+            -l|--lite )
+                export DFS_LITE=1
+                ;;
+            -q|--quiet )
+                export DFS_QUIET=1
+                ;;
+            --color )
+                export DFS_COLOR=1
+                setup_color
+                ;;
+            -4|-6|-v )
+                EXTRA_SSH_OPTIONS+=("$option")
+                ;;
             -o )
-                EXTRA_SSH_OPTIONS+=("-o" "$2")
-                shift
-                ;;
-            -- )
-                shift
-                positional+=("$@")
-                break
-                ;;
-            -* )
-                fmt_fatal "unknown option: $1"
+                if [[ -n "$remaining" ]]; then
+                    option_value=$remaining
+                    arg=""
+                else
+                    [[ $# -gt 0 ]] || fmt_fatal "option '-o' requires an argument"
+                    option_value=$1
+                    shift
+                fi
+                EXTRA_SSH_OPTIONS+=("-o" "$option_value")
                 ;;
             * )
-                positional+=("$1")
+                fmt_fatal "unknown option: '$option'"
                 ;;
         esac
-        shift
     done
+
+    if [[ "${positional[2]}" == "--" ]]; then
+        positional=("${positional[@]:0:2}" "${positional[@]:3}")
+    fi
+
     IFS=',' read -ra remotes <<< "${positional[0]}"
     for i in ${!remotes[@]}; do if [[ -z "${remotes[i]}" ]]; then unset remotes[i]; fi; done
     if [[ "${#positional[@]}" == "0" || "${#remotes[@]}" == "0" ]]; then
         print_help
         exit 1
+    fi
+    load_riot_config
+    if [[ "$GPG_FORWARD" == "1" && ( \
+        ( "${positional[1]}" != "" && "${positional[1]}" != "ssh" && "${positional[1]}" != "tmux" ) \
+        || "${#positional[@]}" -gt 2 ) ]]; then
+        fmt_fatal "gpg-agent forwarding is only supported for interactive SSH login"
     fi
     for i in ${!remotes[@]}; do
         remote="${remotes[i]}"
@@ -326,7 +656,17 @@ router() {
         case "${positional[1]}" in
             ssh|tmux|"" )
                 [[ "${positional[1]}" == tmux ]] && USE_TMUX=1
+                if [[ "$GPG_FORWARD" == "1" ]]; then
+                    prepare_gpg_forwarding
+                fi
                 run_ssh ssh "${positional[@]:2}"
+                ;;
+            git )
+                if printf '%s\0' "${positional[@]:2}" | grep -Fxqz -- '-C'; then
+                    run_ssh ssh git "${positional[@]:2}"
+                else
+                    run_ssh ssh git -C "$(pwd)" "${positional[@]:2}"
+                fi
                 ;;
             ping|ping4|ping6 )
                 test "${#positional[@]}" -eq 2 || fmt_fatal "ping requires no arguments"
@@ -342,6 +682,11 @@ router() {
                 test -n "${positional[2]}" || fmt_fatal "no target address provided"
                 test "${#positional[@]}" -eq 3 || fmt_fatal "sshl requires exactly one argument"
                 run_sshl "${positional[2]}"
+                ;;
+            sshr )
+                test -n "${positional[2]}" || fmt_fatal "no target address provided"
+                test "${#positional[@]}" -eq 3 || fmt_fatal "sshr requires exactly one argument"
+                run_sshr "${positional[2]}"
                 ;;
             sshd )
                 test "${#positional[@]}" -le 3 || fmt_fatal "sshd requires one or no arguments"
@@ -374,4 +719,4 @@ router() {
     fi
 }
 
-router "${GOT_OPTS[@]}"
+router "$@"

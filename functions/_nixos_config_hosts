@@ -1,0 +1,3 @@
+#compdef bnd nor
+
+compadd -- /root/NixOS-Config/hosts/*(/:t)

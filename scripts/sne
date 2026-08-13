@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+if [ "$#" -eq 0 ]; then
+    echo "usage: sne <filename or regex pattern>"
+    echo "example: sne config.yaml"
+    exit 1
+fi
+
+SEARCH_PATTERN="$1"
+files=()
+while IFS= read -r -d $'\0' file; do
+    files+=("$file")
+done < <(fd "$SEARCH_PATTERN" --type f --print0)
+file_count=${#files[@]}
+if [ "$file_count" -eq 0 ]; then
+    echo "no file match '$SEARCH_PATTERN'"
+    exit 0
+fi
+echo "🔎 found $file_count files:"
+for file in "${files[@]}"; do
+    echo "  📄 $file"
+done
+echo "----------------------------------------"
+
+read -r -p "edit? [Y/n] " response
+response=${response:-Y}
+if [[ "$response" =~ ^[Yy]$ ]]; then
+    vim "${files[@]}"
+else
+    echo "❌ aborted"
+fi

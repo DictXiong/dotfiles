@@ -1,0 +1,3 @@
+#compdef sagt
+
+compadd -- gpg gpg-pin kill ls op piv reset

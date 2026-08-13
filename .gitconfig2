@@ -1,6 +1,7 @@
 [user]
-    email = me@beardic.cn
+    email = me@dxng.cn
     name = Dict Xiong
+    signingkey = 3E241558655D7FE06C6711A5A5D6250D1806CAA8
 [core]
     editor = vim
     # test this by `git update-index --test-untracked-cache`

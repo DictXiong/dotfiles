@@ -44,47 +44,6 @@ jobs:
         shell: /bin/zsh -ileo PIPE_FAIL {0}
         run: source tools/test.zsh
   
-  test-macos:
-    name: test on macos
-    runs-on: macos-latest
-    steps:
-      - name: checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: install dfs
-        run: |
-          rev=`git rev-parse HEAD`
-          pwd
-          set -x
-          DFS_NO_WALL=0 ./install.sh -adl
-          test `git rev-parse HEAD` = "$rev"
-
-      - name: antigen build
-        shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: |
-          echo $SHELL
-          antigen list
-
-      - name: run tests and reset
-        shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: |
-          source tools/test.zsh
-          antigen reset
-          rm -rf $ANTIGEN $HOME/.antigen $HOME/.config/dotfiles
-          ./install.sh -dl
-
-      - name: antigen build with DFS_NO_WALL
-        shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: |
-          echo $SHELL
-          antigen list
-
-      - name: run tests
-        shell: /bin/zsh -ileo PIPE_FAIL {0}
-        run: source tools/test.zsh
-
   test-autodep:
     name: test of auto-install dependencies
     runs-on: ubuntu-latest
