@@ -1,0 +1,105 @@
+#compdef riot
+
+_riot() {
+    local context state state_descr line
+    typeset -A opt_args
+
+    _arguments -C -s \
+        '(-4 -6)-4[Force ssh to use IPv4 addresses only]' \
+        '(-4 -6)-6[Force ssh to use IPv6 addresses only]' \
+        '(-D --dry-run)'{-D,--dry-run}'[Print commands without executing them]' \
+        '(-d --dev)'{-d,--dev}'[Enable shell execution tracing]' \
+        '(-g --gpg)'{-g,--gpg}'[Forward the local GPG agent for an interactive login]' \
+        '(-h --help)'{-h,--help}'[Display help and exit]' \
+        '(-l --lite)'{-l,--lite}'[Enable dotfiles lite mode]' \
+        '*-o[Pass an option to ssh]:SSH option:' \
+        '(-p --password)'{-p,--password}'[Use password authentication]' \
+        '(-q --quiet)'{-q,--quiet}'[Enable dotfiles quiet mode]' \
+        '(-t --trust)'{-t,--trust}'[Trust the remote and enable forwarding]' \
+        '*-v[Enable verbose ssh output]' \
+        '--color[Force colored output]' \
+        '--tmux[Open SSH sessions in tmux windows]' \
+        '1:remote:_riot_remotes' \
+        '2:command:_riot_commands' \
+        '*::command argument:->command-args'
+
+    case $state in
+        command-args)
+            case $line[2] in
+                ssh|tmux|zssh)
+                    _riot_complete_with _ssh ssh "$line[1]" "${line[@]:2}"
+                    ;;
+                git)
+                    _riot_complete_with _git git "${line[@]:2}"
+                    ;;
+                sftp)
+                    _riot_complete_with _sftp sftp "$line[1]" "${line[@]:2}"
+                    ;;
+                scp)
+                    _riot_complete_with _scp scp "${line[@]:2}"
+                    ;;
+                sshl|sshr)
+                    _message 'forwarding specification'
+                    ;;
+                sshd)
+                    _guard '[0-9]#' 'local port'
+                    ;;
+                rm|ping|ping4|ping6)
+                    _message 'no more arguments'
+                    ;;
+                *)
+                    _default
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_riot_commands() {
+    local -a commands=(
+        'ssh:Open an SSH session (default)'
+        'tmux:Open SSH sessions in tmux windows'
+        'git:Run git on the remote host'
+        'sshl:Create local port forwarding with ssh -L'
+        'sshr:Create remote port forwarding with ssh -R'
+        'sshd:Create dynamic port forwarding with ssh -D'
+        'zssh:Open a zssh session'
+        'sftp:Open an SFTP session'
+        'scp:Copy files to or from the remote host'
+        'rm:Remove the remote host key from known_hosts'
+        'ping:Ping the remote host'
+        'ping4:Ping the remote host over IPv4'
+        'ping6:Ping the remote host over IPv6'
+    )
+    _describe -t commands 'riot command' commands
+}
+
+_riot_presets() {
+    local -a config_files presets
+    local file
+
+    [[ -z $DOTFILES ]] || config_files+=("$DOTFILES/riot-config.sh")
+    config_files+=("$HOME/.config/riot-config.sh" "$PWD/riot-config.sh")
+    for file in "$config_files[@]"; do
+        [[ -r $file ]] || continue
+        presets+=("${(@f)$(sed -nE 's/^([[:alnum:]_.-]+)\.(remote|batch)\(\).*/\1/p' "$file" 2>/dev/null)}")
+    done
+    presets=(${(u)presets})
+    _describe -t presets 'riot preset' presets
+}
+
+_riot_remotes() {
+    _alternative \
+        'presets:riot preset:_riot_presets' \
+        'hosts:host:_hosts'
+}
+
+_riot_complete_with() {
+    local completer=$1
+    shift
+    local -a words=("$@")
+    local CURRENT=$#words
+    "$completer"
+}
+
+_riot "$@"
