@@ -35,6 +35,7 @@ doll
 dfs cd
 tools/test-getopts.sh
 tools/test-riot-gpg.sh
+tools/test-sagent-gpg-pin.sh
 tools/common.sh get_os_name
 test $(echo y | tools/common.sh ask_for_yN "test") = "1"
 test $(echo n | tools/common.sh ask_for_yN "test") = "0"

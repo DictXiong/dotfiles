@@ -154,7 +154,7 @@ check_pinentry()
     fi
 }
 
-use_gpg_agent()
+prepare_gpg_agent()
 {
     command -v gpgconf > /dev/null 2>&1 || fmt_fatal "gpgconf not found"
     command -v gpg-connect-agent > /dev/null 2>&1 || fmt_fatal "gpg-connect-agent not found"
@@ -167,6 +167,11 @@ use_gpg_agent()
 
     gpgconf --launch gpg-agent
     gpg-connect-agent updatestartuptty /bye > /dev/null
+}
+
+use_gpg_agent()
+{
+    prepare_gpg_agent
 
     local agent_socket
     agent_socket=$(gpgconf --list-dirs agent-ssh-socket)
@@ -176,8 +181,35 @@ use_gpg_agent()
 
     fmt_note "using gpg-agent: $agent_socket"
     echo unset SSH_AGENT_PID
-    printf 'export GPG_TTY=%q\n' "$current_tty"
+    printf 'export GPG_TTY=%q\n' "$GPG_TTY"
     printf 'export SSH_AUTH_SOCK=%q\n' "$agent_socket"
+}
+
+cache_gpg_pin()
+{
+    [[ $# -le 1 ]] || fmt_fatal "usage: sagt gpg-pin [KEY]"
+    command -v gpg > /dev/null 2>&1 || fmt_fatal "gpg not found"
+    prepare_gpg_agent
+
+    local signing_key="${1:-}"
+    local temp_dir
+    local signature_file
+    local status=0
+    local gpg_args=(--detach-sign)
+
+    temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/sagent-gpg-pin.XXXXXXXXXX") || \
+        fmt_fatal "failed to create a temporary directory"
+    signature_file="$temp_dir/signature.gpg"
+    gpg_args+=(--output "$signature_file")
+    [[ -z "$signing_key" ]] || gpg_args+=(--local-user "$signing_key")
+
+    fmt_note "performing a test signature; enter the GPG PIN and touch the token if prompted"
+    printf 'sagt gpg-pin\n' | gpg "${gpg_args[@]}" || status=$?
+
+    rm -f -- "$signature_file"
+    rmdir -- "$temp_dir"
+    [[ $status -eq 0 ]] || fmt_fatal "test signature failed (gpg exit $status)"
+    fmt_note "test signature completed; the GPG PIN should remain cached until the card or agent session is reset"
 }
 
 read_agent_file()
@@ -289,6 +321,9 @@ route()
             ;;
         gpg)
             use_gpg_agent
+            ;;
+        gpg-pin)
+            cache_gpg_pin "${@:2}"
             ;;
         reset)
             reset
