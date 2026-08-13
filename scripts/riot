@@ -5,6 +5,7 @@ source "$THIS_DIR/../tools/common.sh"
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 EXTRA_SSH_OPTIONS=()
+GPG_FORWARD=0
 
 # config
 RIOT_CONFIG_FILES=(
@@ -133,6 +134,129 @@ parse_remote() {
     if [[ -n "$jump_servers" ]]; then
         SSH_OPTIONS+=("-o" "ProxyJump=$jump_servers")
     fi
+}
+
+check_local_gpg_agent() {
+    LOCAL_GPG_EXTRA_SOCKET=""
+    GPG_FORWARD_ERROR=""
+
+    if ! command -v gpgconf > /dev/null 2>&1 || ! command -v gpg-connect-agent > /dev/null 2>&1; then
+        GPG_FORWARD_ERROR="gpgconf or gpg-connect-agent is not available"
+        return 1
+    fi
+
+    local agent_info
+    agent_info=$(gpg-connect-agent --no-autostart 'GETINFO pid' /bye 2>/dev/null || true)
+    if ! grep -qE '^D [1-9][0-9]*$' <<< "$agent_info"; then
+        GPG_FORWARD_ERROR="local gpg-agent is not running"
+        return 1
+    fi
+
+    LOCAL_GPG_EXTRA_SOCKET=$(gpgconf --list-dirs agent-extra-socket 2>/dev/null || true)
+    if [[ -z "$LOCAL_GPG_EXTRA_SOCKET" || "$LOCAL_GPG_EXTRA_SOCKET" != /* \
+        || "$LOCAL_GPG_EXTRA_SOCKET" == *:* || "$LOCAL_GPG_EXTRA_SOCKET" == *$'\r'* \
+        || "$LOCAL_GPG_EXTRA_SOCKET" == *$'\n'* || ! -S "$LOCAL_GPG_EXTRA_SOCKET" ]]; then
+        GPG_FORWARD_ERROR="local gpg-agent extra socket is unavailable"
+        return 1
+    fi
+
+    local extra_info
+    extra_info=$(gpg-connect-agent --raw-socket "$LOCAL_GPG_EXTRA_SOCKET" 'GETINFO version' /bye 2>/dev/null || true)
+    if ! grep -qE '^D [^[:space:]]+' <<< "$extra_info"; then
+        GPG_FORWARD_ERROR="local gpg-agent extra socket exists but is not accepting connections"
+        return 1
+    fi
+}
+
+probe_remote_gpg_socket() {
+    REMOTE_GPG_SOCKET=""
+
+    # The probe must be an independent connection: reusing or creating a
+    # multiplex master here races with the immediately following login.
+    local query_cmd=(ssh "-S" "none" "-o" "ClearAllForwardings=yes" "-o" "RequestTTY=no")
+    if [[ -n "$PORT" ]]; then
+        query_cmd+=("-p" "$PORT")
+    fi
+    query_cmd+=(
+        "${SSH_OPTIONS[@]}"
+        "${EXTRA_SSH_OPTIONS[@]}"
+        "-T"
+        "$USERNAME${USERNAME:+@}$SERVER"
+        'socket=$(gpgconf --list-dirs agent-socket 2>/dev/null) || exit 10
+case "$socket" in /*/S.gpg-agent) ;; *) exit 11;; esac
+case "$socket" in *:*) exit 11;; esac
+case "$socket" in *"
+"*) exit 11;; esac
+carriage_return=$(printf "\r")
+case "$socket" in *"$carriage_return"*) exit 11;; esac
+if [ -e "$socket" ] && [ ! -S "$socket" ]; then exit 12; fi
+if [ -S "$socket" ] && command -v gpg-connect-agent >/dev/null 2>&1; then
+    agent_mode=$(gpg-connect-agent --raw-socket "$socket" "GETINFO restricted" /bye 2>/dev/null || true)
+    case "$agent_mode" in *"D 1"*) exit 13;; esac
+fi
+systemd_socket=0
+if command -v systemctl >/dev/null 2>&1 && systemctl --user is-active --quiet gpg-agent.socket >/dev/null 2>&1; then
+    systemd_socket=1
+fi
+gpgconf --kill gpg-agent >/dev/null 2>&1 || exit 14
+rm -f "$socket" || exit 15
+printf "%s\n%s\n" "$socket" "$systemd_socket"'
+    )
+
+    local output status
+    if output=$("${query_cmd[@]}"); then
+        status=0
+    else
+        status=$?
+    fi
+    case "$status" in
+    0) ;;
+    10) GPG_FORWARD_ERROR="gpgconf is unavailable on the remote host" ;;
+    11) GPG_FORWARD_ERROR="remote gpgconf returned an invalid agent socket" ;;
+    12) GPG_FORWARD_ERROR="refusing to remove the non-socket remote gpg-agent path" ;;
+    13) GPG_FORWARD_ERROR="another forwarded gpg-agent is already using the remote socket; close that session first" ;;
+    14) GPG_FORWARD_ERROR="failed to stop the remote gpg-agent (the socket may belong to another forwarding session)" ;;
+    15) GPG_FORWARD_ERROR="failed to remove the stale remote gpg-agent socket" ;;
+    *) GPG_FORWARD_ERROR="failed to query or clean the remote gpg-agent socket (ssh status $status)" ;;
+    esac
+    if [[ "$status" != "0" ]]; then
+        return 1
+    fi
+
+    local remote_systemd_socket
+    REMOTE_GPG_SOCKET=${output%%$'\n'*}
+    remote_systemd_socket=${output#*$'\n'}
+    if [[ -z "$REMOTE_GPG_SOCKET" || "$REMOTE_GPG_SOCKET" == *$'\r'* || "$REMOTE_GPG_SOCKET" == *$'\n'* \
+        || "$REMOTE_GPG_SOCKET" != /*/S.gpg-agent || "$REMOTE_GPG_SOCKET" == *:* \
+        || "$remote_systemd_socket" != "0" && "$remote_systemd_socket" != "1" ]]; then
+        GPG_FORWARD_ERROR="remote gpgconf returned an invalid agent socket: $output"
+        return 1
+    fi
+    if [[ "$remote_systemd_socket" == "1" ]]; then
+        fmt_warning "remote gpg-agent.socket is active and may race with GPG forwarding; consider disabling its socket activation"
+    fi
+}
+
+prepare_gpg_forwarding() {
+    if [[ "$DFS_DRY_RUN" == "1" ]]; then
+        REMOTE_GPG_SOCKET="<remote-gpg-agent-socket>"
+        LOCAL_GPG_EXTRA_SOCKET="<local-gpg-agent-extra-socket>"
+    else
+        if ! check_local_gpg_agent; then
+            fmt_fatal "cannot forward gpg-agent: $GPG_FORWARD_ERROR"
+        fi
+        if ! probe_remote_gpg_socket; then
+            fmt_fatal "cannot forward gpg-agent: $GPG_FORWARD_ERROR"
+        fi
+    fi
+
+    SSH_OPTIONS+=(
+        # The probe already removed the old socket. Do not let the main SSH
+        # connection unlink a path recreated during the gap between them.
+        "-o" "StreamLocalBindUnlink=no"
+        "-o" "ExitOnForwardFailure=yes"
+        "-R" "$REMOTE_GPG_SOCKET:$LOCAL_GPG_EXTRA_SOCKET"
+    )
 }
 
 print_cmd() {
@@ -303,8 +427,10 @@ remove_hostkey() {
 # main
 print_help()
 {
-    fmt_info "usage: $0 [-Ddhlqt] [--dry-run] [--dev] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [command-args]"
+    fmt_info "usage: $0 [-Ddghlqt] [--dry-run] [--dev] [--gpg] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [command-args]"
     cat <<EOF
+  options:
+  - -g, --gpg: forward the local GPG agent during an interactive SSH login (trusted remotes only)
   available commands:
   - ssh [ssh-command-args] (default)
   - tmux [ssh-command-args] (run ssh in multiple tmux windows)
@@ -329,6 +455,9 @@ router() {
                 ;;
             -t|--trust )
                 RIOT_TRUST_SERVER=1
+                ;;
+            -g|--gpg )
+                GPG_FORWARD=1
                 ;;
             --tmux )
                 USE_TMUX=1
@@ -369,6 +498,11 @@ router() {
         print_help
         exit 1
     fi
+    if [[ "$GPG_FORWARD" == "1" && ( \
+        ( "${positional[1]}" != "" && "${positional[1]}" != "ssh" && "${positional[1]}" != "tmux" ) \
+        || "${#positional[@]}" -gt 2 ) ]]; then
+        fmt_fatal "gpg-agent forwarding is only supported for interactive SSH login"
+    fi
     for i in ${!remotes[@]}; do
         remote="${remotes[i]}"
         local batch_func="${remote}.batch"
@@ -380,6 +514,9 @@ router() {
         case "${positional[1]}" in
             ssh|tmux|"" )
                 [[ "${positional[1]}" == tmux ]] && USE_TMUX=1
+                if [[ "$GPG_FORWARD" == "1" ]]; then
+                    prepare_gpg_forwarding
+                fi
                 run_ssh ssh "${positional[@]:2}"
                 ;;
             git )
