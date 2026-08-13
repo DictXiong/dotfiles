@@ -6,9 +6,9 @@ if [[ -f ~/.config/dotfiles/env ]]; then set -a; source ~/.config/dotfiles/env; 
 if [[ "$DFS_DEV" == "1" ]]; then set -x; fi
 DFS_CURL_OPTIONS="--retry 2 --max-time 20"
 
-# parse args and set env, when it is sourced
-# todo: make this skipable
-if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+# Parse args and set env when sourced, unless the caller handles its own
+# option boundary.
+if [[ "${BASH_SOURCE[0]}" != "${0}" && "$DFS_SKIP_ARG_PARSE" != "1" ]]; then
     ORIGIN_ARGS=("$@")
     ARG=""
     GOT_OPTS=()
@@ -41,15 +41,9 @@ fi
 
 # Color settings
 # Source: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
-if [[ -t 1 || "$DFS_COLOR" == "1" ]]; then
-    is_tty() {
-        true
-    }
-else
-    is_tty() {
-        false
-    }
-fi
+is_tty() {
+    [[ -t 1 || "$DFS_COLOR" == "1" ]]
+}
 
 supports_truecolor() {
     case "$COLORTERM" in

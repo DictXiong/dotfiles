@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # connect to iot services
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
+DFS_SKIP_ARG_PARSE=1
 source "$THIS_DIR/../tools/common.sh"
+unset DFS_SKIP_ARG_PARSE
 RIOT_TRUST_CLIENT=${RIOT_TRUST_CLIENT:-${DFS_TRUST:-0}}
 RIOT_TRUST_SERVER=${RIOT_TRUST_SERVER:-0}
 EXTRA_SSH_OPTIONS=()
@@ -13,11 +15,14 @@ RIOT_CONFIG_FILES=(
     "$HOME/.config/riot-config.sh"
     "riot-config.sh"
 )
-for file in "${RIOT_CONFIG_FILES[@]}"; do
-    if [[ -f "$file" ]]; then
-        source "$file"
-    fi
-done
+load_riot_config() {
+    local file
+    for file in "${RIOT_CONFIG_FILES[@]}"; do
+        if [[ -f "$file" ]]; then
+            source "$file"
+        fi
+    done
+}
 
 # check if port number valid
 check_port() {
@@ -437,12 +442,13 @@ NAME
     riot - connect to remote hosts using SSH presets
 
 SYNOPSIS
-    ${0##*/} [OPTION]... REMOTE [COMMAND] [--] [COMMAND-ARG]...
+    ${0##*/} [OPTION]... REMOTE [OPTION]... [COMMAND [COMMAND-ARG]...]
 
 DESCRIPTION
     Connect to REMOTE using the matching configuration from riot-config.sh.
     COMMAND defaults to ssh. Separate multiple remotes with commas and jump
-    hosts with slashes.
+    hosts with slashes. OPTIONs may appear before COMMAND. Once COMMAND is
+    found, all remaining arguments are passed to it without further parsing.
 
 OPTIONS
     -4
@@ -529,8 +535,44 @@ EOF
 
 router() {
     local positional=()
-    while [[ $# > 0 ]]; do
-        case "$1" in
+    local arg=""
+    local option=""
+    local remaining=""
+    local option_value=""
+    while [[ $# > 0 || -n "$arg" ]]; do
+        if [[ -z "$arg" ]]; then
+            arg=$1
+            shift
+        fi
+
+        # Normalize a long option or one item from a short-option group.
+        remaining=""
+        case "$arg" in
+            -- )
+                positional+=("$@")
+                break
+                ;;
+            --* )
+                option=$arg
+                arg=""
+                ;;
+            -?* )
+                option=${arg:0:2}
+                remaining=${arg:2}
+                arg=${remaining:+-$remaining}
+                ;;
+            * )
+                positional+=("$arg")
+                arg=""
+                if [[ "${#positional[@]}" -ge 2 ]]; then
+                    positional+=("$@")
+                    break
+                fi
+                continue
+                ;;
+        esac
+
+        case "$option" in
             -h|--help )
                 print_help
                 exit 0
@@ -547,39 +589,54 @@ router() {
             -p|--password )
                 EXTRA_SSH_OPTIONS+=("-o" "PasswordAuthentication=yes" "-o" "PubkeyAuthentication=no")
                 ;;
+            -D|--dry-run )
+                export DFS_DRY_RUN=1
+                ;;
+            -d|--dev )
+                export DFS_DEV=1
+                set -x
+                ;;
+            -l|--lite )
+                export DFS_LITE=1
+                ;;
+            -q|--quiet )
+                export DFS_QUIET=1
+                ;;
+            --color )
+                export DFS_COLOR=1
+                setup_color
+                ;;
+            -4|-6|-v )
+                EXTRA_SSH_OPTIONS+=("$option")
+                ;;
             -o )
-                EXTRA_SSH_OPTIONS+=("-o" "$2")
-                shift
-                ;;
-            -4 )
-                EXTRA_SSH_OPTIONS+=("-4")
-                ;;
-            -6 )
-                EXTRA_SSH_OPTIONS+=("-6")
-                ;;
-            -v )
-                EXTRA_SSH_OPTIONS+=("-v")
-                ;;
-            -- )
-                shift
-                positional+=("$@")
-                break
-                ;;
-            -* )
-                fmt_fatal "unknown option: '$1'. if this option is for the remote command, add '--' before."
+                if [[ -n "$remaining" ]]; then
+                    option_value=$remaining
+                    arg=""
+                else
+                    [[ $# -gt 0 ]] || fmt_fatal "option '-o' requires an argument"
+                    option_value=$1
+                    shift
+                fi
+                EXTRA_SSH_OPTIONS+=("-o" "$option_value")
                 ;;
             * )
-                positional+=("$1")
+                fmt_fatal "unknown option: '$option'"
                 ;;
         esac
-        shift
     done
+
+    if [[ "${positional[2]}" == "--" ]]; then
+        positional=("${positional[@]:0:2}" "${positional[@]:3}")
+    fi
+
     IFS=',' read -ra remotes <<< "${positional[0]}"
     for i in ${!remotes[@]}; do if [[ -z "${remotes[i]}" ]]; then unset remotes[i]; fi; done
     if [[ "${#positional[@]}" == "0" || "${#remotes[@]}" == "0" ]]; then
         print_help
         exit 1
     fi
+    load_riot_config
     if [[ "$GPG_FORWARD" == "1" && ( \
         ( "${positional[1]}" != "" && "${positional[1]}" != "ssh" && "${positional[1]}" != "tmux" ) \
         || "${#positional[@]}" -gt 2 ) ]]; then
@@ -659,4 +716,4 @@ router() {
     fi
 }
 
-router "${GOT_OPTS[@]}"
+router "$@"
