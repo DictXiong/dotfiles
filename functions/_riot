@@ -80,7 +80,7 @@ _riot_presets() {
 
     [[ -z $DOTFILES ]] || config_files+=("$DOTFILES/riot-config.sh")
     config_files+=("$HOME/.config/riot-config.sh" "$PWD/riot-config.sh")
-    for file in "$config_files[@]"; do
+    for file in "${config_files[@]}"; do
         [[ -r $file ]] || continue
         presets+=("${(@f)$(sed -nE 's/^([[:alnum:]_.-]+)\.(remote|batch)\(\).*/\1/p' "$file" 2>/dev/null)}")
     done

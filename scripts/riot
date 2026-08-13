@@ -542,7 +542,7 @@ router() {
     local option=""
     local remaining=""
     local option_value=""
-    while [[ $# > 0 || -n "$arg" ]]; do
+    while [[ $# -gt 0 || -n "$arg" ]]; do
         if [[ -z "$arg" ]]; then
             arg=$1
             shift

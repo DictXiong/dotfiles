@@ -12,7 +12,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" && "$DFS_SKIP_ARG_PARSE" != "1" ]]; then
     ORIGIN_ARGS=("$@")
     ARG=""
     GOT_OPTS=()
-    while [[ $# > 0 || -n "$ARG" ]]; do
+    while [[ $# -gt 0 || -n "$ARG" ]]; do
         if [[ -z "$ARG" ]]; then
             if [[ "$1" == "--" ]]; then GOT_OPTS+=("$@"); break; fi
             ARG="$1"; shift;
