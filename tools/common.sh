@@ -18,7 +18,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
             ARG="$1"; shift;
         fi
         case $ARG in
-            -q*|--quite ) export DFS_QUIET=1 ;;
+            -q*|--quiet ) export DFS_QUIET=1 ;;
             -l*|--lite ) export DFS_LITE=1 ;;
             -d*|--dev ) export DFS_DEV=1; set -x ;;
             -D*|--dry-run ) export DFS_DRY_RUN=1 ;;

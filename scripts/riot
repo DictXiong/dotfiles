@@ -427,21 +427,103 @@ remove_hostkey() {
 # main
 print_help()
 {
-    fmt_info "usage: $0 [-Ddghlqt] [--dry-run] [--dev] [--gpg] [--help] [--lite] [--quite] [--trust] [--tmux] [--password] [[-o ssh-option]...] remote [command] [--] [command-args]"
-    cat <<EOF
-  options:
-  - -g, --gpg: forward the local GPG agent during an interactive SSH login (trusted remotes only)
-  available commands:
-  - ssh [ssh-command-args] (default)
-  - tmux [ssh-command-args] (run ssh in multiple tmux windows)
-  - git [git-command-args] (run git on remote machine)
-  - sshl [local-port:remote-host:]remote-port (ssh -L)
-  - sshd [local-port] (ssh -D)
-  - zssh [ssh-command-args]
-  - sftp
-  - scp source destination
-  - rm (remove host keys)
-  - ping/ping4/ping6 (ping the remote servers)
+    local pager=(cat)
+    if [[ -t 1 ]] && command -v less > /dev/null 2>&1; then
+        pager=(less -R)
+    fi
+
+    cat <<EOF | "${pager[@]}"
+NAME
+    riot - connect to remote hosts using SSH presets
+
+SYNOPSIS
+    ${0##*/} [OPTION]... REMOTE [COMMAND] [--] [COMMAND-ARG]...
+
+DESCRIPTION
+    Connect to REMOTE using the matching configuration from riot-config.sh.
+    COMMAND defaults to ssh. Separate multiple remotes with commas and jump
+    hosts with slashes.
+
+OPTIONS
+    -4
+        Force ssh to use IPv4 addresses only.
+
+    -6
+        Force ssh to use IPv6 addresses only.
+
+    -D, --dry-run
+        Print commands without executing them.
+
+    -d, --dev
+        Enable shell execution tracing.
+
+    -g, --gpg
+        Forward the local GPG agent during an interactive SSH login. Use only
+        with trusted remote hosts.
+
+    -h, --help
+        Display this help and exit.
+
+    -l, --lite
+        Enable dotfiles lite mode for loaded configuration.
+
+    -o SSH-OPTION
+        Pass an option to ssh. This option may be specified multiple times.
+
+    -p, --password
+        Use password authentication instead of public-key authentication.
+
+    -q, --quiet
+        Enable dotfiles quiet mode for loaded configuration.
+
+    -t, --trust
+        Trust the remote and enable X11 and SSH agent forwarding.
+
+    -v
+        Enable verbose ssh output.
+
+    --color
+        Force colored output.
+
+    --tmux
+        Open SSH sessions in tmux windows.
+
+    --
+        End option parsing.
+
+COMMANDS
+    ssh [SSH-ARG]...
+        Open an SSH session. This is the default command.
+
+    tmux [SSH-ARG]...
+        Open SSH sessions in multiple tmux windows.
+
+    git [GIT-ARG]...
+        Run git on the remote host.
+
+    sshl [LOCAL-PORT:REMOTE-HOST:]REMOTE-PORT
+        Create local port forwarding with ssh -L.
+
+    sshr [REMOTE-HOST:]REMOTE-PORT
+        Create remote port forwarding with ssh -R.
+
+    sshd [LOCAL-PORT]
+        Create dynamic port forwarding with ssh -D.
+
+    zssh [SSH-ARG]...
+        Open a zssh session.
+
+    sftp [SFTP-ARG]...
+        Open an SFTP session.
+
+    scp SOURCE DESTINATION
+        Copy files to or from the remote host.
+
+    rm
+        Remove the remote host key from known_hosts.
+
+    ping, ping4, ping6
+        Ping the remote host.
 EOF
 }
 
@@ -462,7 +544,7 @@ router() {
             --tmux )
                 USE_TMUX=1
                 ;;
-            --password )
+            -p|--password )
                 EXTRA_SSH_OPTIONS+=("-o" "PasswordAuthentication=yes" "-o" "PubkeyAuthentication=no")
                 ;;
             -o )
