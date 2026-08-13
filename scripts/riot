@@ -27,7 +27,7 @@ load_riot_config() {
 # check if port number valid
 check_port() {
     [[ "$1" =~ ^[1-9][0-9]{0,4}$ ]] || return 1
-    [[ $1 < 65536 && $1 > 0 ]] || return 1
+    [[ $1 -lt 65536 && $1 -gt 0 ]] || return 1
     return 0
 }
 
@@ -59,8 +59,8 @@ get_server_meta() {
         "$remote" =~ ^[^:]+:[1-9][0-9]*$  # contains only one colon
         || "$remote" =~ ^\[.+\]:[1-9][0-9]*$  # in the form of [host]:port
         || "$remote" =~ :::[1-9][0-9]*$  # in the form of :::port
-        || "$remote" =~ ^([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}:[1-9][0-9]*$  # full ipv6 address with port
-        || "$remote" =~ ^[0-9a-f:]+%.+:[1-9][0-9]*$  # ipv6 address with scope and port
+        || "$remote" =~ ^([0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}:[1-9][0-9]*$  # full ipv6 address with port
+        || "$remote" =~ ^[0-9A-Fa-f:]+%.+:[1-9][0-9]*$  # ipv6 address with scope and port
     ]]; then
         RET_PORT=${remote##*:}
         remote=${remote%:*}
@@ -185,6 +185,7 @@ probe_remote_gpg_socket() {
     query_cmd+=(
         "${SSH_OPTIONS[@]}"
         "${EXTRA_SSH_OPTIONS[@]}"
+        "-o" "RequestTTY=no"
         "-T"
         "$USERNAME${USERNAME:+@}$SERVER"
         'socket=$(gpgconf --list-dirs agent-socket 2>/dev/null) || exit 10
@@ -289,7 +290,10 @@ eval_or_echo() {
             tmux_win=$((tmux_win+1))
             $DO tmux new-window -t $TMUX_SESS:$tmux_win -d bash -l
         fi
-        $DO tmux send-keys -t $TMUX_SESS:$tmux_win $(printf '%s Space ' "${CMD[@]}") Enter
+        for arg in "${CMD[@]}"; do
+            $DO tmux send-keys -t "$TMUX_SESS:$tmux_win" "$arg" Space
+        done
+        $DO tmux send-keys -t "$TMUX_SESS:$tmux_win" Enter
     else
         $DO "${CMD[@]}"
     fi
