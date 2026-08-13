@@ -178,14 +178,13 @@ probe_remote_gpg_socket() {
 
     # The probe must be an independent connection: reusing or creating a
     # multiplex master here races with the immediately following login.
-    local query_cmd=(ssh "-S" "none" "-o" "ClearAllForwardings=yes" "-o" "RequestTTY=no")
+    local query_cmd=(ssh "-S" "none" "-o" "ClearAllForwardings=yes")
     if [[ -n "$PORT" ]]; then
         query_cmd+=("-p" "$PORT")
     fi
     query_cmd+=(
         "${SSH_OPTIONS[@]}"
         "${EXTRA_SSH_OPTIONS[@]}"
-        "-o" "RequestTTY=no"
         "-T"
         "$USERNAME${USERNAME:+@}$SERVER"
         'socket=$(gpgconf --list-dirs agent-socket 2>/dev/null) || exit 10
@@ -290,9 +289,9 @@ eval_or_echo() {
             tmux_win=$((tmux_win+1))
             $DO tmux new-window -t $TMUX_SESS:$tmux_win -d bash -l
         fi
-        for arg in "${CMD[@]}"; do
-            $DO tmux send-keys -t "$TMUX_SESS:$tmux_win" "$arg" Space
-        done
+        local command
+        printf -v command '%q ' "${CMD[@]}"
+        $DO tmux send-keys -l -t "$TMUX_SESS:$tmux_win" "${command% }"
         $DO tmux send-keys -t "$TMUX_SESS:$tmux_win" Enter
     else
         $DO "${CMD[@]}"

@@ -123,6 +123,8 @@ MOCK_REMOTE_RESTRICTED=0 MOCK_SYSTEMD_ACTIVE=1 run_riot -g example.test > "$TEST
 grep -Fq 'remote gpg-agent.socket is active' "$TEST_DIR/err"
 grep -Fq 'ARG=none' "$MOCK_SSH_LOG"
 grep -Fq 'ARG=ClearAllForwardings=yes' "$MOCK_SSH_LOG"
+grep -Fq 'ARG=-T' "$MOCK_SSH_LOG"
+! grep -Fq 'ARG=RequestTTY=' "$MOCK_SSH_LOG"
 grep -Fq 'ARG=StreamLocalBindUnlink=no' "$MOCK_SSH_LOG"
 grep -Fq "ARG=$MOCK_REMOTE_SOCKET:$MOCK_LOCAL_SOCKET" "$MOCK_SSH_LOG"
 [[ ! -e "$MOCK_REMOTE_SOCKET" ]]
