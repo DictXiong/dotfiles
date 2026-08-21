@@ -255,6 +255,10 @@ prepare_gpg_forwarding() {
         fi
     fi
 
+    # A pre-existing multiplex master cannot apply this connection's -R
+    # forwarding request. Put this first because OpenSSH keeps the first
+    # value for repeated options, and force a dedicated connection.
+    SSH_OPTIONS=("-o" "ControlMaster=no" "${SSH_OPTIONS[@]}")
     SSH_OPTIONS+=(
         # The probe already removed the old socket. Do not let the main SSH
         # connection unlink a path recreated during the gap between them.
