@@ -149,7 +149,14 @@ bnd() {
 }
 nor() {
     test -n "$1" || { echo fatal: no verb given; return 1; }
-    nixos-rebuild "$1" --flake .${2:+#}$2
+    local verb="$1"
+    local flake=".${2:+#$2}"
+
+    if command -v nh >/dev/null 2>&1 && [[ "$verb" != dry-build && "$verb" != dry-activate ]]; then
+        nh os "$verb" --bypass-root-check "$flake"
+    else
+        nixos-rebuild "$verb" --flake "$flake"
+    fi
 }
 alias 'nors'='nor switch'
 alias 'norbt'='nor boot'
