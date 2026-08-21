@@ -127,6 +127,7 @@ grep -Fq 'ARG=-T' "$MOCK_SSH_LOG"
 ! grep -Fq 'ARG=RequestTTY=' "$MOCK_SSH_LOG"
 grep -Fq 'ARG=StreamLocalBindUnlink=no' "$MOCK_SSH_LOG"
 grep -Fq "ARG=$MOCK_REMOTE_SOCKET:$MOCK_LOCAL_SOCKET" "$MOCK_SSH_LOG"
+grep -Fq 'ARG=ControlMaster=no' "$MOCK_SSH_LOG"
 [[ ! -e "$MOCK_REMOTE_SOCKET" ]]
 
 echo 'riot gpg forwarding tests passed'
