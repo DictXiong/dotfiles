@@ -1,0 +1,378 @@
+#!/usr/bin/env bash
+# Author: OpenAI Codex
+# AI-assisted implementation, generated and reviewed with OpenAI Codex.
+
+set -euo pipefail
+# Keep glob expansion and sorting stable across locales, so -n remains
+# repeatable when the service and filesystem contents have not changed.
+scf_lc_all_was_set=false
+scf_original_lc_all=""
+if [[ -n ${LC_ALL+x} ]]; then
+  scf_lc_all_was_set=true
+  scf_original_lc_all=$LC_ALL
+fi
+export LC_ALL=C
+
+restore_locale() {
+  if [[ $scf_lc_all_was_set == true ]]; then
+    export LC_ALL=$scf_original_lc_all
+  else
+    unset LC_ALL
+  fi
+}
+
+usage() {
+  cat >&2 <<'EOF'
+Usage: scf [-r] [-n NUM] SERVICE
+
+Open the configuration file referenced by a systemd service's ExecStart.
+SERVICE may be given with or without the .service suffix.
+
+  -r  recursively inspect referenced files and directories (maximum reference depth: 3)
+  -n  open candidate NUM directly, without displaying the selection list
+
+Environment:
+  SCF_MAX_CANDIDATES  maximum number of candidates (default: 20)
+  SCF_MAX_DEPTH       maximum reference depth (default: 3)
+EOF
+  exit 2
+}
+
+recursive=false
+selection_number=""
+service=""
+while (( $# > 0 )); do
+  argument=$1
+  shift
+
+  if [[ $argument == -- ]]; then
+    [[ -z $service && $# -eq 1 ]] || usage
+    service=$1
+    shift
+    break
+  fi
+
+  if [[ $argument == -* ]]; then
+    options=${argument#-}
+    [[ -n $options ]] || usage
+    while [[ -n $options ]]; do
+      option=${options:0:1}
+      options=${options:1}
+      case $option in
+        r) recursive=true ;;
+        n)
+          if [[ -n $options ]]; then
+            selection_number=$options
+            options=""
+          else
+            (( $# > 0 )) || usage
+            selection_number=$1
+            shift
+          fi
+          ;;
+        *) usage ;;
+      esac
+    done
+  else
+    [[ -z $service ]] || usage
+    service=$argument
+  fi
+done
+
+if [[ -z $service ]]; then
+  usage
+fi
+
+interactive=false
+if [[ -t 0 && -t 1 && -t 2 ]]; then
+  interactive=true
+fi
+
+# Prompts and candidate details are written to stderr.  Keep pipelines and
+# redirected output free of escape sequences.
+if [[ $interactive == true ]]; then
+  color_item=$'\033[1;36m'
+  color_detail=$'\033[2;37m'
+  color_prompt=$'\033[1;33m'
+  color_reset=$'\033[0m'
+else
+  color_item=""
+  color_detail=""
+  color_prompt=""
+  color_reset=""
+fi
+
+if [[ -n $selection_number && ! $selection_number =~ ^[0-9]+$ ]]; then
+  echo "scf: invalid candidate number: $selection_number" >&2
+  exit 2
+fi
+if [[ -n $selection_number ]]; then
+  # Bash arithmetic treats numbers with a leading zero as octal.
+  selection_number=$((10#$selection_number))
+  if (( selection_number < 1 )); then
+    echo "scf: invalid candidate number: 0" >&2
+    exit 2
+  fi
+fi
+
+service_argument=$service
+if [[ $service != *.service ]]; then
+  service+=.service
+fi
+
+# Keep the argument a unit name, rather than allowing it to become a
+# systemctl option.  This also makes accidental shell syntax harmless.
+if [[ ! $service =~ ^[A-Za-z0-9_.@:%+-]+\.service$ ]]; then
+  echo "scf: invalid service name: $service_argument" >&2
+  exit 2
+fi
+
+if ! exec_start=$(systemctl show --no-pager --property=ExecStart --value "$service"); then
+  echo "scf: cannot inspect $service" >&2
+  exit 1
+fi
+
+if [[ -z $exec_start || $exec_start == "{}" ]]; then
+  echo "scf: $service has no ExecStart" >&2
+  exit 1
+fi
+
+# Keep recursion bounded even when configuration files refer to each other.
+max_candidates=${SCF_MAX_CANDIDATES:-20}
+max_reference_depth=${SCF_MAX_DEPTH:-3}
+if [[ ! $max_candidates =~ ^[0-9]+$ ]]; then
+  echo "scf: SCF_MAX_CANDIDATES must be a positive integer" >&2
+  exit 2
+fi
+if [[ ! $max_reference_depth =~ ^[0-9]+$ ]]; then
+  echo "scf: SCF_MAX_DEPTH must be a non-negative integer" >&2
+  exit 2
+fi
+# Normalize user-provided decimal values before using Bash arithmetic.
+max_candidates=$((10#$max_candidates))
+max_reference_depth=$((10#$max_reference_depth))
+if (( max_candidates < 1 )); then
+  echo "scf: SCF_MAX_CANDIDATES must be a positive integer" >&2
+  exit 2
+fi
+declare -A candidate_seen=()
+declare -A candidate_depth=()
+declare -A candidate_source=()
+declare -A candidate_source_detail=()
+config_paths=()
+other_paths=()
+recursive_paths=()
+recursive_depths=()
+declare -A recursive_seen=()
+
+path_pattern="/[^[:space:];,'\"})]+"
+
+extract_paths() {
+  grep -a -oE "$path_pattern" || true
+}
+
+has_config_extension() {
+  local path=$1
+  [[ $path =~ \.(conf|cfg|cnf|ini|json|toml|ya?ml|xml|properties)$ ]]
+}
+
+is_config_path() {
+  local path=$1
+  has_config_extension "$path" \
+    || [[ $path == *config* || $path == *configuration* ]]
+}
+
+add_candidate() {
+  local path=$1
+  local depth=$2
+  local source=$3
+  local source_detail=${4:-}
+
+  [[ -f $path ]] || return 1
+  [[ -n ${candidate_seen[$path]+seen} ]] && return 0
+  (( ${#candidate_seen[@]} < max_candidates )) || return 1
+
+  candidate_seen[$path]=1
+  candidate_depth[$path]=$depth
+  candidate_source[$path]=$source
+  candidate_source_detail[$path]=$source_detail
+  if is_config_path "$path"; then
+    config_paths+=("$path")
+  else
+    other_paths+=("$path")
+  fi
+}
+
+enqueue_recursive() {
+  local path=$1
+  local depth=$2
+
+  [[ $recursive == true ]] || return 0
+  (( depth <= max_reference_depth )) || return 0
+  [[ -f $path ]] || return 0
+  [[ -n ${recursive_seen[$path]+seen} ]] && return 0
+
+  recursive_seen[$path]=1
+  recursive_paths+=("$path")
+  recursive_depths+=("$depth")
+}
+
+expand_directory() {
+  local directory=$1
+  local depth=$2
+  local source=$3
+  local path
+  local entries
+
+  [[ $recursive == true && -d $directory ]] || return 0
+
+  # dotglob also catches hidden configuration files.  nullglob prevents the
+  # literal pattern from being treated as a candidate for an empty directory.
+  shopt -s dotglob nullglob
+  entries=("$directory"/*)
+  shopt -u dotglob nullglob
+
+  for path in "${entries[@]}"; do
+    # A service's configuration often contains runtime directories such as
+    # Python's bin directory.  Only configuration-looking files from a
+    # directory should consume the candidate budget.
+    has_config_extension "$path" || continue
+    add_candidate "$path" "$depth" "$source" "directory $directory" || continue
+    enqueue_recursive "$path" "$depth"
+  done
+}
+
+consider_initial_path() {
+  local path=$1
+
+  if [[ -f $path ]]; then
+    add_candidate "$path" 0 "ExecStart" || true
+  elif [[ -d $path ]]; then
+    expand_directory "$path" 0 "ExecStart"
+  fi
+}
+
+# systemctl's ExecStart value contains both `path=` and `argv[]=`.  Pull out
+# absolute path tokens, then drop the first one (the executable itself).
+# NixOS-generated configuration files are normally immutable regular files in
+# /nix/store, but the same also works for /etc and /run paths.
+mapfile -t initial_paths < <(
+  printf '%s\n' "$exec_start" \
+    | extract_paths \
+    | awk '!seen[$0]++'
+)
+
+if (( ${#initial_paths[@]} > 0 )); then
+  initial_paths=("${initial_paths[@]:1}")
+fi
+
+for path in "${initial_paths[@]}"; do
+  consider_initial_path "$path"
+done
+
+paths=("${config_paths[@]}")
+if (( ${#paths[@]} == 0 )); then
+  paths=("${other_paths[@]}")
+fi
+
+if [[ $recursive == true ]]; then
+  for path in "${paths[@]}"; do
+    enqueue_recursive "$path" 0
+  done
+
+  recursive_index=0
+  while (( recursive_index < ${#recursive_paths[@]} )); do
+    path=${recursive_paths[recursive_index]}
+    depth=${recursive_depths[recursive_index]}
+    recursive_index=$((recursive_index + 1))
+    (( depth < max_reference_depth )) || continue
+    next_depth=$((depth + 1))
+
+    mapfile -t referenced_paths < <(extract_paths < "$path")
+    for referenced_path in "${referenced_paths[@]}"; do
+      if [[ -f $referenced_path ]]; then
+        add_candidate "$referenced_path" "$next_depth" "$path" || continue
+        enqueue_recursive "$referenced_path" "$next_depth"
+      elif [[ -d $referenced_path ]]; then
+        expand_directory "$referenced_path" "$next_depth" "$path"
+      fi
+    done
+  done
+
+  paths=("${config_paths[@]}")
+  if (( ${#paths[@]} == 0 )); then
+    paths=("${other_paths[@]}")
+  fi
+fi
+
+if (( ${#paths[@]} == 0 )); then
+  echo "scf: no existing configuration path found in ExecStart of $service" >&2
+  echo "ExecStart: $exec_start" >&2
+  exit 1
+fi
+
+if [[ $interactive == false && -z $selection_number ]]; then
+  selection_number=1
+fi
+
+if [[ -n $selection_number ]]; then
+  if (( selection_number > ${#paths[@]} )); then
+    echo "scf: candidate number $selection_number is out of range (1-${#paths[@]})" >&2
+    exit 2
+  fi
+  config_path=${paths[selection_number - 1]}
+elif (( ${#paths[@]} > 1 )); then
+  declare -A displayed_indices=()
+  for i in "${!paths[@]}"; do
+    displayed_indices["${paths[i]}"]=$((i + 1))
+  done
+
+  printf '%sscf: multiple possible configuration files for %s:%s\n' \
+    "$color_prompt" "$service" "$color_reset" >&2
+  for i in "${!paths[@]}"; do
+    path=${paths[i]}
+    source=${candidate_source[$path]}
+    if [[ $source == ExecStart ]]; then
+      source_label=ExecStart
+    elif [[ -n ${displayed_indices[$source]+seen} ]]; then
+      source_label="#${displayed_indices[$source]}"
+    else
+      source_label=$source
+    fi
+    source_detail=${candidate_source_detail[$path]}
+    if [[ -n $source_detail ]]; then
+      source_label+=" ($source_detail)"
+    fi
+    printf '%s  %d) %s%s\n' \
+      "$color_item" "$((i + 1))" "$path" "$color_reset" >&2
+    printf '%s     depth: %d; derived from: %s%s\n' \
+      "$color_detail" "${candidate_depth[$path]}" "$source_label" "$color_reset" >&2
+  done
+  read -r -p "${color_prompt}Select a file [1]: ${color_reset}" selection
+  selection=${selection:-1}
+  if [[ ! $selection =~ ^[0-9]+$ ]]; then
+    echo "scf: invalid selection" >&2
+    exit 2
+  fi
+  selection=$((10#$selection))
+  if (( selection < 1 || selection > ${#paths[@]} )); then
+    echo "scf: invalid selection" >&2
+    exit 2
+  fi
+  config_path=${paths[selection - 1]}
+else
+  config_path=${paths[0]}
+fi
+
+if [[ $interactive == false ]]; then
+  restore_locale
+  exec cat -- "$config_path"
+fi
+
+editor=${VISUAL:-${EDITOR:-vim}}
+read -r -a editor_command <<< "$editor"
+if (( ${#editor_command[@]} == 0 )); then
+  editor_command=(vim)
+fi
+restore_locale
+exec "${editor_command[@]}" "$config_path"

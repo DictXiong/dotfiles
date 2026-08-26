@@ -1,0 +1,27 @@
+#compdef scf
+
+_scf() {
+    _arguments -s \
+        '(-r)-r[Recursively inspect referenced files and directories]' \
+        '(-n)-n[Open candidate number directly]:candidate number:' \
+        '--[End of options]' \
+        '1:systemd service:_scf_services'
+}
+
+_scf_services() {
+    local -a services
+
+    if (( $+commands[systemctl] )); then
+        services=("${(@f)$(systemctl list-unit-files --type=service --no-legend --no-pager 2>/dev/null \
+            | awk '$1 ~ /\.service$/ {print $1}' \
+            | sort -u)}")
+    fi
+
+    if (( ${#services} > 0 )); then
+        _describe -t services 'systemd service' services
+    else
+        _message 'systemd service'
+    fi
+}
+
+_scf "$@"

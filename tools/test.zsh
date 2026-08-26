@@ -34,6 +34,7 @@ dogo
 doll
 dfs cd
 tools/test-getopts.sh
+tools/test-scf.sh
 tools/test-riot-gpg.sh
 tools/test-sagent-gpg-pin.sh
 tools/common.sh get_os_name
