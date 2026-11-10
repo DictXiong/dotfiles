@@ -28,6 +28,9 @@ while [[ $# > 0||-n "$ARG" ]];do
         ARG=-${ARG:2}
     fi
 done
+# The verified updater runs from install.sh. Only the legacy opt-out mode
+# still performs the old pre-install checkout.
+if [[ "${DFS_IGNORE_COMMIT_SIGN:-0}" != 1 ]]; then DFS_SECURE=0; fi
 IFS=',' read -r -a DFS_USERS<<<"$DFS_USER"
 for u in "${DFS_USERS[@]}";do
     if [[ -z "$u" ]];then

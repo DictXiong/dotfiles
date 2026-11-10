@@ -3,9 +3,18 @@ on:
   push: ~
   workflow_dispatch: ~
 jobs:
+  test-signed-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tools/test-signed-updates.sh
+
   test-ubuntu:
     name: test on ubuntu
     runs-on: ubuntu-latest
+    # The legacy integration tests exercise the live release channel.
+    env:
+      DFS_IGNORE_COMMIT_SIGN: "1"
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
@@ -47,6 +56,8 @@ jobs:
   test-autodep:
     name: test of auto-install dependencies
     runs-on: ubuntu-latest
+    env:
+      DFS_IGNORE_COMMIT_SIGN: "1"
     steps:
       - name: remove dependencies
         run: |
@@ -73,6 +84,8 @@ jobs:
   test-get-dotfiles-cn:
     name: test of get.dotfiles.cn script
     runs-on: ubuntu-latest
+    env:
+      DFS_IGNORE_COMMIT_SIGN: "1"
     steps:
       - name: checkout repo
         uses: actions/checkout@v4

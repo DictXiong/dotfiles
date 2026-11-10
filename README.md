@@ -34,6 +34,45 @@ git clone https://github.com/DictXiong/dotfiles.git ~/dotfiles
 The installer adds small source/include entries to the existing zsh, tmux,
 Vim, and Git configuration files instead of replacing them entirely.
 
+### Signed updates
+
+To protect the SSH authorized keys, updates verify the commit signature and
+use the committer time. If that signature cannot be verified, they verify
+the OpenPGP-signed `dfs-release/<full-commit-id>` tag and use its tagger time.
+An update must be strictly newer than the installed revision when both can
+be verified. For a GitHub merge, push the signed tag before advancing the
+release pointer. For a trusted first install, verify the starting revision
+with an independently obtained public key before running the installer.
+
+Without GnuPG, the installer warns and updates without verification for that
+run. For future updates, install GnuPG or set `DFS_IGNORE_COMMIT_SIGN=1`
+in `~/.config/dotfiles/env` to explicitly skip verification.
+
+## Nix
+
+Add `inputs.dotfiles.url = "github:DictXiong/dotfiles";` to your flake.
+The dotfiles flake has no inputs of its own.
+
+- `dotfiles.lib.ssh.authorizedKeys` is the list of entries from
+  `.ssh/authorized_keys2`, in file order, with blank and comment lines removed.
+- `dotfiles.lib.ssh.selectAuthorizedKeys` takes a list of SSH key comments and
+  returns the matching entries in the requested order. It matches plain
+  `type key comment` entries and fails if a comment is missing or ambiguous.
+- `dotfiles.lib.files` exposes paths to `authorizedKeys`,
+  `authorizedCertificates` (the EID certificate bundle), `git`, `tmux`, `vim`,
+  and `zsh`. Use these paths to reference the original files.
+
+For a NixOS module that receives the flake's `inputs` via `specialArgs`, set
+the following option with the comments of the keys you want to authorize.
+
+```nix
+users.users.root.openssh.authorizedKeys.keys =
+  inputs.dotfiles.lib.ssh.selectAuthorizedKeys [ "your-key-comment" ];
+```
+
+Run `nix eval path:.#lib.ssh.authorizedKeys --json` from this checkout to
+inspect the full list.
+
 ## Useful commands
 
 ```sh

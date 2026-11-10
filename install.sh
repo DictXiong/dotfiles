@@ -258,9 +258,15 @@ install_update()
     fmt_note "installing update.sh ..."
     cp "${DOTFILES}/.update.sh" "${DOTFILES}/update.sh"
     chmod +x "${DOTFILES}/update.sh"
+    local ignore_commit_sign=${DFS_IGNORE_COMMIT_SIGN:-0}
+    if [[ "$ignore_commit_sign" != 1 ]] && ! command -v gpg >/dev/null; then
+        fmt_warning "gpg not found. Updating without signature checks for this installation."
+        fmt_warning "For future updates, install GnuPG or set DFS_IGNORE_COMMIT_SIGN=1 in ~/.config/dotfiles/env."
+        ignore_commit_sign=1
+    fi
     fmt_note "running update.sh ..."
     set +e
-    DFS_UPDATED_RET=85 ${DOTFILES}/update.sh
+    DFS_IGNORE_COMMIT_SIGN="$ignore_commit_sign" DFS_UPDATED_RET=85 "${DOTFILES}/update.sh"
     RET=$?
     if [[ $RET == 85 ]]; then
         fmt_note "dfs updated. re-running install.sh ..."

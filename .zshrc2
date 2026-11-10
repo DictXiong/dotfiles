@@ -205,13 +205,6 @@ dfs()
             mkdir -p ~/.config/dotfiles
             $EDITOR ~/.config/dotfiles/env
             ;;
-        force-update ) (
-            cd "$DOTFILES"
-            git fetch --all
-            ref=$(git symbolic-ref --short HEAD 2> /dev/null)  || ref=$(git rev-parse --short HEAD 2> /dev/null)  || return 0
-            for i in $(git for-each-ref refs/heads --format='%(refname)') ; do git checkout ${i#refs/heads/} ; git pull --ff-only ; done
-            git checkout -c advice.detachedHead=false $ref)
-            ;;
         reset  )
             antigen reset 1> /dev/null
             rm -rf $HOME/.antigen
@@ -221,7 +214,7 @@ dfs()
             echo 'Done. Please open a new shell to see the changes.'
             ;;
         beacon ) "$DOTFILES/tools/common.sh" "post_beacon" "$2" "$3" ;;
-        *      ) echo "unknown command \"$1\". available: update, force-update, version, reset, cd, log" ;;
+        *      ) echo "unknown command \"$1\". available: update, version, reset, cd, log" ;;
     esac
 }
 
