@@ -158,6 +158,24 @@ nor() {
         nixos-rebuild "$verb" --flake "$flake"
     fi
 }
+norbd() (
+    local store_path
+
+    if command -v nh >/dev/null 2>&1; then
+        local tmpdir
+        tmpdir=$(mktemp -d) || return $?
+        # Keep the new system rooted until nixos-diff exits.
+        trap 'rm -f -- "$tmpdir/result"; rmdir -- "$tmpdir"' EXIT
+        nh os build --bypass-root-check --out-link "$tmpdir/result" ".${1:+#$1}" || return $?
+        store_path=$(readlink -e -- "$tmpdir/result") || return $?
+    else
+        local host_name="${1:-$HOST}"
+        store_path=$(nix --extra-experimental-features 'nix-command flakes' build \
+            --no-link --print-out-paths ".#nixosConfigurations.\"$host_name\".config.system.build.toplevel") || return $?
+    fi
+
+    nixos-diff "$store_path"
+)
 alias 'nors'='nor switch'
 alias 'norbt'='nor boot'
 alias 'nort'='nor test'
