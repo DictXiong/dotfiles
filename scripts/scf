@@ -25,14 +25,18 @@ usage() {
   cat >&2 <<'EOF'
 Usage: scf [-r] [-n NUM] SERVICE
 
-Open the configuration file referenced by a systemd service's ExecStart.
+Open a readable text file referenced by a systemd service's ExecStart.
 SERVICE may be given with or without the .service suffix.
+List file arguments, text entry points, file references, then directory entries.
+File names and extensions do not determine eligibility.
 
   -r  recursively inspect referenced files and directories (maximum reference depth: 3)
   -n  open candidate NUM directly, without displaying the selection list
 
 Environment:
-  SCF_MAX_CANDIDATES  maximum number of candidates (default: 20)
+  SCF_MAX_CANDIDATES  maximum number of displayed candidates (default: 20)
+  SCF_MAX_SCAN        maximum number of filesystem paths inspected (default: 256)
+  SCF_MAX_BYTES       total bytes parsed for recursive references (default: 1048576)
   SCF_MAX_DEPTH       maximum reference depth (default: 3)
 EOF
   exit 2
@@ -120,14 +124,14 @@ if [[ $service != *.service ]]; then
   service+=.service
 fi
 
-# Keep the argument a unit name, rather than allowing it to become a
-# systemctl option.  This also makes accidental shell syntax harmless.
-if [[ ! $service =~ ^[A-Za-z0-9_.@:%+-]+\.service$ ]]; then
+# systemd uses \xHH escapes in unit names derived from paths.
+checked_service=${service//\\x[0-9A-Fa-f][0-9A-Fa-f]/_}
+if [[ ! $checked_service =~ ^[A-Za-z0-9_.@:%+-]+\.service$ ]]; then
   echo "scf: invalid service name: $service_argument" >&2
   exit 2
 fi
 
-if ! exec_start=$(systemctl show --no-pager --property=ExecStart --value "$service"); then
+if ! exec_start=$(systemctl show --no-pager --property=ExecStart --value -- "$service"); then
   echo "scf: cannot inspect $service" >&2
   exit 1
 fi
@@ -139,6 +143,8 @@ fi
 
 # Keep recursion bounded even when configuration files refer to each other.
 max_candidates=${SCF_MAX_CANDIDATES:-20}
+max_scan=${SCF_MAX_SCAN:-256}
+max_bytes=${SCF_MAX_BYTES:-1048576}
 max_reference_depth=${SCF_MAX_DEPTH:-3}
 if [[ ! $max_candidates =~ ^[0-9]+$ ]]; then
   echo "scf: SCF_MAX_CANDIDATES must be a positive integer" >&2
@@ -148,165 +154,518 @@ if [[ ! $max_reference_depth =~ ^[0-9]+$ ]]; then
   echo "scf: SCF_MAX_DEPTH must be a non-negative integer" >&2
   exit 2
 fi
+if [[ ! $max_scan =~ ^[0-9]+$ ]]; then
+  echo "scf: SCF_MAX_SCAN must be a positive integer" >&2
+  exit 2
+fi
+if [[ ! $max_bytes =~ ^[0-9]+$ ]]; then
+  echo "scf: SCF_MAX_BYTES must be a positive integer" >&2
+  exit 2
+fi
 # Normalize user-provided decimal values before using Bash arithmetic.
 max_candidates=$((10#$max_candidates))
+max_scan=$((10#$max_scan))
+max_bytes=$((10#$max_bytes))
 max_reference_depth=$((10#$max_reference_depth))
 if (( max_candidates < 1 )); then
   echo "scf: SCF_MAX_CANDIDATES must be a positive integer" >&2
   exit 2
 fi
-declare -A candidate_seen=()
+if (( max_scan < 1 )); then
+  echo "scf: SCF_MAX_SCAN must be a positive integer" >&2
+  exit 2
+fi
+if (( max_bytes < 1 )); then
+  echo "scf: SCF_MAX_BYTES must be a positive integer" >&2
+  exit 2
+fi
+declare -A resolved_paths=()
+declare -A path_kinds=()
+declare -A path_sizes=()
+declare -A reference_cache=()
+declare -A candidate_path=()
+declare -A candidate_rank=()
 declare -A candidate_depth=()
+declare -A traversal_depth=()
 declare -A candidate_source=()
 declare -A candidate_source_detail=()
-config_paths=()
-other_paths=()
+candidate_ids=()
 recursive_paths=()
-recursive_depths=()
-declare -A recursive_seen=()
+declare -A processed_depth=()
+declare -A processed_rank=()
+declare -A expanded_directories=()
+directory_paths=()
+directory_depths=()
+directory_sources=()
+entry_paths=()
+entry_depths=()
+entry_sources=()
+entry_directories=()
+scan_count=0
+scan_limited=false
+bytes_remaining=$max_bytes
+bytes_limited=false
 
-path_pattern="/[^[:space:];,'\"})]+"
+path_pattern="\"/([^\"\\\\]|\\\\.)*\"|'/([^'\\\\]|\\\\.)*'|/([^[:space:];,'\"})\\\\]|\\\\.)+"
+
+decode_path() {
+  local path=$1
+  local decoded=""
+  local escape character digits
+
+  while [[ $path == *\\* ]]; do
+    decoded+=${path%%\\*}
+    path=${path#*\\}
+    escape=${path:0:1}
+    path=${path:1}
+    case $escape in
+      x)
+        digits=${path:0:2}
+        if [[ $digits =~ ^[0-9a-fA-F]{2}$ ]]; then
+          printf -v character '%b' "\\x$digits"
+          decoded+=$character
+          path=${path:2}
+        else
+          decoded+='\x'
+        fi
+        ;;
+      [0-7])
+        digits=$escape${path:0:2}
+        if [[ $digits =~ ^[0-7]{3}$ ]]; then
+          printf -v character '%b' "\\0$digits"
+          decoded+=$character
+          path=${path:2}
+        else
+          decoded+="\\$escape"
+        fi
+        ;;
+      s|' ') decoded+=' ' ;;
+      /|\"|\') decoded+=$escape ;;
+      a|b|e|f|n|r|t|v|\\)
+        printf -v character '%b' "\\$escape"
+        decoded+=$character
+        ;;
+      *) decoded+="\\$escape" ;;
+    esac
+  done
+  printf '%s\n' "$decoded$path"
+}
 
 extract_paths() {
-  grep -a -oE "$path_pattern" || true
+  local path
+  while IFS= read -r path; do
+    if [[ $path == \"*\" || $path == \'*\' ]]; then
+      path=${path:1:-1}
+    fi
+    decode_path "$path"
+  done < <(grep -a -oE "$path_pattern" || true)
 }
 
-has_config_extension() {
-  local path=$1
-  [[ $path =~ \.(conf|cfg|cnf|ini|json|toml|ya?ml|xml|properties)$ ]]
+# Preserve the context of each path without interpreting shell or Python code.
+# Search-path assignments suppress directory expansion, while file references
+# on those same lines remain candidates.
+extract_references() {
+  local context path
+  while IFS=$'\t' read -r context path; do
+    if [[ $path == \"*\" || $path == \'*\' ]]; then
+      path=${path:1:-1}
+    fi
+    printf '%s\t' "$context"
+    decode_path "$path"
+  done < <(
+    SCF_PATH_PATTERN="$path_pattern" awk '
+      BEGIN {
+        pattern = ENVIRON["SCF_PATH_PATTERN"]
+        # These variables describe runtime search lists, rather than file types.
+        variables = "(PATH|PYTHONPATH|LD_LIBRARY_PATH|LIBRARY_PATH|MANPATH|INFOPATH|PERL5LIB|RUBYLIB|CLASSPATH|NODE_PATH|PKG_CONFIG_PATH|GI_TYPELIB_PATH|XDG_DATA_DIRS)"
+        assignment = "(^|[;[:space:]])(export[[:space:]]+)?" variables "[[:space:]]*\\+?="
+        python = "(sys\\.path(\\[[^]]*\\])?[[:space:]]*\\+?=|sys\\.path\\.(insert|append|extend)[[:space:]]*\\(|site\\.addsitedir[[:space:]]*\\()"
+      }
+      function emit(fragment, context, path, key, previous) {
+        while (match(fragment, pattern)) {
+          previous = RSTART > 1 ? substr(fragment, RSTART-1, 1) : ""
+          path = substr(fragment, RSTART, RLENGTH)
+          fragment = substr(fragment, RSTART + RLENGTH)
+          # A slash inside a URL, version, or variable expansion is not an
+          # absolute path token. Quoted absolute paths keep their full value.
+          if (substr(path, 1, 1) == "/" && previous != "" &&
+              previous !~ /[[:space:]]/ && !index("=<>({[,", previous)) continue
+          key = context SUBSEP path
+          if (!seen[key]++) printf "%s\t%s\n", context, path
+        }
+      }
+      function uncomment(line, i, character, quoted, escaped) {
+        quoted = quote
+        for (i = 1; i <= length(line); i++) {
+          character = substr(line, i, 1)
+          if (escaped) { escaped = 0; continue }
+          if (character == "\\" && quoted != "\047") { escaped = 1; continue }
+          if (quoted != "") {
+            if (character == quoted) quoted = ""
+          } else if (character == "\"" || character == "\047") {
+            quoted = character
+          } else if (character == "#" && (i == 1 || substr(line, i-1, 1) ~ /[[:space:];]/)) {
+            return substr(line, 1, i-1)
+          }
+        }
+        return line
+      }
+      # End a shell value at its unquoted token boundary. A Python search-path
+      # call/list may span lines, but statements after it keep their own context.
+      function consume_search(line, start, i, character, escaped) {
+        for (i = start; i <= length(line); i++) {
+          character = substr(line, i, 1)
+          if (escaped) { escaped = 0; continue }
+          if (character == "\\" && quote != "\047") { escaped = 1; continue }
+          if (quote != "") {
+            if (character == quote) quote = ""
+          } else if (character == "\"" || character == "\047") {
+            quote = character
+          } else if (mode == "shell" && character ~ /[[:space:];]/) {
+            mode = ""
+            return i
+          } else if (mode == "python") {
+            if (character == "[" || character == "(") balance++
+            if ((character == "]" || character == ")") && balance > 0) {
+              balance--
+              if (method && balance == 0) {
+                mode = ""
+                return i+1
+              }
+            }
+            if (character == ";" && balance == 0) {
+              mode = ""
+              return i
+            }
+          }
+        }
+        if (quote == "" && balance == 0 && !escaped) mode = ""
+        return i
+      }
+      {
+        line = uncomment($0)
+        if (mode == "" && line ~ /^[[:space:]]*(;|\/\/)/) next
+        cursor = 1
+        while (cursor <= length(line) || mode != "") {
+          if (mode != "") {
+            stop = consume_search(line, cursor)
+            emit(substr(line, cursor, stop-cursor), "search")
+            cursor = stop
+            if (cursor > length(line)) break
+            continue
+          }
+          rest = substr(line, cursor)
+          shell_start = 0
+          python_start = 0
+          if (match(rest, assignment)) {
+            shell_start = RSTART
+            shell_length = RLENGTH
+          }
+          if (match(rest, python)) {
+            python_start = RSTART
+            python_length = RLENGTH
+          }
+          if (!shell_start && !python_start) {
+            emit(rest, "file")
+            break
+          }
+          if (shell_start && (!python_start || shell_start < python_start)) {
+            start = shell_start
+            header_length = shell_length
+            mode = "shell"
+            method = 0
+          } else {
+            start = python_start
+            header_length = python_length
+            mode = "python"
+            method = substr(rest, start+header_length-1, 1) == "("
+          }
+          emit(substr(rest, 1, start-1), "file")
+          quote = ""
+          balance = method ? 1 : 0
+          cursor += start+header_length-1
+        }
+      }
+    '
+  )
 }
 
-is_config_path() {
-  local path=$1
-  has_config_extension "$path" \
-    || [[ $path == *config* || $path == *configuration* ]]
+# Cache both lexical resolution and physical attributes. Callers use the
+# globals canonical_path and path_kind so cache updates stay in this shell.
+inspect_path() {
+  local path=$1 controls size
+  [[ $path == /* ]] || return 1
+  canonical_path=""
+  path_kind=""
+  if [[ -n ${resolved_paths[$path]+cached} ]]; then
+    canonical_path=${resolved_paths[$path]}
+    [[ -n $canonical_path ]] || return 1
+  else
+    resolved_paths[$path]=""
+    case $path in
+      /dev|/dev/*|/proc|/proc/*|/sys|/sys/*) return 1 ;;
+    esac
+    canonical_path=$(readlink -f -- "$path") || return 1
+    case $canonical_path in
+      /dev|/dev/*|/proc|/proc/*|/sys|/sys/*) return 1 ;;
+    esac
+    resolved_paths[$path]=$canonical_path
+  fi
+
+  if [[ -n ${path_kinds[$canonical_path]+cached} ]]; then
+    path_kind=${path_kinds[$canonical_path]}
+    [[ $path_kind != skip ]]
+    return
+  fi
+  if (( scan_count >= max_scan )); then
+    scan_limited=true
+    return 1
+  fi
+  scan_count=$((scan_count + 1))
+  path_kind=skip
+  if [[ -d $canonical_path ]]; then
+    path_kind=directory
+  elif [[ -f $canonical_path && -r $canonical_path ]]; then
+    # Inspect a bounded prefix. Allow whitespace, ANSI escapes and UTF-8 bytes,
+    # but reject NUL and other binary controls even after an ASCII first line.
+    if controls=$(head -c 65536 -- "$canonical_path" | tr -d '\11\12\14\15\33\40-\176\200-\377' | wc -c) &&
+        (( controls == 0 )) && size=$(stat -c '%s' -- "$canonical_path"); then
+      path_kind=text
+      path_sizes[$canonical_path]=$size
+      if head -c 2 -- "$canonical_path" | grep -qxF '#!'; then
+        path_kind=script
+      fi
+    fi
+  fi
+  path_kinds[$canonical_path]=$path_kind
+  [[ $path_kind != skip ]]
+}
+
+queue_directory() {
+  directory_paths+=("$1")
+  directory_depths+=("$2")
+  directory_sources+=("$3")
 }
 
 add_candidate() {
-  local path=$1
-  local depth=$2
-  local source=$3
-  local source_detail=${4:-}
+  local path=$1 rank=$2 depth=$3 source=$4 detail=$5
+  inspect_path "$path" || return 0
+  [[ $path_kind != directory ]] || return 0
+  local id=$canonical_path
 
-  [[ -f $path ]] || return 1
-  [[ -n ${candidate_seen[$path]+seen} ]] && return 0
-  (( ${#candidate_seen[@]} < max_candidates )) || return 1
-
-  candidate_seen[$path]=1
-  candidate_depth[$path]=$depth
-  candidate_source[$path]=$source
-  candidate_source_detail[$path]=$source_detail
-  if is_config_path "$path"; then
-    config_paths+=("$path")
-  else
-    other_paths+=("$path")
+  if [[ -z ${traversal_depth[$id]+seen} ]] || (( depth < traversal_depth[$id] )); then
+    traversal_depth[$id]=$depth
+    if [[ $recursive == true ]] && (( depth < max_reference_depth )); then
+      recursive_paths+=("$id")
+    fi
   fi
+  if [[ $recursive == true && -n ${candidate_rank[$id]+seen} ]] &&
+      (( rank < candidate_rank[$id] && traversal_depth[$id] < max_reference_depth )); then
+    recursive_paths+=("$id")
+  fi
+  if [[ -z ${candidate_rank[$id]+seen} ]]; then
+    candidate_ids+=("$id")
+    candidate_path[$id]=$path
+  elif (( rank > candidate_rank[$id] ||
+      (rank == candidate_rank[$id] && depth >= candidate_depth[$id]) )); then
+    return 0
+  fi
+
+  candidate_rank[$id]=$rank
+  candidate_depth[$id]=$depth
+  candidate_source[$id]=$source
+  candidate_source_detail[$id]=$detail
 }
 
-enqueue_recursive() {
-  local path=$1
-  local depth=$2
-
-  [[ $recursive == true ]] || return 0
-  (( depth <= max_reference_depth )) || return 0
-  [[ -f $path ]] || return 0
-  [[ -n ${recursive_seen[$path]+seen} ]] && return 0
-
-  recursive_seen[$path]=1
-  recursive_paths+=("$path")
-  recursive_depths+=("$depth")
+consider_reference() {
+  local path=$1 rank=$2 depth=$3 source=$4 detail=$5 context=${6:-file}
+  # Defer directory probing until all known explicit files have been inspected.
+  if [[ -d $path ]]; then
+    if [[ $recursive == true && $context != search ]]; then
+      queue_directory "$path" "$depth" "$source"
+    fi
+  else
+    add_candidate "$path" "$rank" "$depth" "$source" "$detail"
+  fi
 }
 
 expand_directory() {
-  local directory=$1
-  local depth=$2
-  local source=$3
-  local path
-  local entries
-
-  [[ $recursive == true && -d $directory ]] || return 0
-
-  # dotglob also catches hidden configuration files.  nullglob prevents the
-  # literal pattern from being treated as a candidate for an empty directory.
-  shopt -s dotglob nullglob
-  entries=("$directory"/*)
-  shopt -u dotglob nullglob
-
-  for path in "${entries[@]}"; do
-    # A service's configuration often contains runtime directories such as
-    # Python's bin directory.  Only configuration-looking files from a
-    # directory should consume the candidate budget.
-    has_config_extension "$path" || continue
-    add_candidate "$path" "$depth" "$source" "directory $directory" || continue
-    enqueue_recursive "$path" "$depth"
-  done
-}
-
-consider_initial_path() {
-  local path=$1
-
-  if [[ -f $path ]]; then
-    add_candidate "$path" 0 "ExecStart" || true
-  elif [[ -d $path ]]; then
-    expand_directory "$path" 0 "ExecStart"
+  local path=$1 depth=$2 source=$3
+  inspect_path "$path" || return 0
+  [[ $path_kind == directory ]] || return 0
+  local id=$canonical_path entry
+  if [[ -n ${expanded_directories[$id]+seen} ]] &&
+      (( expanded_directories[$id] <= depth )); then
+    return 0
   fi
+  expanded_directories[$id]=$depth
+
+  shopt -s dotglob nullglob
+  for entry in "$path"/*; do
+    # Only expand one level. Referenced subdirectories get their own tasks.
+    [[ -f $entry ]] || continue
+    entry_paths+=("$entry")
+    entry_depths+=("$depth")
+    entry_sources+=("$source")
+    entry_directories+=("$path")
+  done
+  shopt -u dotglob nullglob
 }
 
-# systemctl's ExecStart value contains both `path=` and `argv[]=`.  Pull out
-# absolute path tokens, then drop the first one (the executable itself).
-# NixOS-generated configuration files are normally immutable regular files in
-# /nix/store, but the same also works for /etc and /run paths.
-mapfile -t initial_paths < <(
+# Keep argv[0] separate for each command, so a file used as an entry point
+# in one ExecStart can still be a higher-ranked argument in another command.
+extract_arguments() {
+  awk '
+    {
+      rest = $0
+      while (match(rest, /argv\[[0-9]*\]=/)) {
+        field = substr(rest, RSTART, RLENGTH)
+        rest = substr(rest, RSTART+RLENGTH)
+        quote = ""
+        escaped = 0
+        for (stop = 1; stop <= length(rest); stop++) {
+          character = substr(rest, stop, 1)
+          if (escaped) { escaped = 0; continue }
+          if (character == "\\") { escaped = 1; continue }
+          if (quote != "") {
+            if (character == quote) quote = ""
+          } else if (character == "\"" || character == "\047") {
+            quote = character
+          # systemctl prints the shell command supplied to -c without adding
+          # quotes. Its semicolons belong to argv until a property boundary.
+          } else if (character == ";") {
+            tail = substr(rest, stop)
+            if (tail ~ /^;[[:space:]]*ignore_errors=(yes|no)[[:space:]]*;[[:space:]]*start_time=/ ||
+                tail ~ /^;[[:space:]]*argv\[[0-9]*\]=/ ||
+                tail ~ /^;[[:space:]]*}[[:space:]]*($|\{[[:space:]]*path=)/) break
+          }
+        }
+        value = substr(rest, 1, stop-1)
+        rest = substr(rest, stop+1)
+        if (field == "argv[0]=") continue
+        if (field == "argv[]=") {
+          sub(/^[[:space:]]*/, "", value)
+          quote = ""
+          escaped = 0
+          for (first = 1; first <= length(value); first++) {
+            character = substr(value, first, 1)
+            if (escaped) { escaped = 0; continue }
+            if (character == "\\") { escaped = 1; continue }
+            if (quote != "") {
+              if (character == quote) quote = ""
+            } else if (character == "\"" || character == "\047") {
+              quote = character
+            } else if (character ~ /[[:space:]]/) {
+              break
+            }
+          }
+          value = substr(value, first)
+        }
+        print value
+      }
+    }
+  '
+}
+
+mapfile -t entry_points < <(
   printf '%s\n' "$exec_start" \
-    | extract_paths \
-    | awk '!seen[$0]++'
+    | grep -oE '(^|\{[[:space:]]*)path=[^;]+' \
+    | extract_paths | awk '!seen[$0]++'
+)
+mapfile -t initial_paths < <(
+  printf '%s\n' "$exec_start" | extract_arguments | extract_paths | awk '!seen[$0]++'
 )
 
-if (( ${#initial_paths[@]} > 0 )); then
-  initial_paths=("${initial_paths[@]:1}")
-fi
-
+# Process every explicit argument before entry points or directory contents.
 for path in "${initial_paths[@]}"; do
-  consider_initial_path "$path"
+  consider_reference "$path" 0 0 ExecStart argument
+done
+for path in "${entry_points[@]}"; do
+  add_candidate "$path" 1 0 ExecStart "entry point"
 done
 
-paths=("${config_paths[@]}")
-if (( ${#paths[@]} == 0 )); then
-  paths=("${other_paths[@]}")
-fi
-
-if [[ $recursive == true ]]; then
-  for path in "${paths[@]}"; do
-    enqueue_recursive "$path" 0
-  done
-
-  recursive_index=0
-  while (( recursive_index < ${#recursive_paths[@]} )); do
-    path=${recursive_paths[recursive_index]}
-    depth=${recursive_depths[recursive_index]}
-    recursive_index=$((recursive_index + 1))
-    (( depth < max_reference_depth )) || continue
+file_index=0
+directory_index=0
+entry_index=0
+while [[ $recursive == true ]]; do
+  if (( file_index < ${#recursive_paths[@]} )); then
+    id=${recursive_paths[file_index]}
+    file_index=$((file_index + 1))
+    depth=${traversal_depth[$id]}
+    if [[ -n ${processed_depth[$id]+seen} ]] &&
+        (( processed_depth[$id] <= depth && processed_rank[$id] <= candidate_rank[$id] )); then
+      continue
+    fi
+    processed_depth[$id]=$depth
+    processed_rank[$id]=${candidate_rank[$id]}
     next_depth=$((depth + 1))
-
-    mapfile -t referenced_paths < <(extract_paths < "$path")
-    for referenced_path in "${referenced_paths[@]}"; do
-      if [[ -f $referenced_path ]]; then
-        add_candidate "$referenced_path" "$next_depth" "$path" || continue
-        enqueue_recursive "$referenced_path" "$next_depth"
-      elif [[ -d $referenced_path ]]; then
-        expand_directory "$referenced_path" "$next_depth" "$path"
+    reference_rank=2
+    # A directory neighbour does not gain stronger provenance merely by
+    # mentioning another file. Keep that branch behind explicit references.
+    if (( candidate_rank[$id] > reference_rank )); then reference_rank=${candidate_rank[$id]}; fi
+    if [[ -z ${reference_cache[$id]+cached} ]]; then
+      read_bytes=${path_sizes[$id]}
+      if (( read_bytes > bytes_remaining )); then
+        read_bytes=$bytes_remaining
+        bytes_limited=true
+        # A cut path on the last line must not become a different candidate.
+        reference_cache[$id]=$(head -c "$read_bytes" -- "$id" | sed '$d' | extract_references)
+      else
+        reference_cache[$id]=$(head -c "$read_bytes" -- "$id" | extract_references)
       fi
-    done
-  done
-
-  paths=("${config_paths[@]}")
-  if (( ${#paths[@]} == 0 )); then
-    paths=("${other_paths[@]}")
+      bytes_remaining=$((bytes_remaining - read_bytes))
+    fi
+    while IFS=$'\t' read -r context referenced_path; do
+      [[ $context == file || $context == search ]] || continue
+      consider_reference "$referenced_path" "$reference_rank" "$next_depth" "$id" "file reference" "$context"
+      if [[ $scan_limited == true ]] && (( scan_count >= max_scan )); then break; fi
+    done <<< "${reference_cache[$id]}"
+  elif (( entry_index < ${#entry_paths[@]} )); then
+    if (( scan_count >= max_scan )); then scan_limited=true; break; fi
+    add_candidate "${entry_paths[entry_index]}" 3 "${entry_depths[entry_index]}" \
+      "${entry_sources[entry_index]}" "directory ${entry_directories[entry_index]}"
+    entry_index=$((entry_index + 1))
+  elif (( directory_index < ${#directory_paths[@]} )); then
+    if (( scan_count >= max_scan )); then scan_limited=true; break; fi
+    expand_directory "${directory_paths[directory_index]}" \
+      "${directory_depths[directory_index]}" "${directory_sources[directory_index]}"
+    directory_index=$((directory_index + 1))
+  else
+    break
   fi
+done
+
+# Stable insertion by source rank and depth preserves discovery order for ties.
+paths=()
+for id in "${candidate_ids[@]}"; do
+  position=${#paths[@]}
+  while (( position > 0 )); do
+    previous=${paths[position - 1]}
+    if (( candidate_rank[$previous] < candidate_rank[$id] ||
+        (candidate_rank[$previous] == candidate_rank[$id] &&
+         candidate_depth[$previous] <= candidate_depth[$id]) )); then
+      break
+    fi
+    paths[position]=${paths[position - 1]}
+    position=$((position - 1))
+  done
+  paths[position]=$id
+done
+
+if [[ $scan_limited == true ]]; then
+  printf 'scf: inspection truncated at SCF_MAX_SCAN=%s; increase it to inspect more references\n' "$max_scan" >&2
+fi
+if [[ $bytes_limited == true ]]; then
+  printf 'scf: recursive parsing truncated at SCF_MAX_BYTES=%s; increase it to read more text\n' "$max_bytes" >&2
+fi
+if (( ${#paths[@]} > max_candidates )); then
+  printf 'scf: showing %s of %s text files (SCF_MAX_CANDIDATES); increase it to show more\n' \
+    "$max_candidates" "${#paths[@]}" >&2
+  paths=("${paths[@]:0:max_candidates}")
 fi
 
 if (( ${#paths[@]} == 0 )); then
-  echo "scf: no existing configuration path found in ExecStart of $service" >&2
+  echo "scf: no existing configuration or script path found in ExecStart of $service" >&2
   echo "ExecStart: $exec_start" >&2
   exit 1
 fi
@@ -320,18 +679,20 @@ if [[ -n $selection_number ]]; then
     echo "scf: candidate number $selection_number is out of range (1-${#paths[@]})" >&2
     exit 2
   fi
-  config_path=${paths[selection_number - 1]}
+  selected_id=${paths[selection_number - 1]}
+  config_path=${candidate_path[$selected_id]}
 elif (( ${#paths[@]} > 1 )); then
   declare -A displayed_indices=()
   for i in "${!paths[@]}"; do
     displayed_indices["${paths[i]}"]=$((i + 1))
   done
 
-  printf '%sscf: multiple possible configuration files for %s:%s\n' \
+  printf '%sscf: multiple referenced text files for %s:%s\n' \
     "$color_prompt" "$service" "$color_reset" >&2
   for i in "${!paths[@]}"; do
-    path=${paths[i]}
-    source=${candidate_source[$path]}
+    id=${paths[i]}
+    path=${candidate_path[$id]}
+    source=${candidate_source[$id]}
     if [[ $source == ExecStart ]]; then
       source_label=ExecStart
     elif [[ -n ${displayed_indices[$source]+seen} ]]; then
@@ -339,14 +700,14 @@ elif (( ${#paths[@]} > 1 )); then
     else
       source_label=$source
     fi
-    source_detail=${candidate_source_detail[$path]}
+    source_detail=${candidate_source_detail[$id]}
     if [[ -n $source_detail ]]; then
       source_label+=" ($source_detail)"
     fi
     printf '%s  %d) %s%s\n' \
       "$color_item" "$((i + 1))" "$path" "$color_reset" >&2
-    printf '%s     depth: %d; derived from: %s%s\n' \
-      "$color_detail" "${candidate_depth[$path]}" "$source_label" "$color_reset" >&2
+    printf '%s     %s; depth: %d; derived from: %s%s\n' \
+      "$color_detail" "${path_kinds[$id]}" "${candidate_depth[$id]}" "$source_label" "$color_reset" >&2
   done
   read -r -p "${color_prompt}Select a file [1]: ${color_reset}" selection
   selection=${selection:-1}
@@ -359,9 +720,11 @@ elif (( ${#paths[@]} > 1 )); then
     echo "scf: invalid selection" >&2
     exit 2
   fi
-  config_path=${paths[selection - 1]}
+  selected_id=${paths[selection - 1]}
+  config_path=${candidate_path[$selected_id]}
 else
-  config_path=${paths[0]}
+  selected_id=${paths[0]}
+  config_path=${candidate_path[$selected_id]}
 fi
 
 if [[ $interactive == false ]]; then

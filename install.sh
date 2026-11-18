@@ -94,19 +94,21 @@ prepare_config()
         return
     fi
     fmt_note "preparing dotfiles configurations ..."
-    local key value
+    local key value assignment
     for i in "${DFS_CONFIGS[@]}"; do
         if [[ "$i" == *"="* ]]; then
             key=${i%%=*}
             value=${i#*=}
         else
             key=$i
-            value=$(eval echo \$$key)
         fi
+        [[ "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || fmt_fatal "invalid configuration key \"$key\""
+        if [[ "$i" != *"="* ]]; then value=${!key}; fi
+        printf -v assignment '%s=%q' "$key" "$value"
         HOME_FILES_PATH+=(".config/dotfiles/env")
-        HOME_FILES_CONTENT+=("$key=$value")
-        echo -n "$key=$value "
-        export $key=$value
+        HOME_FILES_CONTENT+=("$assignment")
+        printf '%s ' "$assignment"
+        export "$key=$value"
     done
     echo
 }
@@ -117,6 +119,82 @@ append_hist()
     "$DOTFILES/tools/append_zsh_hist.sh" "$@"
 }
 
+config_file_target()
+{
+    local filename=$1 target links=0
+    while [[ -L "$filename" ]]; do
+        ((links+=1))
+        [[ $links -le 40 ]] || fmt_fatal "too many symlinks resolving \"$1\""
+        target=$(readlink "$filename") || return
+        if [[ "$target" == /* ]]; then
+            filename=$target
+        else
+            filename="$(dirname "$filename")/$target"
+        fi
+    done
+    printf '%s\n' "$filename"
+}
+
+rewrite_config_file()
+(
+    local filename=$1 content=$2 action=$3
+    local temporary line ending link_count backup="" write_pending=0
+    filename=$(config_file_target "$filename") || exit 1
+    temporary=$(mktemp "${filename}.XXXXXXXX")
+    cleanup_config_write()
+    {
+        local status=$?
+        trap - EXIT
+        trap '' HUP INT TERM
+        if [[ "$write_pending" == 1 ]]; then
+            if cat "$backup" > "$filename"; then
+                write_pending=0
+            else
+                fmt_error "could not restore \"$filename\"; original content remains in \"$backup\""
+            fi
+        fi
+        if [[ "$write_pending" == 0 && -n "$backup" ]]; then rm -f -- "$backup"; fi
+        rm -f -- "$temporary"
+        exit "$status"
+    }
+    trap cleanup_config_write EXIT
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    cp -p -- "$filename" "$temporary"
+    # Read each complete or partial line so unrelated content keeps its original
+    # final newline, permissions, and symlink target.
+    while true; do
+        ending=$'\n'
+        if ! IFS= read -r line; then
+            ending=""
+            [[ -n "$line" ]] || break
+        fi
+        if [[ "$action" != append && "$line" == "$content" ]]; then continue; fi
+        printf '%s%s' "$line" "$ending"
+    done < "$filename" > "$temporary"
+    if [[ "$action" != uninstall ]]; then
+        if [[ -s "$temporary" && -n "$(tail -c 1 "$temporary")" ]]; then
+            printf '\n' >> "$temporary"
+        fi
+        printf '%s\n' "$content" >> "$temporary"
+    fi
+    if cmp -s -- "$temporary" "$filename"; then return 0; fi
+    link_count=$(stat -c '%h' "$filename" 2>/dev/null) || link_count=$(stat -f '%l' "$filename")
+    [[ "$link_count" =~ ^[1-9][0-9]*$ ]] || fmt_fatal "cannot determine hard-link count for \"$filename\""
+    if (( link_count > 1 )); then
+        # Replacing the inode would split existing hard links. Keep a complete
+        # backup until the in-place write has succeeded or been restored.
+        backup=$(mktemp "${filename}.backup.XXXXXXXX")
+        cp -p -- "$filename" "$backup"
+        write_pending=1
+        cat "$temporary" > "$filename"
+        write_pending=0
+    else
+        mv -f -- "$temporary" "$filename"
+    fi
+)
+
 install_file_content()
 {
     fmt_note "installing file content ..."
@@ -124,11 +202,18 @@ install_file_content()
         local filename="$HOME/${HOME_FILES_PATH[$i]}"
         local content="${HOME_FILES_CONTENT[$i]}"
         fmt_info "installing \"$content\" into \"$filename\" ..."
-        mkdir -p $(dirname "$filename")
+        mkdir -p "$(dirname "$filename")"
         if [ ! -f "$filename" ]; then
-            touch $filename
+            touch "$filename"
         fi
-        grep -qxF -- "$content" "$filename" || echo "$content" >> "$filename"
+        if [[ "${HOME_FILES_PATH[$i]}" == .config/dotfiles/env ]]; then
+            # The env file can contain multiline values and arbitrary shell
+            # blocks. Appending lets the requested value win without parsing or
+            # removing existing shell code, including a repeated older value.
+            rewrite_config_file "$filename" "$content" append
+        elif ! grep -qxF -- "$content" "$filename"; then
+            rewrite_config_file "$filename" "$content" install
+        fi
     done
 }
 
@@ -140,7 +225,7 @@ uninstall_file_content()
         local content=${HOME_FILES_CONTENT[$i]}
         fmt_info "removing \"$content\" from \"$filename\" ..."
         if [ -f "$filename" ]; then
-            grep -vxF -- "$content" "$filename" | tee "$filename"
+            rewrite_config_file "$filename" "$content" uninstall
         fi
     done
 }
@@ -159,41 +244,40 @@ install_symlink()
             fmt_error "\"$src\" does not exist! aborting this job ..."
             continue
         fi
-        mkdir -p $(dirname "$dst")
-        if [ -f "$dst" ]; then
-            if [ "$(readlink $dst)" -ef "$src" ]; then
+        mkdir -p "$(dirname "$dst")"
+        if [[ -e "$dst" || -L "$dst" ]]; then
+            if [[ -L "$dst" && "$dst" -ef "$src" ]]; then
                 continue
             fi
             fmt_warning "\"$dst\" already exists! stat output:"
             echo ----------
-            stat $dst
+            stat "$dst"
             echo ----------
             yn=$(ask_for_yN "would you like to replace ${dst}?")
             if [[ "$yn" == "1" ]]; then
-                rm $dst
+                rm "$dst"
             else
                 fmt_error "aborting this job ..."
                 continue
             fi
         fi
-        ln -s $src $dst
+        ln -s "$src" "$dst"
     done
 }
 
 uninstall_symlink()
 {
     fmt_note "uninstalling symlinks ..."
-    local src
-    for src in "${!HOME_SYMLINKS[@]}"; do
-        local dst=${HOME_SYMLINKS[$src]}
-        src="$DOTFILES/$src"
-        dst="$HOME/$dst"
-        if [ "$(readlink $dst)" -ef "$src" ]; then
+    local i src dst
+    for i in "${!HOME_SYMLINKS_SRC[@]}"; do
+        src="$DOTFILES/${HOME_SYMLINKS_SRC[$i]}"
+        dst="$HOME/${HOME_SYMLINKS_DST[$i]}"
+        if [[ -L "$dst" ]] && [[ "$(readlink "$dst")" == "$src" || "$dst" -ef "$src" ]]; then
             fmt_info "removing symlink \"$dst\" ..."
             echo ----------
-            stat $dst
+            stat "$dst"
             echo ----------
-            rm $dst
+            rm "$dst"
         fi
     done
 }
@@ -214,9 +298,11 @@ install_crontab()
 
 uninstall_crontab()
 {
+    local existing
     if [[ -x $(command -v crontab) ]]; then
         fmt_note "removing \"$CRON_JOB\" from crontab ..."
-        ( crontab -l | grep -vxF "$CRON_JOB" ) | crontab -
+        existing=$(crontab -l 2>/dev/null) || return 0
+        printf '%s\n' "$existing" | grep -vxF "$CRON_JOB" | crontab -
     else
         fmt_note "crontab does not exist. skipping ..."
     fi
@@ -280,7 +366,7 @@ install_update()
 uninstall_update()
 {
     fmt_note "removing update.sh ..."
-    rm "${DOTFILES}/update.sh"
+    rm -f "${DOTFILES}/update.sh"
 }
 
 install()
@@ -320,7 +406,7 @@ FUNC=install
 INSTALL_DEP=0
 store_config=0
 store_hist=0
-for i in ${GOT_OPTS[@]}; do
+for i in "${GOT_OPTS[@]}"; do
     if [[ "$store_config" == "1" ]]; then
         store_config=0
         DFS_CONFIGS+=("$i")
@@ -341,4 +427,20 @@ for i in ${GOT_OPTS[@]}; do
         * ) fmt_fatal "unknown option \"$i\"" ;;
     esac
 done
+[[ "$store_config" == 0 ]] || fmt_fatal "option -x requires a configuration key or KEY=VALUE"
+[[ "$store_hist" == 0 ]] || fmt_fatal "option -H requires a history key"
+if [[ "$DFS_DRY_RUN" == 1 ]]; then
+    if [[ "$FUNC" == install ]]; then prepare_config; fi
+    fmt_note "dry run: $FUNC dotfiles"
+    if [[ "$FUNC" == install && "$INSTALL_DEP" == 1 ]]; then fmt_info "would install dependencies"; fi
+    fmt_info "would $FUNC ${DOTFILES}/update.sh and crontab entry $CRON_JOB"
+    for i in "${!HOME_FILES_PATH[@]}"; do
+        fmt_info "would $FUNC ${HOME_FILES_CONTENT[$i]} in $HOME/${HOME_FILES_PATH[$i]}"
+    done
+    for i in "${!HOME_SYMLINKS_SRC[@]}"; do
+        fmt_info "would $FUNC link $HOME/${HOME_SYMLINKS_DST[$i]} to $DOTFILES/${HOME_SYMLINKS_SRC[$i]}"
+    done
+    if [[ "$FUNC" == install ]]; then fmt_info "would install tmux/Vim plugins and import requested history"; fi
+    exit 0
+fi
 $FUNC

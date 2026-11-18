@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )
 THIS_FILE=$(basename "${BASH_SOURCE}")
@@ -9,6 +10,26 @@ DFS_IGNORE_COMMIT_SIGN=${requested_ignore_commit_sign:-${DFS_IGNORE_COMMIT_SIGN:
 
 DFS_UPDATED_RET=${DFS_UPDATED_RET:-0}
 DFS_UPDATE_CHANNEL=${DFS_UPDATE_CHANNEL:-"main"}
+
+if [[ "$DFS_DRY_RUN" == "1" ]]; then
+    fmt_info "dry-run: would fetch updates for channel $DFS_UPDATE_CHANNEL, verify the selected revision, and refresh update.sh"
+    exit 0
+fi
+
+refresh_updater()
+(
+    if [[ -x ./update.sh ]] && cmp -s ./.update.sh ./update.sh; then
+        return 0
+    fi
+    fmt_info "refreshing update.sh ..."
+    local updater_tmp
+    updater_tmp=$(mktemp ./.update.sh.XXXXXXXX)
+    trap 'rm -f -- "$updater_tmp"' EXIT
+    # Bash may still be reading the running updater. Keep its inode intact.
+    cp -p ./.update.sh "$updater_tmp"
+    chmod +x "$updater_tmp"
+    mv -f -- "$updater_tmp" ./update.sh
+)
 
 signed_commit_timestamp()
 {
@@ -108,7 +129,7 @@ git fetch --all --prune --tags
 if [[ -n "$(git status -s)" ]]; then
     fmt_error "directory not clean"
     apost_beacon "dfs.dirty"
-    exit
+    exit 1
 fi
 
 # get the specified commit id
@@ -121,7 +142,7 @@ esac
 if [[ ! "$DFS_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
     fmt_error "invalid commit id"
     apost_beacon "dfs.invalid-commit" "invalid commit id: ${DFS_COMMIT}"
-    exit
+    exit 1
 fi
 
 installed_commit=$(git rev-parse HEAD)
@@ -133,17 +154,15 @@ fi
 
 # update
 if [[ "$installed_commit" == "$DFS_COMMIT" ]]; then
+    if [[ -z "$DFS_DEV" || "$DFS_DEV" == "0" ]]; then
+        refresh_updater
+    fi
     fmt_info "nothing to do"
 else
     fmt_info "checking out to commit $DFS_COMMIT ..."
     if [[ -z "$DFS_DEV" || "$DFS_DEV" == "0" ]]; then
         git -c advice.detachedHead=false checkout $DFS_COMMIT
-        # Bash may still be reading the running updater. Keep its inode intact.
-        updater_tmp=$(mktemp ./.update.sh.XXXXXXXX)
-        trap 'rm -f -- "$updater_tmp"' EXIT
-        cp -p ./.update.sh "$updater_tmp"
-        chmod +x "$updater_tmp"
-        mv -f -- "$updater_tmp" ./update.sh
+        refresh_updater
         apost_beacon "dfs.updated"
         exit "$DFS_UPDATED_RET"
     else

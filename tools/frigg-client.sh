@@ -55,6 +55,7 @@ handle_resp()
         fmt_info "try to register you hostname and uuid"
         fmt_info "hostname: $hostname"
         fmt_info "uuid: $uuid"
+        return 1
     else
         echo $resp >&2
         fmt_fatal "server returned an error"

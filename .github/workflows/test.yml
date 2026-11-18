@@ -3,6 +3,21 @@ on:
   push: ~
   workflow_dispatch: ~
 jobs:
+  test-offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline regression tests
+        run: |
+          bash tools/test-getopts.sh
+          bash tools/test-install.sh
+          bash tools/test-update.sh
+          bash tools/test-riot.sh
+          bash tools/test-riot-gpg.sh
+          bash tools/test-sagent-gpg-pin.sh
+          bash tools/test-scf.sh
+          bash tools/test-frigg-client.sh
+
   test-signed-updates:
     runs-on: ubuntu-latest
     steps:

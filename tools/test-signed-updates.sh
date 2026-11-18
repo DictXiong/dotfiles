@@ -12,7 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 mkdir -m 700 "$GNUPGHOME"
-unset DFS_IGNORE_COMMIT_SIGN DFS_UPDATE_GPG_KEY_FILE DFS_UPDATE_CHANNEL
+unset DFS_IGNORE_COMMIT_SIGN DFS_UPDATE_GPG_KEY_FILE DFS_UPDATE_CHANNEL DFS_DRY_RUN
 
 old_signer=old@example.invalid
 new_signer=new@example.invalid
@@ -128,7 +128,7 @@ git -C "$remote" commit -q --allow-empty --no-gpg-sign -m 'Unsigned commit'
 reject_update 'has no trusted signature or signed release tag'
 without_gpg="$fixture/bin-without-gpg"
 mkdir "$without_gpg"
-for tool in bash dirname basename git grep mktemp cp chmod mv rm; do
+for tool in bash dirname basename git grep mktemp cp chmod mv rm cmp; do
     ln -s "$(command -v "$tool")" "$without_gpg/$tool"
 done
 PATH="$without_gpg" reject_update 'gpg not found. Set DFS_IGNORE_COMMIT_SIGN=1'

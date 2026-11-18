@@ -306,17 +306,13 @@ prepare_ssh_cmd() {
     else
         local port_param='-p'
     fi
-    CMD=(
-        "$ssh_bin"
-        "${PORT:+$port_param}" "$PORT"
-        "${SSH_OPTIONS[@]}"
-        "${EXTRA_SSH_OPTIONS[@]}"
-        "$SCP_SRC"
-        "$USERNAME${USERNAME:+@}$SERVER"
-        "$SCP_DST"
-        "${@:2}"
-    )
-    for i in ${!CMD[@]}; do if [[ -z "${CMD[i]}" ]]; then unset CMD[i]; fi; done
+    CMD=("$ssh_bin")
+    [[ -z "$PORT" ]] || CMD+=("$port_param" "$PORT")
+    CMD+=("${SSH_OPTIONS[@]}" "${EXTRA_SSH_OPTIONS[@]}")
+    [[ -z "$SCP_SRC" ]] || CMD+=("$SCP_SRC")
+    CMD+=("$USERNAME${USERNAME:+@}$SERVER")
+    [[ -z "$SCP_DST" ]] || CMD+=("$SCP_DST")
+    CMD+=("${@:2}")
 }
 
 # ssh
@@ -389,11 +385,10 @@ run_sshd()
 run_scp() {
     local src="$1"
     local dst="$2"
-    local dst_is_remote=1
-    # whoever is ./*, it can't be the remote; whoever not exists on local, it's possible the remote.
-    # it is suggested to use ./* for local files.
-    if [[ "$src" != "./"* && ( "$dst" == "./"* || ( ! -e "$src" && -e "$dst" ) ) ]]; then
-        dst_is_remote=0
+    local dst_is_remote="$3"
+    local SCP_SRC="" SCP_DST=""
+    if [[ "$SERVER" == *:* ]]; then
+        SERVER="[$SERVER]"
     fi
     if [[ "$dst_is_remote" == "1" ]]; then
         SCP_SRC="$src"
@@ -429,7 +424,13 @@ remove_hostkey() {
     else
         key="[$SERVER]:$PORT"
     fi
-    ssh-keygen -R "$key"
+    CMD=(ssh-keygen -R "$key")
+    print_cmd
+    if [[ "$DFS_DRY_RUN" == "1" ]]; then
+        echo "${CMD[@]}"
+    else
+        "${CMD[@]}"
+    fi
 }
 
 # main
@@ -635,6 +636,7 @@ router() {
 
     IFS=',' read -ra remotes <<< "${positional[0]}"
     for i in ${!remotes[@]}; do if [[ -z "${remotes[i]}" ]]; then unset remotes[i]; fi; done
+    remotes=("${remotes[@]}")
     if [[ "${#positional[@]}" == "0" || "${#remotes[@]}" == "0" ]]; then
         print_help
         exit 1
@@ -645,11 +647,34 @@ router() {
         || "${#positional[@]}" -gt 2 ) ]]; then
         fmt_fatal "gpg-agent forwarding is only supported for interactive SSH login"
     fi
-    for i in ${!remotes[@]}; do
-        remote="${remotes[i]}"
+    local scp_dst_is_remote=1
+    if [[ "${positional[1]}" == scp ]]; then
+        test "${#positional[@]}" -eq 4 || fmt_fatal "scp requires exactly two arguments: source and destination"
+        test -n "${positional[2]}" || fmt_fatal "no source path specified"
+        test -n "${positional[3]}" || fmt_fatal "no destination path specified"
+        # Resolve direction once, before any transfer can create or remove a
+        # local file. A ./ prefix explicitly identifies the local side.
+        if [[ "${positional[2]}" != "./"* && ( "${positional[3]}" == "./"* \
+            || ( ! -e "${positional[2]}" && -e "${positional[3]}" ) ) ]]; then
+            scp_dst_is_remote=0
+        fi
+    fi
+    local batch_chains=()
+    local batch_chain first_added batch_index
+    local remote_index=0
+    while (( remote_index < ${#remotes[@]} )); do
+        remote="${remotes[remote_index]}"
+        batch_chain=${batch_chains[remote_index]:-}
+        remote_index=$((remote_index + 1))
+        [[ -n "$remote" ]] || continue
         local batch_func="${remote}.batch"
         if is_function "$batch_func"; then
+            [[ "$batch_chain" != *"|$batch_func|"* ]] || fmt_fatal "recursive batch: $remote"
+            first_added=${#remotes[@]}
             "$batch_func"
+            for ((batch_index=first_added; batch_index<${#remotes[@]}; batch_index++)); do
+                batch_chains[batch_index]="$batch_chain|$batch_func|"
+            done
             continue
         fi
         parse_remote "$remote"
@@ -698,10 +723,7 @@ router() {
                 fi
                 ;;
             scp )
-                test "${#positional[@]}" -eq 4 || fmt_fatal "scp requires exactly two arguments: source and destination"
-                test -n "${positional[2]}" || fmt_fatal "no source path specified"
-                test -n "${positional[3]}" || fmt_fatal "no destination path specified"
-                run_scp "${positional[2]}" "${positional[3]}"
+                run_scp "${positional[2]}" "${positional[3]}" "$scp_dst_is_remote"
                 ;;
             rm )
                 test "${#positional[@]}" -eq 2 || fmt_fatal "rm requires no arguments"
